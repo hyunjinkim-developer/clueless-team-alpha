@@ -162,9 +162,10 @@ def assign_random_character(game, user):
             if not available_characters:
                 raise ValueError("No available characters left in this game.")
 
-            # Pick a random character and double-check uniqueness
+            # Pick a random character
             character = random.choice(available_characters)
-            # Verify no player (active or inactive) has this character
+            # Extra safety: Verify no player (active or inactive) has this character
+            # This is redundant with taken_characters but guards against rare edge cases
             if game.players.filter(character=character).exists():
                 raise ValueError(f"Character {character} already assigned to a player!")
             player = Player.objects.create(
@@ -175,8 +176,9 @@ def assign_random_character(game, user):
                 is_active=True,
                 turn=character == "Miss Scarlet" and game.players.filter(is_active=True).count() == 0  # First player gets turn
             )
+            # Add user ever joined the game
             if user.username not in game.players_list:
-                game.players_list.append(user.username)  # Add to historical list
+                game.players_list.append(user.username)
                 game.save()
             if DEBUG_ASSIGN_RANDOM_CHARACTER:
                 print(f"Assigned new player: {user.username} as {character}")
