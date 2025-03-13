@@ -10,8 +10,8 @@ import random
 from .models import *
 from .constants import *
 
-# For debugging purpose, remove after development
-DEBUG_AUTH = True
+# For debugging purpose, disable in production
+DEBUG_AUTH = True # Debug flag for authentication logging
 
 # Custom form for user signup
 class SignupForm(forms.Form):
