@@ -9,10 +9,13 @@ Simplified version of board game Clue
     3. % pip install -r requirements.txt
     * To uninstall all dependencies
         - % python uninstall_packages.py
-2. Run the server
+2. DB migration
+    1. % python manage.py makemigrations
+    2. % python manage.py migrate
+3. Run the server
     1. Run Redis server
         - % redis-server
-    2. Setting for ASGI/Channels
+    2. Initial Setting for ASGI/Channels
         - % python run_daphne.py
         * To run the server listens both HTTP (pages) and WebSocket (live) connections.
             [For further explanation](https://www.notion.so/hyunjinkimdeveloper/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d).
