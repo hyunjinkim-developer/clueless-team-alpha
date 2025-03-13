@@ -17,104 +17,128 @@ class SignupForm(forms.Form):
 
 # View to handle login and signup
 def login_view(request):
+    login_form = AuthenticationForm()
+    signup_form = SignupForm()
+    show_signup = 'signup' in request.GET or 'signup' in request.POST
+    error_message = None
+    success_message = None
+
+    # Get the game and all players ever joined
+    game, _ = Game.objects.get_or_create(id=1, defaults={'case_file': {}, 'players_list': []})
+    all_players = game.players_list  # Full history from players_list
+
     if request.method == 'POST':
         if 'login' in request.POST:
-            form = AuthenticationForm(request, data=request.POST)
-            if form.is_valid():
-                user = form.get_user()
-                login(request, user)
-                # Ensure a game with ID 1 exists, or create one
-                game, created = Game.objects.get_or_create(id=1, defaults={'case_file': {}})
-                # If this is a new game, initialize the case file
-                if created:
-                    game.case_file = {
-                        'suspect': random.choice(SUSPECTS),
-                        'room': random.choice(ROOMS),
-                        'weapon': random.choice(WEAPONS)
-                    }
-                    game.save()
-                # Assign a random character to the user
-                assign_random_character(game, user)
-                return redirect('game_view', game_id=game.id)
+            login_form = AuthenticationForm(request, data=request.POST)
+            if login_form.is_valid():
+                user = login_form.get_user()
+                if len(game.players_list) >= 6 and user.username not in game.players_list:
+                    error_message = "The game is already full with 6 players."
+                else:
+                    login(request, user)
+                    assign_random_character(game, user)
+
+                    success_message = f"Logged in successfully as {user.username}!"
+                    # Log all players after login
+                    print(f"\n--- Player Login: {user.username} ---")
+                    print("All players in Game 1:")
+                    for player in game.players.all():
+                        print(
+                            f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
+                    print(f"Total players ever joined: {len(game.players_list)}")
+                    print("----------------\n")
+
+                    return redirect('game_view', game_id=game.id)
+            else:
+                error_message = "Invalid login credentials."  # Error for invalid login
         elif 'signup' in request.POST:
-            form = SignupForm(request.POST)
-            if form.is_valid():
-                username = form.cleaned_data['username']
-                password = form.cleaned_data['password']
+            signup_form = SignupForm(request.POST)
+            if signup_form.is_valid():
+                username = signup_form.cleaned_data['username']
+                password = signup_form.cleaned_data['password']
                 if not User.objects.filter(username=username).exists():
                     user = User.objects.create_user(username=username, password=password)
-                    login(request, user)
-                    # Ensure a game with ID 1 exists, or create one
-                    game, created = Game.objects.get_or_create(id=1, defaults={'case_file': {}})
-                    # If this is a new game, initialize the case file
-                    if created:
-                        game.case_file = {
-                            'suspect': random.choice(SUSPECTS),
-                            'room': random.choice(ROOMS),
-                            'weapon': random.choice(WEAPONS)
-                        }
-                        game.save()
-                    # Assign a random character to the user
-                    assign_random_character(game, user)
-                    return redirect('game_view', game_id=game.id)
+                    success_message = f"Signup successful for {username}! Please log in."
+                    show_signup = False  # Switch to login form
+                    signup_form = SignupForm()  # Reset signup form
                 else:
-                    form.add_error('username', 'Username already exists.')
-        else:
-            form = AuthenticationForm() if 'login' in request.GET else SignupForm()
-    else:
-        form = AuthenticationForm() if 'login' not in request.GET else SignupForm()
-    return render(request, 'game/login.html',
-                  {'form': form, 'show_signup': 'signup' in request.GET})
-
-# View to handle user logout
-def logout_view(request):
-    logout(request)  # Log the user out
-    return redirect('login')  # Redirect to login page
+                    signup_form.add_error('username', 'Username already exists.')
+                    error_message = "Username already exists."
+            else:
+                error_message = "Invalid signup details."  # Error for invalid signup
+    return render(request, 'game/login.html', {
+        'login_form': login_form,
+        'signup_form': signup_form,
+        'show_signup': show_signup,
+        'error_message': error_message,
+        'success_message': success_message,
+        'all_players': all_players
+    })
 
 def game_view(request, game_id):
+    # Simple view to render game page with game_id
     if not request.user.is_authenticated:
         return redirect('login')
-    game = Game.objects.get(id=game_id)
-    players = list(game.players.values('username', 'character', 'location', 'turn', 'hand'))
-    return render(request, 'game/game.html', {
-        'game_id': game_id,
-        'players': players  # Pass players data to template
-    })
+    return render(request, 'game/game.html', {'game_id': game_id})
+
+def logout_view(request):
+    if request.user.is_authenticated:
+        game = Game.objects.get(id=1)
+        try:
+            player = Player.objects.get(game=game, username=request.user.username, is_active=True)
+            player.is_active = False
+            player.save()  # No change to players_list
+
+            # Log all players after logout
+            print(f"\n--- Player Logout: {request.user.username} ---")
+            print("All players in Game 1:")
+            for player in game.players.all():
+                print(f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
+            print(f"Total players ever joined: {len(game.players_list)}")
+            print("----------------\n")
+
+            # Broadcast updated game state
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"game_{game.id}",
+                {
+                    'type': 'game_update',
+                    'game_state': get_game_state(game)
+                }
+            )
+        except Player.DoesNotExist:
+            pass
+    logout(request)
+    return redirect('login')
 
 def assign_random_character(game, user):
     """
     Assign a random character to the user for the given game, ensuring no duplicates.
     """
-    # Get the list of characters already taken in the game
-    taken_characters = game.players.values_list('character', flat=True)
-    available_characters = [char for char in SUSPECTS if char not in taken_characters]
-    if not available_characters:
-        raise ValueError("No available characters left in the game.")
+    try:
+        player = Player.objects.get(game=game, username=user.username)
+        if not player.is_active:
+            player.is_active = True
+            player.save()
+    except Player.DoesNotExist:
+        taken_characters = game.players.filter(is_active=True).values_list('character', flat=True)
+        available_characters = [char for char in SUSPECTS if char not in taken_characters]
+        if not available_characters:
+            raise ValueError("No available characters left in this game.")
+        character = random.choice(available_characters)
+        player = Player.objects.create(
+            game=game,
+            username=user.username,
+            character=character,
+            location=STARTING_LOCATIONS[character],
+            is_active=True,
+            turn=character == "Miss Scarlet" and game.players.filter(is_active=True).count() == 0
+        )
+        if user.username not in game.players_list:  # Add only on first join
+            game.players_list.append(user.username)
+            game.save()
 
-    # Randomly select a character from the available ones
-    character = random.choice(available_characters)
-
-    # Create or update the Player object for the user in the game
-    player, created = Player.objects.get_or_create(
-        game=game,
-        username=user.username,  # Renamed from nickname
-        defaults={
-            'character': character,
-            'location': STARTING_LOCATIONS[character],
-            'is_active': True,
-            'turn': character == "Miss Scarlet"
-        }
-    )
-
-    if not created:
-        # If the player already exists, update their character and location
-        player.character = character
-        player.location = STARTING_LOCATIONS[character]
-        player.is_active = True
-        player.turn = character == "Miss Scarlet"
-        player.save()
-
-    # Notify all players of the updated game state via WebSocket
+    # Broadcast updated game state
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
         f"game_{game.id}",
@@ -125,10 +149,8 @@ def assign_random_character(game, user):
     )
 
 def get_game_state(game):
-    """
-        Helper function to get the current game state for broadcasting.
-    """
-    players = list(game.players.values('username', 'character', 'location', 'turn', 'hand'))
+    # Return game state with only active players
+    players = list(game.players.filter(is_active=True).values('game', 'username', 'character', 'location', 'is_active', 'turn', 'hand'))
     return {
         'case_file': game.case_file if not game.is_active else None,
         'players': players,
@@ -137,5 +159,3 @@ def get_game_state(game):
         'hallways': HALLWAYS,
         'weapons': WEAPONS
     }
-
-

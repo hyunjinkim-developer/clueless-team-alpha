@@ -24,6 +24,7 @@ Simplified version of board game Clue
 
 ## Features
 
+
 ## DB Structure
 auth_user        game_game          game_player
 +----+           +----+             +----+

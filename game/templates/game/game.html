@@ -28,6 +28,16 @@
         overflow-y: auto; /* Add scrollbar if content exceeds height */
     }
 
+    #turn-notification {
+        margin: 10px 0; /* Space around turn notification */
+        padding: 10px; /* Padding inside */
+        border: 1px solid #ccc; /* Light gray border */
+        background-color: #f9f9f9; /* Light background */
+        text-align: center; /* Center text */
+    }
+
+    .current-turn { background-color: #90ee90; }  /* Light green for turn indication */
+
     #game-board {
         display: grid; /* Use CSS Grid for board layout */
         grid-template-columns: repeat(5, var(--cell-size)); /* 5 columns, each 200px */
@@ -102,19 +112,6 @@
         background-color: white;
     }
 
-    .info-message {
-        color: blue; /* Blue color for info messages */
-        margin: 10px 0; /* Margin for spacing */
-    }
-
-    #turn-notification {
-        margin: 10px 0; /* Space around turn notification */
-        padding: 10px; /* Padding inside */
-        border: 1px solid #ccc; /* Light gray border */
-        background-color: #f9f9f9; /* Light background */
-        text-align: center; /* Center text */
-    }
-
     /* CSS Animation for fading in the character */
     @keyframes fadeMove {
         0% {
@@ -126,10 +123,11 @@
             transform: scale(1); /* End at normal size */
         }
     }
-
     .fade-move {
         animation: fadeMove 0.5s ease-in-out; /* Apply the fadeMove animation over 0.5s */
     }
+
+
 </style>
 <head>
 </head>
@@ -297,21 +295,28 @@
         addClickListeners();
     }
 
-    function updateGameBoard(character, fromLocation, toLocation, players) {  // Update board for moves, with latest players data
-        console.log(`Updating board: ${character} from ${fromLocation} to ${toLocation}`); // Debug log
-        // Always update both from and to locations using the latest players data
-        updateRoomCharacters(players);  // Update all rooms
-        updateHallwayCharacters(players);  // Update all hallways
-        const toElement = document.getElementById(toLocation);
-        if (toElement && (toElement.classList.contains('room') || toElement.classList.contains('hallway'))) {
-            const charElement = document.getElementById(`${toLocation}-characters`); // Get the character element
+    // Smoother Animation: Update board and animate moved character
+    function updateGameBoard(gameState) {
+        const players = gameState.players || [];
+        const movedPlayer = currentPlayer && players.find(p => p.username === currentUsername && p.location !== currentPlayer.location);
+        updateRoomCharacters(players);
+        updateHallwayCharacters(players);
+        if (movedPlayer) {
+            const charElement = document.getElementById(`${movedPlayer.location}-characters`);
             if (charElement) {
-                charElement.classList.remove('fade-move');  // Reset animation
-                void charElement.offsetWidth;  // Trigger reflow to restart animation
-                charElement.classList.add('fade-move');  // Apply the animation
+                charElement.classList.remove('fade-move');
+                void charElement.offsetWidth;  // Trigger reflow for animation restart
+                charElement.classList.add('fade-move');
             }
         }
-        currentPlayer = players.find(player => player.username === currentUsername); // Update current player location
+        currentPlayer = players.find(player => player.username === currentUsername) || null;
+
+        // Highlight current player's turn
+        const allLocations = document.querySelectorAll('.room, .hallway');
+        allLocations.forEach(loc => loc.classList.remove('current-turn'));
+        if (currentPlayer && currentPlayer.turn) {
+            document.getElementById(currentPlayer.location).classList.add('current-turn');
+        }
     }
 
     function updateRoomCharacters(players) {
@@ -344,63 +349,33 @@
         });
     }
 
-    function addClickListeners() {  // Add click listeners to rooms and hallways
+    // Move Validation and Turn Enforcement handled server-side
+    // client just sends move request
+    function addClickListeners() {
         const rooms = document.querySelectorAll('.room');
         const hallways = document.querySelectorAll('.hallway');
         const clickableElements = [...rooms, ...hallways];
 
         clickableElements.forEach(element => {
             element.addEventListener('click', () => {
-                const location = element.id; // Get the ID of the clicked element
-                if (currentPlayer && isValidMove(currentPlayer.location, location)) {
-                    const message = JSON.stringify({'action': 'move', 'location': location});
-                    console.log('Sending:', message);  // Log the message for debugging
-                    ws.send(message);  // Send move request to server
+                const location = element.id;
+                if (currentPlayer) {
+                    const message = JSON.stringify({
+                        'type': 'move',
+                        'location': location
+                    });
+                    console.log('Sending move:', message);
+                    ws.send(message);
                 } else {
-                    console.log('Invalid move or not your turn for location:', location);
+                    console.log('No current player defined');
                 }
             });
         });
     }
 
-    function isValidMove(fromLocation, toLocation) {
-        // Check if it's the current player's turn (simplified logic)
-        const turnMessage = document.getElementById('turn-message').textContent;
-        if (!turnMessage.includes(currentUsername)) {
-            return false; // Not your turn
-        }
-
-        // Define valid moves based on adjacency (simplified from consumers.py)
-        const validMoves = {
-            'Study': ['Hallway1', 'Hallway3', 'Kitchen'],
-            'Hall': ['Hallway1', 'Hallway2', 'Hallway4'],
-            'Lounge': ['Hallway2', 'Hallway5', 'Conservatory'],
-            'Library': ['Hallway3', 'Hallway6', 'Hallway8'],
-            'BilliardRoom': ['Hallway4', 'Hallway6', 'Hallway7', 'Hallway9'],
-            'DiningRoom': ['Hallway5', 'Hallway7', 'Hallway10'],
-            'Conservatory': ['Hallway8', 'Hallway11', 'Lounge'],
-            'Ballroom': ['Hallway9', 'Hallway11', 'Hallway12'],
-            'Kitchen': ['Hallway10', 'Hallway12', 'Study'],
-            'Hallway1': ['Study', 'Hall'],
-            'Hallway2': ['Hall', 'Lounge'],
-            'Hallway3': ['Study', 'Library'],
-            'Hallway4': ['Hall', 'BilliardRoom'],
-            'Hallway5': ['Lounge', 'DiningRoom'],
-            'Hallway6': ['Library', 'BilliardRoom'],
-            'Hallway7': ['BilliardRoom', 'DiningRoom'],
-            'Hallway8': ['Library', 'Conservatory'],
-            'Hallway9': ['BilliardRoom', 'Ballroom'],
-            'Hallway10': ['DiningRoom', 'Kitchen'],
-            'Hallway11': ['Conservatory', 'Ballroom'],
-            'Hallway12': ['Ballroom', 'Kitchen']
-        };
-
-        return fromLocation && toLocation && validMoves[fromLocation] && validMoves[fromLocation].includes(toLocation);
-    }
-
-
     document.addEventListener('DOMContentLoaded', () => {
-        initializeBoard({players: playersData});
+        updateGameBoard({ players: playersData });
+        addClickListeners();
     });
 </script>
 </html>
