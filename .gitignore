@@ -40,3 +40,7 @@ ENV/
 db.sqlite3
 # Optional: Ignore migrations during early dev
 game/migrations/
+
+# Redis-specific
+dump.rdb
+
