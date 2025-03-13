@@ -23,19 +23,13 @@ Simplified version of board game Clue
     The development log contains debugging cases
     You can track updates on [https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4]
 
+## Directory
+
 ## Features
 
+## Task-list
+* When reload the page,
+    - show corresponding data not overwritten with the latest login player info
+    - Consider deployment on cloud services
 
-## DB Structure
-auth_user        game_game          game_player
-+----+           +----+             +----+
-| id |<---+      | id |<---+        | id |
-| username |---+>| case_file  |---+>| game_id   |---+
-| password |     | is_active  |     | username  |   |
-+----+           | created_at |     | character |   |
-                 +----+             | location  |   |
-                                    | is_active |   |
-                                    | turn      |   |
-                                    | hand      |   |
-                                    +----+      |   |
-                                                    v
+

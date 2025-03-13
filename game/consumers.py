@@ -31,8 +31,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    # Handle WebSocket disconnection when a client leaves
     async def disconnect(self, close_code):
+        """Handle WebSocket disconnection when a client leaves"""
         if hasattr(self, 'game_group_name'):  # Check if group was set
             # Remove this client from the game’s WebSocket group
             await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
@@ -55,8 +55,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             # Echo unrecognized messages back to the client
             await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
 
-    # Handle game_update events broadcast to the group
     async def game_update(self, event):
+        """Handle game_update events broadcast to the group"""
         game_state = event['game_state']  # Extract game state from event
         print(f"Received game_update event for game {self.game_id}")  # Debug log
         players = game_state.get('players', [])  # Get players list, default to empty
@@ -82,8 +82,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
         return Player.objects.get(game=game, username=username)  # Fetch Player by username and game
 
-    # Handle player move requests from clients
     async def handle_move(self, data):
+        """Handle a player's move request without turn restriction."""
         to_location = data.get('location')  # Extract target location from message
         if not to_location:
             # Send error if no location provided

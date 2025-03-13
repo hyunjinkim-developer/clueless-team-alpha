@@ -228,17 +228,13 @@
 
         clickableElements.forEach(element => {
             element.addEventListener('click', () => {
-                const location = element.id; // Get the clicked location ID (e.g., "Hallway3")
-                if (currentPlayer && currentPlayer.is_active) { // Only allow moves if player is active
-                    const message = JSON.stringify({
-                        'type': 'move',
-                        'location': location // Send move request with target location
-                    });
-                    console.log('Sending move:', message); // Debug log for move request
-                    ws.send(message); // Send move request via WebSocket
-                } else {
-                    console.log('No current player defined or player is inactive'); // Log if move not allowed
-                }
+                const location = element.id;
+                const message = JSON.stringify({
+                    'type': 'move',
+                    'location': location
+                });
+                console.log('Sending move:', message);
+                ws.send(message);
             });
         });
     }
