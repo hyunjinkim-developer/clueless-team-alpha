@@ -6,12 +6,14 @@ from django import forms
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import random
+from django.db import transaction  # For atomic operations
 
 from .models import *
 from .constants import *
 
 # For debugging purpose, disable in production
 DEBUG_AUTH = True # Debug flag for authentication logging
+DEBUG_ASSIGN_RANDOM_CHARACTER = True
 
 # Custom form for user signup
 class SignupForm(forms.Form):
@@ -149,24 +151,35 @@ def assign_random_character(game, user):
         if not player.is_active:
             player.is_active = True
             player.save()  # Reactivate existing player
+            if DEBUG_ASSIGN_RANDOM_CHARACTER:
+                print(f"Reactivated player: {user.username} as {player.character}")
     except Player.DoesNotExist:
-        # Assign a new character if player doesn’t exist
-        taken_characters = game.players.filter(is_active=True).values_list('character', flat=True)
-        available_characters = [char for char in SUSPECTS if char not in taken_characters]
-        if not available_characters:
-            raise ValueError("No available characters left in this game.")
-        character = random.choice(available_characters)
-        player = Player.objects.create(
-            game=game,
-            username=user.username,
-            character=character,
-            location=STARTING_LOCATIONS[character],  # Set initial location from constants
-            is_active=True,
-            turn=character == "Miss Scarlet" and game.players.filter(is_active=True).count() == 0  # First player gets turn
-        )
-        if user.username not in game.players_list:
-            game.players_list.append(user.username)  # Add to historical list
-            game.save()
+        # Use atomic transaction to prevent race conditions
+        with transaction.atomic():
+            # Get characters of all players who ever joined the game, regardless of is_active
+            taken_characters = game.players.values_list('character', flat=True)
+            available_characters = [char for char in SUSPECTS if char not in taken_characters]
+            if not available_characters:
+                raise ValueError("No available characters left in this game.")
+
+            # Pick a random character and double-check uniqueness
+            character = random.choice(available_characters)
+            # Verify no player (active or inactive) has this character
+            if game.players.filter(character=character).exists():
+                raise ValueError(f"Character {character} already assigned to a player!")
+            player = Player.objects.create(
+                game=game,
+                username=user.username,
+                character=character,
+                location=STARTING_LOCATIONS[character],  # Set initial location from constants
+                is_active=True,
+                turn=character == "Miss Scarlet" and game.players.filter(is_active=True).count() == 0  # First player gets turn
+            )
+            if user.username not in game.players_list:
+                game.players_list.append(user.username)  # Add to historical list
+                game.save()
+            if DEBUG_ASSIGN_RANDOM_CHARACTER:
+                print(f"Assigned new player: {user.username} as {character}")
 
     # Broadcast updated game state to all clients
     channel_layer = get_channel_layer()
