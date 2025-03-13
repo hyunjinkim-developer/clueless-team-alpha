@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .form-container { max-width: 300px; margin: 0 auto; }
+        .error { color: red; }
+        .toggle-link { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Clue-Less Login</h1>
+    <div class="form-container">
+        <form method="post" action="{% if show_signup %}?signup{% else %}?login{% endif %}">
+            {% csrf_token %}
+            {% if form.errors %}
+                {% for error in form.non_field_errors %}
+                    <p class="error">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+            {% if show_signup %}
+                <button type="submit" name="signup">Sign Up</button>
+                <p class="toggle-link"><a href="?login">Back to Login</a></p>
+            {% else %}
+                <button type="submit" name="login">Login</button>
+                <p class="toggle-link"><a href="?signup">Sign Up</a></p>
+            {% endif %}
+        </form>
+    </div>
+</body>
+</html>
