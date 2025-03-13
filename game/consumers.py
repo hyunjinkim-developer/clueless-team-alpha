@@ -49,7 +49,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"Received game_update event for game {self.game_id}")
         players = game_state.get('players', [])
         for player in players:
-            print(f"  - User: {player['username']}, Character: {player['character']}, Location: {player['location']}")
+            print(f"  - ID: {player['username']}, Player_is_active: {player['is_active']}, Character: {player['character']}, Location: {player['location']}")
         await self.send(text_data=json.dumps({
             'type': 'game_update',
             'game_state': game_state
