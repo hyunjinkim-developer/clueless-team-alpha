@@ -20,4 +20,4 @@ class Player(models.Model):
     hand = models.JSONField(default=list)
 
     def __str__(self):
-        return f"{self.nickname} as {self.character} in Game {self.game.id}"
+        return f"{self.username} as {self.character} in Game {self.game.id}"
