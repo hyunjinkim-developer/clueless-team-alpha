@@ -1,7 +1,7 @@
 # Clue-Less
 Simplified version of board game Clue
 
-## Run the server
+## Installation and Run server
 - The commands below are based on macOS. Modify them to match your development environment.
 1. Install dependencies (Python version 3.10.16)
     1. % cd move-to-the-root-of-project-directory
@@ -12,7 +12,7 @@ Simplified version of board game Clue
 2. DB migration
     1. % python manage.py makemigrations
     2. % python manage.py migrate
-3. Run the server
+3. Run server
     1. Run Redis server
         - % redis-server
     2. Initial Setting for ASGI/Channels
