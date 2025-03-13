@@ -10,6 +10,9 @@ import random
 from .models import *
 from .constants import *
 
+# For debugging purpose, remove after development
+DEBUG = True
+
 # Custom form for user signup
 class SignupForm(forms.Form):
     username = forms.CharField(max_length=150, required=True)  # Username field with max length 150
@@ -43,13 +46,14 @@ def login_view(request):
                     assign_random_character(game, user)  # Assign or reactivate character
                     success_message = f"Logged in successfully as {user.username}!"
 
-                    # Log all players to server console after login
-                    print(f"\n--- Player Login: {user.username} ---")
-                    print("All players in Game 1:")
-                    for player in game.players.all():
-                        print(f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
-                    print(f"Total players ever joined: {len(game.players_list)}")
-                    print("----------------\n")
+                    if DEBUG:
+                        # Log all players to server console after login
+                        print(f"\n--- Player Login: {user.username} ---")
+                        print("All players in Game 1:")
+                        for player in game.players.all():
+                            print(f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
+                        print(f"Total players ever joined: {len(game.players_list)}")
+                        print("----------------\n")
 
                     return redirect('game_view', game_id=game.id)  # Redirect to game page
             else:
@@ -115,17 +119,18 @@ def logout_view(request):
             # Find and deactivate the current player
             player = Player.objects.get(game=game, username=request.user.username, is_active=True)
             player.is_active = False
-            player.save()  # No change to players_list
+            player.save()  # Player remains in players_list and on board
 
-            # Log all players to server console after logout
-            print(f"\n--- Player Logout: {request.user.username} ---")
-            print("All players in Game 1:")
-            for player in game.players.all():
-                print(f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
-            print(f"Total players ever joined: {len(game.players_list)}")
-            print("----------------\n")
+            if DEBUG:
+                # Log all players to server console after logout
+                print(f"\n--- Player Logout: {request.user.username} ---")
+                print("All players in Game 1:")
+                for player in game.players.all():
+                    print(f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
+                print(f"Total players ever joined: {len(game.players_list)}")
+                print("----------------\n")
 
-            # Broadcast updated game state
+            # Broadcast updated game state, including all players
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
                 f"game_{game.id}",
@@ -181,13 +186,13 @@ def assign_random_character(game, user):
 
 # Function to get the current game state
 def get_game_state(game):
-    # Fetch all active players with relevant fields
-    players = list(game.players.filter(is_active=True).values('username', 'character', 'location', 'is_active', 'turn', 'hand'))
+    # Fetch all players (active or inactive) with relevant fields
+    players = list(game.players.values('username', 'character', 'location', 'is_active', 'turn', 'hand'))  # Removed is_active filter
     # Return game state dictionary for WebSocket and initial render
     return {
         'case_file': game.case_file if not game.is_active else None,
-        'game_is_active': game.is_active,  # Renamed for consistency with consumers.py
-        'players': players,  # List of active players with location and is_active
+        'game_is_active': game.is_active,  # Game status
+        'players': players,  # List of all players, active or not
         'rooms': ROOMS,
         'hallways': HALLWAYS,
         'weapons': WEAPONS
