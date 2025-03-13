@@ -8,7 +8,7 @@ Icon?
 # JetBrains IDE (e.g., PyCharm)
 idea/
 # Visual Studio Code settings
-.vscode/
+vscode/
 # Vim swap files
 *.swp
 
