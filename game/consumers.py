@@ -96,6 +96,11 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         # Check if it’s this player’s turn
 
+        # Check if the target location is the same as the current location
+        if to_location == from_location:
+            await self.send(text_data=json.dumps({'error': f'You are already at {to_location}'}))
+            return
+
         # Validate move: Check if to_location is adjacent to from_location
         valid_moves = ADJACENCY.get(from_location, [])  # Get list of valid adjacent locations
         if to_location not in valid_moves:
