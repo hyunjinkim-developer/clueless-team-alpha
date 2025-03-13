@@ -25,8 +25,6 @@ HALLWAYS = [
     "Hallway10", # "Kitchen & Dining Room Hallway"
     "Hallway11", # "Conservatory & Ballroom Hallway"
     "Hallway12", # "Kitchen & Ballroom Hallway"
-    "Study & Kitchen Hallway",
-    "Lounge & Conservatory Hallway"
 ]
 
 STARTING_LOCATIONS = {
@@ -36,4 +34,30 @@ STARTING_LOCATIONS = {
     "Mr. Green": "Hallway11",
     "Mrs. White": "Hallway12",
     "Col. Mustard": "Hallway5",
+}
+
+ADJACENCY = {
+    # Rooms and their adjacent hallways
+    'Study': ['Hallway1', 'Hallway3', 'Kitchen'],
+    'Hall': ['Hallway1', 'Hallway2', 'Hallway4'],
+    'Lounge': ['Hallway2', 'Hallway5', 'Conservatory'],
+    'Library': ['Hallway3', 'Hallway6', 'Hallway8'],
+    'BilliardRoom': ['Hallway4', 'Hallway6', 'Hallway7', 'Hallway9'],
+    'DiningRoom': ['Hallway5', 'Hallway7', 'Hallway10'],
+    'Conservatory': ['Hallway8', 'Hallway11', 'Lounge'],
+    'Ballroom': ['Hallway9', 'Hallway11', 'Hallway12'],
+    'Kitchen': ['Hallway10', 'Hallway12', 'Study'],
+    # Hallways and their adjacent rooms
+    'Hallway1': ['Study', 'Hall'],
+    'Hallway2': ['Hall', 'Lounge'],
+    'Hallway3': ['Study', 'Library'],
+    'Hallway4': ['Hall', 'BilliardRoom'],
+    'Hallway5': ['Lounge', 'DiningRoom'],
+    'Hallway6': ['Library', 'BilliardRoom'],
+    'Hallway7': ['BilliardRoom', 'DiningRoom'],
+    'Hallway8': ['Library', 'Conservatory'],
+    'Hallway9': ['BilliardRoom', 'Ballroom'],
+    'Hallway10': ['DiningRoom', 'Kitchen'],
+    'Hallway11': ['Conservatory', 'Ballroom'],
+    'Hallway12': ['Ballroom', 'Kitchen']
 }

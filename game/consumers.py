@@ -94,6 +94,15 @@ class GameConsumer(AsyncWebsocketConsumer):
         player = await self.get_player(self.scope['user'].username)  # Get current Player
         from_location = player.location  # Store current location
 
+        # Check if it’s this player’s turn
+
+        # Validate move: Check if to_location is adjacent to from_location
+        valid_moves = ADJACENCY.get(from_location, [])  # Get list of valid adjacent locations
+        if to_location not in valid_moves:
+            await self.send(
+                text_data=json.dumps({'error': f'Invalid move: {to_location} is not adjacent to {from_location}'}))
+            return
+
         player.location = to_location  # Update player’s location
         await database_sync_to_async(player.save)()  # Save changes asynchronously
 
