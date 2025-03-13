@@ -18,9 +18,8 @@ _1.3 % pip install -r requirements.txt
             You can see why it is needed and how it works on [https://www.notion.so/hyunjinkimdeveloper/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d]
     2-3. Run Django server
         - % python manage.py runserver
-        * Server log shows “Starting ASGI/Daphne version [version] development server at [url]”
-- Development Log
-    The [development log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases<br>
+        * Server log shows “Starting ASGI/Daphne version <version> development server at <url>”
+- [Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases<br>
 
 ## Directory Tree
 ```
