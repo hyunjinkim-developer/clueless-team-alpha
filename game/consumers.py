@@ -4,7 +4,7 @@ import json
 from .models import *
 from .constants import *
 
-# For debugging purpose, remove after development
+# For debugging purpose, disable in production
 DEBUG = False
 
 class GameConsumer(AsyncWebsocketConsumer):

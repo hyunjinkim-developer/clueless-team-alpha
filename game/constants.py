@@ -1,32 +1,37 @@
+# List of playable characters in the game
 SUSPECTS = [
     "Miss Scarlet", "Prof. Plum", "Mrs. Peacock", "Mr. Green", "Mrs. White", "Col. Mustard"
 ]
 
+# List of rooms on the game board
 ROOMS = [
     "Study", "Hall", "Lounge",
     "Library", "Billiard Room", "Dining Room",
     "Conservatory", "Ballroom", "Kitchen"
 ]
 
+# List of weapons available in the game
 WEAPONS = [
     "Rope", "Lead Pipe", "Knife", "Wrench", "Candlestick", "Revolver",
 ]
 
+# List of hallways connecting rooms, with descriptive comments
 HALLWAYS = [
-    "Hallway1", # "Study & Hall Hallway"
-    "Hallway2", # "Lounge & Hall Hallway"
-    "Hallway3", # "Study & Library Hallway"
-    "Hallway4", # "Billiard Room & Hall Hallway"
-    "Hallway5", # "Lounge & Dining Room Hallway"
-    "Hallway6", # "Billiard Room & Library Hallway"
-    "Hallway7", # "Billiard Room & Dining Room Hallway"
-    "Hallway8", # "Conservatory & Library Hallway"
-    "Hallway9", # "Billard Room & Ballroom Hallway"
-    "Hallway10", # "Kitchen & Dining Room Hallway"
-    "Hallway11", # "Conservatory & Ballroom Hallway"
-    "Hallway12", # "Kitchen & Ballroom Hallway"
+    "Hallway1",  # Connects Study & Hall
+    "Hallway2",  # Connects Lounge & Hall
+    "Hallway3",  # Connects Study & Library
+    "Hallway4",  # Connects Billiard Room & Hall
+    "Hallway5",  # Connects Lounge & Dining Room
+    "Hallway6",  # Connects Billiard Room & Library
+    "Hallway7",  # Connects Billiard Room & Dining Room
+    "Hallway8",  # Connects Conservatory & Library
+    "Hallway9",  # Connects Billiard Room & Ballroom
+    "Hallway10", # Connects Kitchen & Dining Room
+    "Hallway11", # Connects Conservatory & Ballroom
+    "Hallway12", # Connects Kitchen & Ballroom
 ]
 
+# Starting locations for each character at the beginning of the game
 STARTING_LOCATIONS = {
     "Miss Scarlet": "Hallway2",
     "Prof. Plum": "Hallway3",
@@ -36,17 +41,18 @@ STARTING_LOCATIONS = {
     "Col. Mustard": "Hallway5",
 }
 
+# Adjacency map defining valid moves between rooms and hallways
 ADJACENCY = {
     # Rooms and their adjacent hallways
-    'Study': ['Hallway1', 'Hallway3', 'Kitchen'],
+    'Study': ['Hallway1', 'Hallway3', 'Kitchen'],  # Secret passage to Kitchen
     'Hall': ['Hallway1', 'Hallway2', 'Hallway4'],
-    'Lounge': ['Hallway2', 'Hallway5', 'Conservatory'],
+    'Lounge': ['Hallway2', 'Hallway5', 'Conservatory'], # Secret passage to Conservatory
     'Library': ['Hallway3', 'Hallway6', 'Hallway8'],
     'BilliardRoom': ['Hallway4', 'Hallway6', 'Hallway7', 'Hallway9'],
     'DiningRoom': ['Hallway5', 'Hallway7', 'Hallway10'],
-    'Conservatory': ['Hallway8', 'Hallway11', 'Lounge'],
+    'Conservatory': ['Hallway8', 'Hallway11', 'Lounge'],  # Secret passage to Lounge
     'Ballroom': ['Hallway9', 'Hallway11', 'Hallway12'],
-    'Kitchen': ['Hallway10', 'Hallway12', 'Study'],
+    'Kitchen': ['Hallway10', 'Hallway12', 'Study'],  # Secret passage to Study
     # Hallways and their adjacent rooms
     'Hallway1': ['Study', 'Hall'],
     'Hallway2': ['Hall', 'Lounge'],
