@@ -36,20 +36,25 @@ clue-less/
 │   └── wsgi.py           # WSGI entry point for traditional HTTP (not used with Daphne)
 ├── game/                 # Django app for game logic
 │   ├── __init__.py       # Marks directory as a Python package
-│   ├── admin.py          # Admin panel configuration (optional, minimal for now)
+│   ├── admin.py          # Admin panel configuration (auto-generated, optional, minimal for now)
 │   ├── apps.py           # App configuration (auto-generated)
 │   ├── constants.py      # Game constants (SUSPECTS, ROOMS, etc.)
 │   ├── consumers.py      # WebSocket consumer for real-time game updates
+│   ├── management/       # Customized testing codes
+│   │   ├── __init__.py   # Marks directory as a Python package
+│   │   └── commands/
+│   │       ├── delete_all_players.py   # Run the script: python manage.py delete_all_players
+│   │       ├── logout_all_players.py
+│   │       └── print_all_users.py
 │   ├── migrations/       # Database migration files
 │   │   ├── __init__.py   # Marks directory as a Python package
 │   │   └── 0001_initial.py  # Initial migration for Game/Player models
 │   ├── models.py         # Database models (Game, Player)
 │   ├── templates/        # HTML templates
-│   │   ├── game/         # Subdirectory for game-related templates
-│   │   │   ├── game.html  # Main game page with board and movement
-│   │   │   └── login.html # Login/signup page (assumed)
-│   │   └── base.html     # Base template for shared layout (optional, assumed)
-│   ├── tests.py          # Unit tests (empty or minimal for now)
+│   │   └── game/         # Subdirectory for game-related templates
+│   │       ├── game.html  # Main game page with board and movement
+│   │       └── login.html # Login/signup page
+│   ├── tests.py          # Unit tests (auto-generated, empty or minimal for now)
 │   └── views.py          # HTTP view functions (login, game, logout)
 └── static/               # Static files (CSS, JS, images - optional, assumed)
     └── game/
@@ -68,10 +73,11 @@ clue-less/
     all players can move freely without turn restrictions, with updates synced via WebSocket.
 * Board Display:
     5x5 grid shows all players’ positions, active or inactive.
+    This allows the game to continue even when some players log out.
 ### Known Issues
 * Reload Problem:
-    Reloading a tab sometimes displays another player’s character in <h2>, despite using server-rendered {{ character }}.
-    Likely due to session cookie sharing in incognito tabs within the same browser.
+    Reloading a tab displays another player’s page.
+    Assuming the tab displays shows the latest login or log out player's information. Need to verification.
 ### Planned Features
 * Turn Rotation:
     Implement sequential turns for Clue’s traditional gameplay (currently disabled per request).
