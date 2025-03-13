@@ -5,11 +5,9 @@ Simplified version of board game Clue
 - The commands below are based on macOS. Modify them to match your development environment.
 <ol>
 1. Install dependencies (Python version 3.10.16)
-    <ol>
-    1.1 % cd move-to-the-root-of-project-directory
-    1.2 % activate-virtual-environment
-    1.3 % pip install -r requirements.txt
-    </ol>
+    1. % cd move-to-the-root-of-project-directory
+    2. % activate-virtual-environment
+    3. % pip install -r requirements.txt
 * To uninstall all dependencies
     - % python uninstall_packages.py
 2. Run the server
