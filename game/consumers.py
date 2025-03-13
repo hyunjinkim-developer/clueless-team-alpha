@@ -1,6 +1,9 @@
-# game/consumers.py
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
 import json
+
+from .models import *
+from .constants import *
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -49,3 +52,93 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'type': 'game_update',
                 'game_state': game_state
         }))
+
+    @database_sync_to_async
+    def get_game(self):
+        return Game.objects.get(id=self.game_id)
+
+    @database_sync_to_async
+    def get_player(self, username):
+        game = Game.objects.get(id=self.game_id)
+        return Player.objects.get(game=game, username=username)
+
+    async def handle_move(self, data):
+        to_location = data.get('location')
+        if not to_location:
+            await self.send(text_data=json.dumps({'error': 'No location provided'}))
+            return
+
+        game = await self.get_game()
+        player = await self.get_player(self.scope['user'].username)
+        from_location = player.location
+
+        # Move Validation: Check if the move is valid based on adjacency
+        valid_moves = {
+            'Study': ['Hallway1', 'Hallway3', 'Kitchen'],
+            'Hall': ['Hallway1', 'Hallway2', 'Hallway4'],
+            'Lounge': ['Hallway2', 'Hallway5', 'Conservatory'],
+            'Library': ['Hallway3', 'Hallway6', 'Hallway8'],
+            'BilliardRoom': ['Hallway4', 'Hallway6', 'Hallway7', 'Hallway9'],
+            'DiningRoom': ['Hallway5', 'Hallway7', 'Hallway10'],
+            'Conservatory': ['Hallway8', 'Hallway11', 'Lounge'],
+            'Ballroom': ['Hallway9', 'Hallway11', 'Hallway12'],
+            'Kitchen': ['Hallway10', 'Hallway12', 'Study'],
+            'Hallway1': ['Study', 'Hall'],
+            'Hallway2': ['Hall', 'Lounge'],
+            'Hallway3': ['Study', 'Library'],
+            'Hallway4': ['Hall', 'BilliardRoom'],
+            'Hallway5': ['Lounge', 'DiningRoom'],
+            'Hallway6': ['Library', 'BilliardRoom'],
+            'Hallway7': ['BilliardRoom', 'DiningRoom'],
+            'Hallway8': ['Library', 'Conservatory'],
+            'Hallway9': ['BilliardRoom', 'Ballroom'],
+            'Hallway10': ['DiningRoom', 'Kitchen'],
+            'Hallway11': ['Conservatory', 'Ballroom'],
+            'Hallway12': ['Ballroom', 'Kitchen']
+        }
+        if to_location not in valid_moves.get(from_location, []):
+            await self.send(text_data=json.dumps({'error': 'Invalid move - locations not adjacent'}))
+            return
+
+        # Turn Enforcement: Ensure it’s the player’s turn
+        if not player.turn:
+            await self.send(text_data=json.dumps({'error': 'Not your turn'}))
+            return
+
+        # Update player location
+        player.location = to_location
+        await database_sync_to_async(player.save)()
+
+        # Rotate turn to next player
+        players = await database_sync_to_async(lambda: list(game.players.all()))()
+        current_index = players.index(player)
+        next_player = players[(current_index + 1) % len(players)]
+        player.turn = False
+        next_player.turn = True
+        await database_sync_to_async(player.save)()
+        await database_sync_to_async(next_player.save)()
+
+        # Broadcast updated game state
+        game_state = await self.get_game_state()
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'game_update',
+                'game_state': game_state
+            }
+        )
+        print(
+            f"Player {player.username} moved from {from_location} to {to_location}, turn passed to {next_player.username}")
+
+    @database_sync_to_async
+    def get_game_state(self):
+        game = Game.objects.get(id=self.game_id)
+        players = list(game.players.values('username', 'character', 'location', 'turn', 'hand'))
+        return {
+            'case_file': game.case_file if not game.is_active else None,
+            'players': players,
+            'is_active': game.is_active,
+            'rooms': ROOMS,
+            'hallways': HALLWAYS,
+            'weapons': WEAPONS
+        }

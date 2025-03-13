@@ -1,42 +1,43 @@
+<!-- game/templates/game/login.html -->
 <!DOCTYPE html>
 <html>
-<head>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-        .form-container { max-width: 300px; margin: 0 auto; }
-        .error { color: red; }
-        .toggle-link { margin-top: 10px; }
-    </style>
-</head>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .error { color: red; }
+    .success { color: green; }
+    .player-list { margin: 10px 0; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; }
+    .player-list ul { list-style-type: none; padding: 0; }
+    .player-list li { margin: 5px 0; }
+</style>
 <body>
-    <h1>Clue-Less Login</h1>
-    <div class="form-container">
-        <form method="post" action="{% if show_signup %}?signup{% else %}?login{% endif %}">
+    {% if not show_signup %}
+        <h1>Login</h1>
+        {% if error_message %}
+            <p class="error">{{ error_message }}</p>
+        {% endif %}
+        {% if success_message %}
+            <p class="success">{{ success_message }}</p>
+        {% endif %}
+        <form method="post">
             {% csrf_token %}
-            {% if form.errors %}
-                {% for error in form.non_field_errors %}
-                    <p class="error">{{ error }}</p>
-                {% endfor %}
-            {% endif %}
-            {% for field in form %}
-                <div>
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                        {% for error in field.errors %}
-                            <p class="error">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            {% endfor %}
-            {% if show_signup %}
-                <button type="submit" name="signup">Sign Up</button>
-                <p class="toggle-link"><a href="?login">Back to Login</a></p>
-            {% else %}
-                <button type="submit" name="login">Login</button>
-                <p class="toggle-link"><a href="?signup">Sign Up</a></p>
-            {% endif %}
+            {{ login_form.as_p }}
+            <button type="submit" name="login">Login</button>
+            <a href="?signup">Sign Up</a>
         </form>
-    </div>
+    {% else %}
+        <h1>Sign Up</h1>
+        {% if error_message %}
+            <p class="error">{{ error_message }}</p>
+        {% endif %}
+        {% if success_message %}
+            <p class="success">{{ success_message }}</p>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {{ signup_form.as_p }}
+            <button type="submit" name="signup">Sign Up</button>
+            <a href="?login">Back to Login</a>
+        </form>
+    {% endif %}
 </body>
 </html>
