@@ -54,11 +54,12 @@ clue-less/
 │   │   └── game/         # Subdirectory for game-related templates
 │   │       ├── game.html  # Main game page with board and movement
 │   │       └── login.html # Login/signup page
+│   ├── routing.py        # Routing for WebSockets
 │   ├── tests.py          # Unit tests (auto-generated, empty or minimal for now)
-│   └── views.py          # HTTP view functions (login, game, logout)
-└── static/               # Static files (CSS, JS, images - optional, assumed)
-    └── game/
-        └── game.css      # Styles for game.html (inline in your code, could be extracted)
+│   ├── views.py          # HTTP view functions (login, game, logout)
+│   └── urls.py           # Game urls
+├── uninstall_packages.py # Uninstall all packages in the virtual environment
+└── run_daphne.py         # Custom script to start the Daphne server with predefined settings, bypassing the command-line daphne invocation.
 
 ## Features
 ### Current Features
