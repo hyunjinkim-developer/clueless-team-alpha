@@ -3,23 +3,22 @@ Simplified version of board game Clue
 
 ## Run the server
 - The commands below are based on macOS. Modify them to match your development environment.
-
 1. Install dependencies (Python version 3.10.16)
     1. % cd move-to-the-root-of-project-directory
     2. % activate-virtual-environment
     3. % pip install -r requirements.txt
-* To uninstall all dependencies
-    - % python uninstall_packages.py
+    * To uninstall all dependencies
+        - % python uninstall_packages.py
 2. Run the server
-    _2.1 Run Redis server
+    1. Run Redis server
         - % redis-server
-    _2.2 Setting for ASGI/Channels
+    2. Setting for ASGI/Channels
         - % python run_daphne.py
         * To run the server listens both HTTP (pages) and WebSocket (live) connections. [For further explanation](https://www.notion.so/hyunjinkimdeveloper/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d)<br>
-    2-3. Run Django server
+    3. Run Django server
         - % python manage.py runserver
         * Server log shows “Starting ASGI/Daphne version 'version' development server at 'url'"
-- [Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases<br>
+        * *[Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases<br>
 
 
 ## Directory Tree
