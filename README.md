@@ -3,7 +3,7 @@ Simplified version of board game Clue
 
 ## Run the server
 - The commands below are based on macOS. Modify them to match your development environment.
-<ol>
+
 1. Install dependencies (Python version 3.10.16)
     1. % cd move-to-the-root-of-project-directory
     2. % activate-virtual-environment
@@ -20,7 +20,7 @@ Simplified version of board game Clue
         - % python manage.py runserver
         * Server log shows “Starting ASGI/Daphne version 'version' development server at 'url'"
 - [Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases<br>
-</ol>
+
 
 ## Directory Tree
 ```
