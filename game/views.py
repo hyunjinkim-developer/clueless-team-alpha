@@ -11,7 +11,7 @@ from .models import *
 from .constants import *
 
 # For debugging purpose, remove after development
-DEBUG = True
+DEBUG_AUTH = True
 
 # Custom form for user signup
 class SignupForm(forms.Form):
@@ -46,7 +46,7 @@ def login_view(request):
                     assign_random_character(game, user)  # Assign or reactivate character
                     success_message = f"Logged in successfully as {user.username}!"
 
-                    if DEBUG:
+                    if DEBUG_AUTH:
                         # Log all players to server console after login
                         print(f"\n--- Player Login: {user.username} ---")
                         print("All players in Game 1:")
@@ -94,21 +94,12 @@ def game_view(request, game_id):
 
     # Get the game instance
     game = Game.objects.get(id=game_id)
-    channel_layer = get_channel_layer()
-    # Get current game state for initial render
+    # Get current game state for initial render only
     game_state = get_game_state(game)
-    # Broadcast game state to all connected clients
-    async_to_sync(channel_layer.group_send)(
-        f"game_{game.id}",
-        {
-            'type': 'game_update',
-            'game_state': game_state
-        }
-    )
     # Render game.html with game_id and initial players data
     return render(request, 'game/game.html', {
         'game_id': game_id,
-        'players': game_state['players']  # Pass players for initial render
+        'players': game_state['players']  # Still needed for players-data
     })
 
 # View to handle logout
@@ -121,7 +112,7 @@ def logout_view(request):
             player.is_active = False
             player.save()  # Player remains in players_list and on board
 
-            if DEBUG:
+            if DEBUG_AUTH:
                 # Log all players to server console after logout
                 print(f"\n--- Player Logout: {request.user.username} ---")
                 print("All players in Game 1:")
@@ -187,7 +178,8 @@ def assign_random_character(game, user):
 # Function to get the current game state
 def get_game_state(game):
     # Fetch all players (active or inactive) with relevant fields
-    players = list(game.players.values('username', 'character', 'location', 'is_active', 'turn', 'hand'))  # Removed is_active filter
+    fields = [f.name for f in Player._meta.fields]  # Dynamically get all Player fields
+    players = list(game.players.values(*fields))  # Fetch all fields for all players
     # Return game state dictionary for WebSocket and initial render
     return {
         'case_file': game.case_file if not game.is_active else None,
