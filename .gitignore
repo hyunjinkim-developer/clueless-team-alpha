@@ -6,10 +6,9 @@ Icon?
 
 # Development tools
 # JetBrains IDE (e.g., PyCharm)
-idea/
 .idea/
 # Visual Studio Code settings
-vscode/
+.vscode/
 # Vim swap files
 *.swp
 
