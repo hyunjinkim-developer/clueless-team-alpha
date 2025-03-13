@@ -15,7 +15,7 @@ Simplified version of board game Clue
     1-2. Setting for ASGI/Channels
         % python run_daphne.py
         - To run the server listens both HTTP (pages) and WebSocket (live) connections.
-            You can see why it is needed and how it works on https://www.notion.so/hyunjinkimdeveloper/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d
+            You can see why it is needed and how it works on [https://www.notion.so/hyunjinkimdeveloper/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d]
     1-3. Run Django server
         % python manage.py runserver
         - Server log shows “Starting ASGI/Daphne version [version] development server at [url]”
@@ -23,13 +23,59 @@ Simplified version of board game Clue
     The development log contains debugging cases
     You can track updates on [https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4]
 
-## Directory
+## Directory Tree
+clue-less/
+├── manage.py              # Django's command-line utility for administrative tasks
+├── requirements.txt       # Lists project dependencies (Django, Channels, etc.)
+├── README.md              # Project overview, setup, and feature documentation
+├── clueless/             # Main Django project directory
+│   ├── __init__.py       # Marks directory as a Python package
+│   ├── asgi.py           # ASGI entry point for Channels (WebSocket support)
+│   ├── settings.py       # Project configuration (database, apps, Channels setup)
+│   ├── urls.py           # Root URL routing for the project
+│   └── wsgi.py           # WSGI entry point for traditional HTTP (not used with Daphne)
+├── game/                 # Django app for game logic
+│   ├── __init__.py       # Marks directory as a Python package
+│   ├── admin.py          # Admin panel configuration (optional, minimal for now)
+│   ├── apps.py           # App configuration (auto-generated)
+│   ├── constants.py      # Game constants (SUSPECTS, ROOMS, etc.)
+│   ├── consumers.py      # WebSocket consumer for real-time game updates
+│   ├── migrations/       # Database migration files
+│   │   ├── __init__.py   # Marks directory as a Python package
+│   │   └── 0001_initial.py  # Initial migration for Game/Player models
+│   ├── models.py         # Database models (Game, Player)
+│   ├── templates/        # HTML templates
+│   │   ├── game/         # Subdirectory for game-related templates
+│   │   │   ├── game.html  # Main game page with board and movement
+│   │   │   └── login.html # Login/signup page (assumed)
+│   │   └── base.html     # Base template for shared layout (optional, assumed)
+│   ├── tests.py          # Unit tests (empty or minimal for now)
+│   └── views.py          # HTTP view functions (login, game, logout)
+└── static/               # Static files (CSS, JS, images - optional, assumed)
+    └── game/
+        └── game.css      # Styles for game.html (inline in your code, could be extracted)
 
 ## Features
-
-## Task-list
-* When reload the page,
-    - show corresponding data not overwritten with the latest login player info
-    - Consider deployment on cloud services
-
-
+### Current Features
+* Login/Logout:
+    Players authenticate and join Game 1,
+    with logout deactivating their Player instance.
+* Character Assignment:
+    Unique characters assigned on first login,
+    preserved across logouts (stored in game.players and game.players_list).
+* Movement:
+    Click adjacent rooms or hallways to move;
+    all players can move freely without turn restrictions, with updates synced via WebSocket.
+* Board Display:
+    5x5 grid shows all players’ positions, active or inactive.
+### Known Issues
+* Reload Problem:
+    Reloading a tab sometimes displays another player’s character in <h2>, despite using server-rendered {{ character }}.
+    Likely due to session cookie sharing in incognito tabs within the same browser.
+### Planned Features
+* Turn Rotation:
+    Implement sequential turns for Clue’s traditional gameplay (currently disabled per request).
+* Suggestions/Accusations:
+    Add mechanics for players to suggest or accuse, integrating card-based disproving and winning conditions.
+* Game End:
+    Define victory conditions and reset mechanics.
