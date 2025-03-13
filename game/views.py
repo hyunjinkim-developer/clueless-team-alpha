@@ -96,10 +96,13 @@ def game_view(request, game_id):
     game = Game.objects.get(id=game_id)
     # Get current game state for initial render only
     game_state = get_game_state(game)
+    # Get current player
+    player = Player.objects.get(game=game, username=request.user.username)
     # Render game.html with game_id and initial players data
     return render(request, 'game/game.html', {
         'game_id': game_id,
-        'players': game_state['players']  # Still needed for players-data
+        'players': game_state['players'],
+        'character': player.character
     })
 
 # View to handle logout

@@ -83,7 +83,7 @@
     <!-- Notification section: Displays welcome message and logout button -->
     <div id="notification">
         <h1>Welcome to Clue-Less Game {{ game_id }}</h1> <!-- Game ID from template -->
-        <h2>You are logged in as Username: {{ request.user.username }} as Character: <span id="character-name"></span>.
+        <h2>You are logged in as Username: {{ request.user.username }} as Character: {{ character }}
             <button onclick="window.location.href='{% url 'logout' %}'">Logout</button></h2> <!-- Current user and logout button -->
         <div id="game-state"></div> <!-- Placeholder for future game state display -->
     </div>
@@ -142,7 +142,7 @@
     const playersDataElement = document.getElementById('players-data');
     const playersData = playersDataElement ? JSON.parse(playersDataElement.textContent) : [];
 
-    // Retrieve current username from the DOM, fallback to empty string if not found
+    // Retrieve current username from the DOM and lock it for this session
     const currentUsernameElement = document.getElementById('current-username');
     const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';
 
@@ -182,12 +182,8 @@
         console.log('Players array:', players); // Debug log for players array
         updateRoomCharacters(players); // Update room displays with all players
         updateHallwayCharacters(players); // Update hallway displays with all players
-
-        currentPlayer = players.find(player => player.username === currentUsername) || null; // Set current player for move checks
-        // Update the player info with username and character
-        if (currentPlayer) {
-            document.getElementById('character-name').innerText = `${currentPlayer.character}`; // Display character name
-        }
+        // Set currentPlayer for movement logic only, no character display update
+        currentPlayer = players.find(player => player.username === currentUsername) || null;
     }
 
     // Update character display in rooms, showing all players regardless of is_active
