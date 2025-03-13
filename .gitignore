@@ -39,4 +39,4 @@ ENV/
 *.sqlite3
 db.sqlite3
 # Optional: Ignore migrations during early dev
-migrations/
+game/migrations/
