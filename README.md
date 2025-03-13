@@ -36,7 +36,7 @@ clue-less/
 │   └── wsgi.py           # WSGI entry point for traditional HTTP (not used with Daphne)
 ├── game/                 # Django app for game logic
 │   ├── __init__.py       # Marks directory as a Python package
-│   ├── admin.py          # Admin panel configuration (auto-generated, optional, minimal for now)
+│   ├── admin.py          # Admin panel configuration (auto-generated, optional, currently minimal)
 │   ├── apps.py           # App configuration (auto-generated)
 │   ├── constants.py      # Game constants (SUSPECTS, ROOMS, etc.)
 │   ├── consumers.py      # WebSocket consumer for real-time game updates
@@ -54,10 +54,10 @@ clue-less/
 │   │   └── game/         # Subdirectory for game-related templates
 │   │       ├── game.html  # Main game page with board and movement
 │   │       └── login.html # Login/signup page
-│   ├── routing.py        # Routing for WebSockets
-│   ├── tests.py          # Unit tests (auto-generated, empty or minimal for now)
+│   ├── routing.py        # WebSocket Routing
+│   ├── tests.py          # Unit tests (auto-generated, currently minimal)
 │   ├── views.py          # HTTP view functions (login, game, logout)
-│   └── urls.py           # Game urls
+│   └── urls.py           # App-specific URL routing
 ├── uninstall_packages.py # Uninstall all packages in the virtual environment
 └── run_daphne.py         # Custom script to start the Daphne server with predefined settings, bypassing the command-line daphne invocation.
 
