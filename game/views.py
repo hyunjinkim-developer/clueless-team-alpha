@@ -104,6 +104,7 @@ def game_view(request, game_id):
     return render(request, 'game/game.html', {
         'game_id': game_id,
         'players': game_state['players'],
+        'username': request.user.username,
         'character': player.character
     })
 

@@ -83,7 +83,7 @@
     <!-- Notification section: Displays welcome message and logout button -->
     <div id="notification">
         <h1>Welcome to Clue-Less Game {{ game_id }}</h1> <!-- Game ID from template -->
-        <h2>You are logged in as Username: {{ request.user.username }} as Character: {{ character }}
+        <h2>You are logged in as Username: {{ username }} as Character: {{ character }}.
             <button onclick="window.location.href='{% url 'logout' %}'">Logout</button></h2> <!-- Current user and logout button -->
         <div id="game-state"></div> <!-- Placeholder for future game state display -->
     </div>
