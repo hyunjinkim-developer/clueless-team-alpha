@@ -24,7 +24,7 @@ Simplified version of board game Clue
     You can track updates on [https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4]
 
 ## Directory Tree
-'''
+'''bash
 clue-less/
 ├── manage.py              # Django's command-line utility for administrative tasks
 ├── requirements.txt       # Lists project dependencies (Django, Channels, etc.)
