@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<style>
+    * { /* Global reset for consistent box model */
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    :root { /* Define global CSS variables */
+        --room-hallway-name-font-size: 25px;
+        --room-hallway-character-font-size: 20px;
+        --cell-size: calc(10 * var(--room-hallway-character-font-size));
+    }
+
+    body {
+        margin: 0; /* Remove default margin */
+        padding: 0; /* Remove default padding */
+        height: auto; /* Allow natural height with scrolling */
+        display: block; /* Remove flex for simplicity */
+        overflow-y: auto; /* Enable vertical scrolling */
+        font-family: Arial, sans-serif; /* Basic font for consistency */
+    }
+
+    #notification {
+        padding: 2px; /* Consistent padding */
+        max-height: 200px; /* Limit notification height to prevent excessive scrolling */
+        overflow-y: auto; /* Add scrollbar if content exceeds height */
+    }
+
+    #game-board {
+        display: grid; /* Use CSS Grid for board layout */
+        grid-template-columns: repeat(5, var(--cell-size)); /* 5 columns, each 200px */
+        grid-template-rows: repeat(5, var(--cell-size)); /* 5 rows, each 200px */
+        gap: 5px; /* Gap between grid cells */
+        background-color: #fff; /* White background */
+        padding: 10px; /* Padding around the board */
+        border: 2px solid #000; /* Black border */
+        margin: 0 auto; /* Center the board horizontally */
+        max-width: fit-content; /* Prevent excessive width */
+    }
+
+    .room, .hallway, .vacant {
+        width: var(--cell-size); /* Fixed width: 200px */
+        height: var(--cell-size); /* Fixed height: 200px */
+        border: 2px solid #000; /* Unified border for all */
+        text-align: center; /* Center text */
+        position: relative; /* Enable positioning for internal elements */
+        box-sizing: border-box; /* Include border and padding in the height/width calculation */
+        cursor: pointer; /* Indicate clickable areas */
+    }
+
+    .room:hover, .hallway:hover {
+        background-color: #e0e0e0; /* Light gray hover effect to indicate clickability */
+    }
+
+    .room-characters span, .hallway-characters span {
+        white-space: nowrap; /* Prevent character names from splitting across lines */
+        display: block; /* Ensure each character name takes its own line */
+        font-weight: bold; /* Make text bold to match room-name and hallway-name */
+    }
+
+    .room {
+        background-color: lightpink;
+    }
+
+    .room-name {
+        font-size: var(--room-hallway-name-font-size); /* Font for room name */
+        font-weight: bold; /* Bold text for emphasis */
+        padding: 5px 0; /* Padding for spacing */
+        background-color: hotpink;
+    }
+
+    .room-characters {
+        font-size: var(--room-hallway-character-font-size);
+        padding: 2px;
+        overflow-y: auto; /* Add scrollbar if content exceeds height */
+        white-space: pre-line;
+        max-height: calc(var(--cell-size) - 40px);
+    }
+
+    .hallway {
+        background-color: lightcyan;
+    }
+
+    .hallway-name {
+        font-size: var(--room-hallway-name-font-size); /* Font for hallway name */
+        font-weight: bold; /* Bold text for emphasis */
+        padding: 5px 0; /* Padding for spacing */
+        background-color: lightskyblue;
+    }
+
+    .hallway-characters {
+        font-size: var(--room-hallway-character-font-size);
+        padding: 2px;
+        overflow-y: auto; /* Add scrollbar if content exceeds height */
+        white-space: pre-line;
+        max-height: calc(var(--cell-size) - 40px);
+    }
+
+    .vacant {
+        background-color: white;
+    }
+
+    .info-message {
+        color: blue; /* Blue color for info messages */
+        margin: 10px 0; /* Margin for spacing */
+    }
+
+    #turn-notification {
+        margin: 10px 0; /* Space around turn notification */
+        padding: 10px; /* Padding inside */
+        border: 1px solid #ccc; /* Light gray border */
+        background-color: #f9f9f9; /* Light background */
+        text-align: center; /* Center text */
+    }
+
+    /* CSS Animation for fading in the character */
+    @keyframes fadeMove {
+        0% {
+            opacity: 0; /* Start fully transparent */
+            transform: scale(0.5); /* Start smaller */
+        }
+        100% {
+            opacity: 1; /* End fully visible */
+            transform: scale(1); /* End at normal size */
+        }
+    }
+
+    .fade-move {
+        animation: fadeMove 0.5s ease-in-out; /* Apply the fadeMove animation over 0.5s */
+    }
+</style>
+<head>
+</head>
+<body>
+<div id="notification">
+    <h1>Welcome to Clue-Less Game {{ game_id }}</h1>
+    <p>You are logged in as {{ request.user.username }}. <button onclick="window.location.href='{% url 'logout' %}'">Logout</button></p>
+    <div id="game-state"></div>
+
+</div>
+
+<div id="game-board">  <!-- Game board grid -->
+    <!-- Rooms: 1=Study, 2=Hall, 3=Lounge,
+                4=Library, 5=Billiard Room, 6=Dining Room,
+                7=Conservatory, 8=Ballroom, 9=Kitchen -->
+
+    <!-- Row 1: -->
+    <div id="Study" class="room">
+        <div class="room-name">Study</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="Study-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+    <div id="Hallway1" class="hallway">
+        <div class="hallway-name">Hallway1</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway1-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Study to Hall -->
+    <div id="Hall" class="room">
+        <div class="room-name">Hall</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="Hall-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+    <div id="Hallway2" class="hallway">
+        <div class="hallway-name">Hallway2</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway2-characters"></div>  <!-- Area for characters in the hallway -->
+    </div> <!-- Hall to Lounge -->
+    <div id="Lounge" class="room">
+        <div class="room-name">Lounge</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="Lounge-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+
+    <!-- Row 2: -->
+    <div id="Hallway3" class="hallway">
+        <div class="hallway-name">Hallway3</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway3-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Study to Library -->
+    <div id="Vacant1" class="vacant"></div>
+    <div id="Hallway4" class="hallway">
+        <div class="hallway-name">Hallway4</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway4-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Hall to Billiard Room -->
+    <div id="Vacant2" class="vacant"></div>
+    <div id="Hallway5" class="hallway">
+        <div class="hallway-name">Hallway5</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway5-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Lounge to Dining Room -->
+
+    <!-- Row 3: -->
+    <div id="Library" class="room">
+        <div class="room-name">Library</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="Library-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+    <div id="Hallway6" class="hallway">
+        <div class="hallway-name">Hallway6</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway6-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Library to Billiard Room -->
+    <div id="BilliardRoom" class="room">
+        <div class="room-name">Billiard Room</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="BilliardRoom-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+    <div id="Hallway7" class="hallway">
+        <div class="hallway-name">Hallway7</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway7-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Billiard Room to Dining Room -->
+    <div id="DiningRoom" class="room">
+        <div class="room-name">Dining Room</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="DiningRoom-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+
+    <!-- Row 4: -->
+    <div id="Hallway8" class="hallway">
+        <div class="hallway-name">Hallway8</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway8-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Library to Conservatory -->
+    <div id="Vacant3" class="vacant"></div>
+    <div id="Hallway9" class="hallway">
+        <div class="hallway-name">Hallway9</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway9-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Billiard Room to Ballroom -->
+    <div id="Vacant4" class="vacant"></div>
+    <div id="Hallway10" class="hallway">
+        <div class="hallway-name">Hallway10</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway10-characters"></div>  <!-- Area for characters in the hallway -->
+    </div>  <!-- Dining Room to Kitchen -->
+
+    <!-- Row 5: -->
+    <div id="Conservatory" class="room">
+        <div class="room-name">Conservatory</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="Conservatory-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+    <div id="Hallway11" class="hallway">
+        <div class="hallway-name">Hallway11</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway11-characters"></div>  <!-- Area for characters in the hallway -->
+    </div> <!-- Conservatory to Ballroom -->
+    <div id="Ballroom" class="room">
+        <div class="room-name">Ballroom</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="Ballroom-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+    <div id="Hallway12" class="hallway">
+        <div class="hallway-name">Hallway12</div>  <!-- Hallway name at the top -->
+        <div class="hallway-characters" id="Hallway12-characters"></div>  <!-- Area for characters in the hallway -->
+    </div> <!-- Ballroom to Kitchen -->
+    <div id="Kitchen" class="room">
+        <div class="room-name">Kitchen</div>  <!-- Room name at the top -->
+        <div class="room-characters" id="Kitchen-characters"></div>  <!-- Area for characters in the room -->
+    </div>
+</div>
+
+
+{{ players|json_script:"players-data" }}  <!-- Serialize players data for JavaScript -->
+{% if request.user.is_authenticated %}
+{{ request.user.username|json_script:"current-username" }}  <!-- Serialize current username only if authenticated -->
+{% endif %}
+
+<script>
+    const gameId = {{game_id}};
+    const ws = new WebSocket(`ws://localhost:8000/ws/game/${gameId}/`);
+
+    const playersDataElement = document.getElementById('players-data');
+    const playersData = playersDataElement ? JSON.parse(playersDataElement.textContent) : [];
+    const currentUsernameElement = document.getElementById('current-username');
+    const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';  // Fallback to empty string if null
+
+    let currentPlayer = null; // Store the current player's data
+
+
+    ws.onopen = function () {
+        console.log("WebSocket connected");
+    };
+    ws.onerror = function (error) {
+        console.error("WebSocket connection error:", error);
+    };
+    ws.onclose = function () {
+        console.log("WebSocket closed");
+    };
+    ws.onmessage = function (event) {  // Handle WebSocket messages
+        const data = JSON.parse(event.data);  // Parse the incoming JSON data
+        console.log('Received WebSocket message:', data);  // Log received message for debugging
+        if (data.character) {  // Handle move updates
+            updateGameBoard(data.character, data.from, data.to, data.player_list || playersData);  // Update board with latest players data
+        } else if (data.player_list) {  // Handle player list updates
+            updateRoomCharacters(data.player_list);  // Update room characters with new player list
+            updateHallwayCharacters(data.player_list);  // Update hallway characters with new player list
+        } else if (data.turn) {  // Handle turn notifications
+            const turnMessage = document.getElementById('turn-notification');  // Get turn notification element
+            turnMessage.innerHTML = `<strong>${data.turn}</strong>`;  // Update turn text with strong tag for emphasis
+            turnMessage.style.color = data.turn.includes(currentUsername) ? 'green' : 'gray';  // Highlight current user's turn
+        } else if (data.error) {  // Handle errors
+            alert(data.error);  // Show error alert
+        }
+    };
+
+    function initializeBoard(gameState) {
+        const players = Array.isArray(gameState.players) ? gameState.players : (Array.isArray(gameState) ? gameState : []);
+        updateRoomCharacters(players);
+        updateHallwayCharacters(players);
+        currentPlayer = players.find(player => player.username === currentUsername);
+        addClickListeners();
+    }
+
+    function updateGameBoard(character, fromLocation, toLocation, players) {  // Update board for moves, with latest players data
+        console.log(`Updating board: ${character} from ${fromLocation} to ${toLocation}`); // Debug log
+        // Always update both from and to locations using the latest players data
+        updateRoomCharacters(players);  // Update all rooms
+        updateHallwayCharacters(players);  // Update all hallways
+        const toElement = document.getElementById(toLocation);
+        if (toElement && (toElement.classList.contains('room') || toElement.classList.contains('hallway'))) {
+            const charElement = document.getElementById(`${toLocation}-characters`); // Get the character element
+            if (charElement) {
+                charElement.classList.remove('fade-move');  // Reset animation
+                void charElement.offsetWidth;  // Trigger reflow to restart animation
+                charElement.classList.add('fade-move');  // Apply the animation
+            }
+        }
+        currentPlayer = players.find(player => player.username === currentUsername); // Update current player location
+    }
+
+    function updateRoomCharacters(players) {
+        const rooms = ['Study', 'Hall', 'Lounge', 'Library', 'BilliardRoom', 'DiningRoom', 'Conservatory', 'Ballroom', 'Kitchen'];
+        const safePlayers = Array.isArray(players) ? players : [];
+        rooms.forEach(roomId => {
+            const charElement = document.getElementById(`${roomId}-characters`);
+            if (charElement) {
+                const charactersInRoom = safePlayers
+                    .filter(player => player.location === roomId && player.character)
+                    .map(player => `<span>${player.character}</span>`)
+                    .join('');
+                charElement.innerHTML = charactersInRoom || '';
+            }
+        });
+    }
+
+    function updateHallwayCharacters(players) {
+        const hallways = ['Hallway1', 'Hallway2', 'Hallway3', 'Hallway4', 'Hallway5', 'Hallway6', 'Hallway7', 'Hallway8', 'Hallway9', 'Hallway10', 'Hallway11', 'Hallway12'];
+        const safePlayers = Array.isArray(players) ? players : [];
+        hallways.forEach(hallwayId => {
+            const charElement = document.getElementById(`${hallwayId}-characters`);
+            if (charElement) {
+                const charactersInHallway = safePlayers
+                    .filter(player => player.location === hallwayId && player.character)
+                    .map(player => `<span>${player.character}</span>`)
+                    .join('');
+                charElement.innerHTML = charactersInHallway || '';
+            }
+        });
+    }
+
+    function addClickListeners() {  // Add click listeners to rooms and hallways
+        const rooms = document.querySelectorAll('.room');
+        const hallways = document.querySelectorAll('.hallway');
+        const clickableElements = [...rooms, ...hallways];
+
+        clickableElements.forEach(element => {
+            element.addEventListener('click', () => {
+                const location = element.id; // Get the ID of the clicked element
+                if (currentPlayer && isValidMove(currentPlayer.location, location)) {
+                    const message = JSON.stringify({'action': 'move', 'location': location});
+                    console.log('Sending:', message);  // Log the message for debugging
+                    ws.send(message);  // Send move request to server
+                } else {
+                    console.log('Invalid move or not your turn for location:', location);
+                }
+            });
+        });
+    }
+
+    function isValidMove(fromLocation, toLocation) {
+        // Check if it's the current player's turn (simplified logic)
+        const turnMessage = document.getElementById('turn-message').textContent;
+        if (!turnMessage.includes(currentUsername)) {
+            return false; // Not your turn
+        }
+
+        // Define valid moves based on adjacency (simplified from consumers.py)
+        const validMoves = {
+            'Study': ['Hallway1', 'Hallway3', 'Kitchen'],
+            'Hall': ['Hallway1', 'Hallway2', 'Hallway4'],
+            'Lounge': ['Hallway2', 'Hallway5', 'Conservatory'],
+            'Library': ['Hallway3', 'Hallway6', 'Hallway8'],
+            'BilliardRoom': ['Hallway4', 'Hallway6', 'Hallway7', 'Hallway9'],
+            'DiningRoom': ['Hallway5', 'Hallway7', 'Hallway10'],
+            'Conservatory': ['Hallway8', 'Hallway11', 'Lounge'],
+            'Ballroom': ['Hallway9', 'Hallway11', 'Hallway12'],
+            'Kitchen': ['Hallway10', 'Hallway12', 'Study'],
+            'Hallway1': ['Study', 'Hall'],
+            'Hallway2': ['Hall', 'Lounge'],
+            'Hallway3': ['Study', 'Library'],
+            'Hallway4': ['Hall', 'BilliardRoom'],
+            'Hallway5': ['Lounge', 'DiningRoom'],
+            'Hallway6': ['Library', 'BilliardRoom'],
+            'Hallway7': ['BilliardRoom', 'DiningRoom'],
+            'Hallway8': ['Library', 'Conservatory'],
+            'Hallway9': ['BilliardRoom', 'Ballroom'],
+            'Hallway10': ['DiningRoom', 'Kitchen'],
+            'Hallway11': ['Conservatory', 'Ballroom'],
+            'Hallway12': ['Ballroom', 'Kitchen']
+        };
+
+        return fromLocation && toLocation && validMoves[fromLocation] && validMoves[fromLocation].includes(toLocation);
+    }
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeBoard({players: playersData});
+    });
+</script>
+</html>
