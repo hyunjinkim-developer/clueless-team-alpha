@@ -18,7 +18,7 @@ Simplified version of board game Clue
     2. Initial Setting for ASGI/Channels
         - % python run_daphne.py
         * To run the server listens both HTTP (pages) and WebSocket (live) connections.
-            [For further explanation](https://www.notion.so/hyunjinkimdeveloper/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d).
+            [For further explanation](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d).
     3. Run Django server
         - % python manage.py runserver
         * Server log shows “Starting ASGI/Daphne version 'version' development server at 'url'"
@@ -82,7 +82,7 @@ clue-less/
 ### Known Issues
 * Reload Problem:
     Reloading a tab displays another player’s page.
-    Assuming the tab displays shows the latest login or log out player's information. Need to verification.
+    Assuming the tab displays shows the latest login or log out player's information. Need verification.
 ### Planned Features
 * Turn Rotation:
     Implement sequential turns for Clue’s traditional gameplay (currently disabled per request).
