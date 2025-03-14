@@ -62,6 +62,10 @@
         font-weight: bold;
     }
 
+    /* Player-specific styling */
+    .player-me { color: red; }      /* My player in red */
+    .player-other { color: blue; }  /* Other players in blue */
+
     /* Room-specific styling */
     .room { background-color: lightpink; }
     .room-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: hotpink; }
@@ -76,8 +80,14 @@
     .vacant { background-color: white; }
 
     /* Animation for character movement */
-    @keyframes fadeMove { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
-    .fade-move { animation: fadeMove 0.5s ease-in-out; }
+    @keyframes pulseMove {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.7); }
+        100% { transform: scale(1); }
+    }
+    .pulse-move {
+        animation: pulseMove 0.5s ease-in-out;
+    }
 </style>
 <body>
     <!-- Notification section: Displays welcome message and logout button -->
@@ -186,36 +196,60 @@
         currentPlayer = players.find(player => player.username === currentUsername) || null;
     }
 
-    // Update character display in rooms, showing all players regardless of is_active
+    // Update room characters with animation for moved players, showing all players regardless of is_active
     function updateRoomCharacters(players) {
         const rooms = ['Study', 'Hall', 'Lounge', 'Library', 'BilliardRoom', 'DiningRoom', 'Conservatory', 'Ballroom', 'Kitchen'];
         rooms.forEach(roomId => {
             const charElement = document.getElementById(`${roomId}-characters`);
             if (charElement) {
-                // Filter players by location only
+                const previousContent = charElement.innerHTML;
                 const charactersInRoom = players
-                    .filter(player => player.location === roomId) // Show all players at this location
-                    .map(player => `<span>${player.character}</span>`) // Map each character to a span element
-                    .join(''); // Join spans with no separator
-                charElement.innerHTML = charactersInRoom || ''; // Update the DOM with character names
+                    .filter(player => player.location === roomId)
+                    .map(player => {
+                        const isCurrentPlayer = player.username === currentUsername;
+                        const className = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
+                        return `<span class="${className}">${player.character}</span>`;
+                    })
+                    .join('');
+
+                // Only apply animation if content changed
+                if (previousContent !== charactersInRoom) {
+                    charElement.innerHTML = charactersInRoom || '';
+                    charElement.classList.add('pulse-move');
+                    setTimeout(() => charElement.classList.remove('pulse-move'), 500); // Match animation duration
+                } else {
+                    charElement.innerHTML = charactersInRoom || '';
+                }
                 console.log(`Updated ${roomId} characters: ${charactersInRoom}`); // Debug log
             }
         });
     }
 
-    // Update character display in hallways, showing all players regardless of is_active
+    // Update hallway characters with animation for moved players, showing all players regardless of is_active
     function updateHallwayCharacters(players) {
         const hallways = ['Hallway1', 'Hallway2', 'Hallway3', 'Hallway4', 'Hallway5', 'Hallway6', 'Hallway7', 'Hallway8', 'Hallway9', 'Hallway10', 'Hallway11', 'Hallway12'];
         hallways.forEach(hallwayId => {
             const charElement = document.getElementById(`${hallwayId}-characters`);
             if (charElement) {
-                // Filter players by location only
+                const previousContent = charElement.innerHTML;
                 const charactersInHallway = players
-                    .filter(player => player.location === hallwayId) // Show all players at this location
-                    .map(player => `<span>${player.character}</span>`) // Map each character to a span element
-                    .join(''); // Join spans with no separator
-                charElement.innerHTML = charactersInHallway || ''; // Update the DOM with character names
-                console.log(`Updated ${hallwayId} characters: ${charactersInHallway}`); // Debug log
+                    .filter(player => player.location === hallwayId)
+                    .map(player => {
+                        const isCurrentPlayer = player.username === currentUsername;
+                        const className = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
+                        return `<span class="${className}">${player.character}</span>`;
+                    })
+                    .join('');
+
+                // Only apply animation if content changed
+                if (previousContent !== charactersInHallway) {
+                    charElement.innerHTML = charactersInHallway || '';
+                    charElement.classList.add('pulse-move');
+                    setTimeout(() => charElement.classList.remove('pulse-move'), 500); // Match animation duration
+                } else {
+                    charElement.innerHTML = charactersInHallway || '';
+                }
+                console.log(`Updated ${hallwayId} characters: ${charactersInHallway}`);
             }
         });
     }
