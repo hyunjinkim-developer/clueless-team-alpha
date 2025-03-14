@@ -48,9 +48,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         elif message_type == 'move':
             await self.handle_move(data)  # Handle player move request
         elif message_type == 'suggest':
-            pass  # Placeholder for suggestion logic
+            await self.handle_suggestion(data) # Handle player suggestion 
         elif message_type == 'accuse':
-            pass  # Placeholder for accusation logic
+            await self.handle_accusation(data) # Handle player accusation
         else:
             # Echo unrecognized messages back to the client
             await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
@@ -95,6 +95,13 @@ class GameConsumer(AsyncWebsocketConsumer):
         from_location = player.location  # Store current location
 
         # Check if it’s this player’s turn
+        # A place holder for current turn check
+        """
+        current_turn = game.current_turn  # Needs a field for turn order 
+        if player.username != current_turn:
+        await self.send(text_data=json.dumps({'error': 'It is not your turn.'}))
+        return
+        """
 
         # Check if the target location is the same as the current location
         if to_location == from_location:
@@ -121,6 +128,78 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
         print(f"Player {player.username} moved from {from_location} to {to_location}")  # Debug log for move
+
+    # Player suggestion
+    async def handle_suggestion(self, data):
+        """
+        Handles a player's suggestion (suspect, weapon, room) and broadcasts aresponse.
+        """
+        player_id = data.get("player_id")
+        suspect = data.get("suspect")
+        weapon = data.get("weapon")
+        room = data.get("room")
+
+        # For demo purposes
+        suggestion = {
+            "player": f"Player {player_id}",
+            "suggestion": 
+                {
+                "suspect": suspect,
+                "weapon": weapon,
+                "room": room
+            },
+            "result": "This suggestion looks correct."
+        }
+
+        # Broadcast the fake suggestion result to all players in the game
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                "type": "suggestion_result",
+                "message": suggestion
+            }
+        )
+        
+    async def suggestion_result(self, event):
+    """
+    Sends the suggestion result to all connected WebSocket clients.
+    """
+    await self.send(text_data=json.dumps(event["message"]))  
+
+        
+    # Player Accusation 
+    async def handle_accusation(self, data):
+    """
+    Handles a player's accusation and broadcasts a response.
+    """
+    player_id = data.get("player_id")
+    suspect = data.get("suspect")
+    weapon = data.get("weapon")
+    room = data.get("room")
+
+    # For the demo any accusation will send a correct message out
+    accusation_result = {
+        "player": f"Player {player_id}",
+        "accusation": {
+            "suspect": suspect,
+            "weapon": weapon,
+            "room": room
+        },
+        "result": f"Player {player_id} has WON the game! The accusation was correct!"
+    }
+
+    # Broadcast the accusation result to all players in the game
+    await self.channel_layer.group_send(
+        self.game_group_name,
+        {
+            "type": "accusation_result",
+            "message": accusation_result
+        }
+    )
+    
+    async def accusation_result(self, event):
+    """Sends the accusation result to all connected WebSocket clients."""
+    await self.send(text_data=json.dumps(event["message"]))
 
     # Async wrapper for synchronous database query to get game state
     # Sync with views.py
