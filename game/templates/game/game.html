@@ -157,6 +157,7 @@
     const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';
 
     let currentPlayer = null; // Store the current player's data for move validation
+    let previousGameState = null; // Store the previous game state to detect movement
 
     // Log when the WebSocket connection is established
     ws.onopen = function() {
@@ -190,14 +191,29 @@
         console.log('Updating game board with state:', gameState); // Debug log for game state
         const players = gameState.players || []; // Extract players array, default to empty if missing
         console.log('Players array:', players); // Debug log for players array
-        updateRoomCharacters(players); // Update room displays with all players
-        updateHallwayCharacters(players); // Update hallway displays with all players
+
+        // Determine which player moved by comparing with previous state
+        let movedPlayer = null;
+        if (previousGameState) {
+            const prevPlayers = previousGameState.players || [];
+            movedPlayer = players.find(player => {
+                const prevPlayer = prevPlayers.find(p => p.username === player.username);
+                return prevPlayer && prevPlayer.location !== player.location;
+            })?.username;
+        }
+
+        updateRoomCharacters(players, movedPlayer); // Update room displays with all players
+        updateHallwayCharacters(players, movedPlayer); // Update hallway displays with all players
         // Set currentPlayer for movement logic only, no character display update
         currentPlayer = players.find(player => player.username === currentUsername) || null;
+
+        // Update previous state for the next comparison
+        previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
     }
 
-    // Update room characters with animation for moved players, showing all players regardless of is_active
-    function updateRoomCharacters(players) {
+    // Update room characters with animation only for the moved player,
+    // showing all players regardless of is_active
+    function updateRoomCharacters(players, movedPlayer) {
         const rooms = ['Study', 'Hall', 'Lounge', 'Library', 'BilliardRoom', 'DiningRoom', 'Conservatory', 'Ballroom', 'Kitchen'];
         rooms.forEach(roomId => {
             const charElement = document.getElementById(`${roomId}-characters`);
@@ -207,16 +223,20 @@
                     .filter(player => player.location === roomId)
                     .map(player => {
                         const isCurrentPlayer = player.username === currentUsername;
-                        const className = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
+                        const isMoved = player.username === movedPlayer;
+                        const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
+                        const className = isMoved ? `${baseClass} pulse-move` : baseClass;
                         return `<span class="${className}">${player.character}</span>`;
                     })
                     .join('');
 
-                // Only apply animation if content changed
+                // Update content and remove animation class after it runs
                 if (previousContent !== charactersInRoom) {
                     charElement.innerHTML = charactersInRoom || '';
-                    charElement.classList.add('pulse-move');
-                    setTimeout(() => charElement.classList.remove('pulse-move'), 500); // Match animation duration
+                    setTimeout(() => {
+                        const spans = charElement.querySelectorAll('.pulse-move');
+                        spans.forEach(span => span.classList.remove('pulse-move'));
+                    }, 500); // Match animation duration
                 } else {
                     charElement.innerHTML = charactersInRoom || '';
                 }
@@ -225,9 +245,14 @@
         });
     }
 
-    // Update hallway characters with animation for moved players, showing all players regardless of is_active
-    function updateHallwayCharacters(players) {
-        const hallways = ['Hallway1', 'Hallway2', 'Hallway3', 'Hallway4', 'Hallway5', 'Hallway6', 'Hallway7', 'Hallway8', 'Hallway9', 'Hallway10', 'Hallway11', 'Hallway12'];
+    // Update hallway characters with animation only for the moved player,
+    // showing all players regardless of is_active
+    function updateHallwayCharacters(players, movedPlayer) {
+        const hallways = ['Hallway1', 'Hallway2',
+                            'Hallway3', 'Hallway4', 'Hallway5',
+                            'Hallway6', 'Hallway7',
+                            'Hallway8', 'Hallway9', 'Hallway10',
+                            'Hallway11', 'Hallway12'];
         hallways.forEach(hallwayId => {
             const charElement = document.getElementById(`${hallwayId}-characters`);
             if (charElement) {
@@ -236,16 +261,20 @@
                     .filter(player => player.location === hallwayId)
                     .map(player => {
                         const isCurrentPlayer = player.username === currentUsername;
-                        const className = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
+                        const isMoved = player.username === movedPlayer;
+                        const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';
+                        const className = isMoved ? `${baseClass} pulse-move` : baseClass;
                         return `<span class="${className}">${player.character}</span>`;
                     })
                     .join('');
 
-                // Only apply animation if content changed
+                // Update content and remove animation class after it runs
                 if (previousContent !== charactersInHallway) {
                     charElement.innerHTML = charactersInHallway || '';
-                    charElement.classList.add('pulse-move');
-                    setTimeout(() => charElement.classList.remove('pulse-move'), 500); // Match animation duration
+                    setTimeout(() => {
+                        const spans = charElement.querySelectorAll('.pulse-move');
+                        spans.forEach(span => span.classList.remove('pulse-move'));
+                    }, 500); // Match animation duration
                 } else {
                     charElement.innerHTML = charactersInHallway || '';
                 }
