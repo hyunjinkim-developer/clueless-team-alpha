@@ -134,14 +134,16 @@ class GameConsumer(AsyncWebsocketConsumer):
         """
         Handles a player's suggestion (suspect, weapon, room) and broadcasts aresponse.
         """
-        player_id = data.get("player_id")
+        user = self.scope['user']  
+        player = await self.get_player(user.username)  
+        
         suspect = data.get("suspect")
         weapon = data.get("weapon")
         room = data.get("room")
 
         # For demo purposes
         suggestion = {
-            "player": f"Player {player_id}",
+            "player": player.username,
             "suggestion": 
                 {
                 "suspect": suspect,
@@ -172,20 +174,22 @@ class GameConsumer(AsyncWebsocketConsumer):
     """
     Handles a player's accusation and broadcasts a response.
     """
-    player_id = data.get("player_id")
+    user = self.scope['user']  
+    player = await self.get_player(user.username)
+   
     suspect = data.get("suspect")
     weapon = data.get("weapon")
     room = data.get("room")
 
     # For the demo any accusation will send a correct message out
     accusation_result = {
-        "player": f"Player {player_id}",
+        "player": player.username,
         "accusation": {
             "suspect": suspect,
             "weapon": weapon,
             "room": room
         },
-        "result": f"Player {player_id} has WON the game! The accusation was correct!"
+        "result": f"Player {player.username} has WON the game! The accusation was correct!"
     }
 
     # Broadcast the accusation result to all players in the game
