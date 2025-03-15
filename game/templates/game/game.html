@@ -146,7 +146,8 @@
     <script>
     // Set up WebSocket connection using the game_id passed from the template
     const gameId = {{ game_id }};
-    const ws = new WebSocket(`ws://localhost:8000/ws/game/${gameId}/`);
+    // const ws = new WebSocket(`ws://localhost:8000/ws/game/${gameId}/`); #D
+    const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
 
     // Retrieve initial players data from the DOM, fallback to empty array if not found
     const playersDataElement = document.getElementById('players-data');

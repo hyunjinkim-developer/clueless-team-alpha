@@ -8,7 +8,7 @@ class Game(models.Model):
     players_list = models.JSONField(default=list) # Username ever joined the game
 
     def __str__(self):
-        return f"Game {self.id} - {'Active' if self.is_active else 'Inactive'}"
+        return f"Game {self.id} - {'Active' if self.is_active else 'Inactive'}/ Players ever joined: {self.players_list}"
 
 class Player(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='players')
