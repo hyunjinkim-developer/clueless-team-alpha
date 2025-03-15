@@ -1,73 +1,66 @@
 <!DOCTYPE html>
 <html>
-    <style>
-        /* Global reset for consistent sizing */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-        /* Define CSS variables for board sizing */
-        :root {
-            --cell-size: min(18vw, 18vh);  /* Auto scales with window size */
-            --room-hallway-name-font-size: calc(var(--cell-size) * 0.15); 
-            --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
-        }
-    
-        /* Basic body styling */
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            overflow: hidden;
-            text-align: center; /* Ensures text is centered */
-        }
-    
-        /* Notification area styling */
-        #notification {
-            padding: 10px;
-            text-align: center;
-            max-width: 90%;
-            background: white;
-            border-bottom: 2px solid black;
-            width: 100%;
-        }
-    
-        /* Game board grid layout */
-        #game-board {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            gap: 2px;
-            background-color: rgb(0, 0, 0);
-            padding: 10px;
-            border: 5px solid black;
-            width: 90vmin;
-            height: 90vmin;
-            margin: auto; /* Ensures it remains centered */
-        }
-    
-        /* Common styling for rooms, hallways, and vacant cells */
-        .room, .hallway, .vacant {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            box-sizing: border-box;
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-    
-        /* Room-specific styling */
-        .room {
-            background-color: lightpink;
-            color: black;
-        }
+<style>
+    /* Global reset for consistent sizing */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Define CSS variables for board sizing */
+    :root {
+    --board-size: min(90vmin, 90vmax); /* Auto-scale to fit the window */
+    --cell-size: calc(90vmin / 5); /* Makes sure cells fit inside board */
+    --room-hallway-name-font-size: calc(var(--cell-size) * 0.15); 
+    --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
+}
+
+/* Body styling */
+body {
+    margin: auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    text-align: center;
+    overflow: hidden; /* Prevents scrolling */
+}
+
+/* Notification bar styling */
+#notification {
+    padding: 10px;
+    text-align: center;
+    width: 100%;
+    max-width: 90%;
+    background: white;
+    border-bottom: 2px solid black;
+}
+
+/* Game board layout */
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    gap: 1px;
+    background-color: black;
+    padding: 10px;
+    border: 5px solid black;
+    width: var(--board-size);
+    height: var(--board-size);
+    margin: auto; /* Ensures it remains centered */
+}
+
+    /* Common styling for rooms, hallways, and vacant cells */
+    .room, .hallway, .vacant {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        border: 2px solid #000;
+        text-align: center;
+        position: relative;
+        box-sizing: border-box;
+        cursor: pointer;
+    }
 
     /* Hover effect for interactivity */
     .room:hover, .hallway:hover { background-color: #e0e0e0; }
@@ -76,59 +69,36 @@
     .room-characters span, .hallway-characters span {
         white-space: nowrap;
         display: block;
-            font-weight: bold;
-            background-color: transparent;
-            padding: 5px;
-            width: 100%;
-            text-align: center;
-        }
-        .hallway-characters {
-            font-size: var(--room-hallway-character-font-size);
-            padding: 2px;
-            text-align: center;
-            min-height: 20%;
-        }
-    
-        /* Vacant cell styling */
-        .vacant {
-            background-color: white;
-        }
-    
-        /* Player-specific styling */
+        font-weight: bold;
+    }
+
+    /* Player-specific styling */
     .player-me { color: red; }      /* My player in red */
     .player-other { color: blue; }  /* Other players in blue */
 
     /* Room-specific styling */
-    .room { background-color: rgb(254, 204, 212); }
-    .room-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; }
+    .room { background-color: lightpink; }
+    .room-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: hotpink; }
     .room-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
 
     /* Hallway-specific styling */
-    .hallway { background-color: rgb(196, 233, 245); }
-    .hallway-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0;}
+    .hallway { background-color: lightcyan; }
+    .hallway-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: lightskyblue; }
     .hallway-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
 
     /* Vacant cell styling */
     .vacant { background-color: white; }
-    
-        /* Animation for character movement */
-        @keyframes pulseMove {
-            0% { transform: scale(1); }
+
+    /* Animation for character movement */
+    @keyframes pulseMove {
+        0% { transform: scale(1); }
         50% { transform: scale(1.7); }
-            100% { transform: scale(1); }
-        }
-        .pulse-move {
-            animation: pulseMove 0.5s ease-in-out;
-        }
-    
-        /* Responsive resizing */
-        @media (max-width: 600px) {
-            :root {
-                --cell-size: min(18vw, 18vh);
-            }
-        }
-    </style>
-    
+        100% { transform: scale(1); }
+    }
+    .pulse-move {
+        animation: pulseMove 0.5s ease-in-out;
+    }
+</style>
 <body>
     <!-- Notification section: Displays welcome message and logout button -->
     <div id="notification">
