@@ -1,43 +1,123 @@
-<!-- game/templates/game/login.html -->
 <!DOCTYPE html>
 <html>
-<style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .error { color: red; }
-    .success { color: green; }
-    .player-list { margin: 10px 0; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; }
-    .player-list ul { list-style-type: none; padding: 0; }
-    .player-list li { margin: 5px 0; }
-</style>
+<head>
+    <title>Clue-Less Login</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        /* Container */
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Headings */
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        /* Error & Success Messages */
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+
+        /* Form Fields */
+        form p {
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        input[type="text"], 
+        input[type="password"], 
+        input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        /* Buttons */
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        /* Links */
+        .toggle-link {
+            display: block;
+            margin-top: 10px;
+            text-decoration: none;
+            color: #007BFF;
+            font-weight: bold;
+        }
+
+        .toggle-link:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
 <body>
-    {% if not show_signup %}
-        <h1>Login</h1>
-        {% if error_message %}
-            <p class="error">{{ error_message }}</p>
+
+    <div class="container">
+        {% if not show_signup %}
+            <h1>Clue-Less Login</h1>
+            {% if error_message %}
+                <p class="error">{{ error_message }}</p>
+            {% endif %}
+            {% if success_message %}
+                <p class="success">{{ success_message }}</p>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                {{ login_form.as_p }}
+                <button type="submit" name="login">Login</button>
+                <a href="?signup" class="toggle-link">Sign Up</a>
+            </form>
+        {% else %}
+            <h1>Clue-Less Sign Up</h1>
+            {% if error_message %}
+                <p class="error">{{ error_message }}</p>
+            {% endif %}
+            {% if success_message %}
+                <p class="success">{{ success_message }}</p>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                {{ signup_form.as_p }}
+                <button type="submit" name="signup">Sign Up</button>
+                <a href="?login" class="toggle-link">Back to Login</a>
+            </form>
         {% endif %}
-        {% if success_message %}
-            <p class="success">{{ success_message }}</p>
-        {% endif %}
-        <form method="post">
-            {% csrf_token %}
-            {{ login_form.as_p }}
-            <button type="submit" name="login">Login</button>
-            <a href="?signup">Sign Up</a>
-        </form>
-    {% else %}
-        <h1>Sign Up</h1>
-        {% if error_message %}
-            <p class="error">{{ error_message }}</p>
-        {% endif %}
-        {% if success_message %}
-            <p class="success">{{ success_message }}</p>
-        {% endif %}
-        <form method="post">
-            {% csrf_token %}
-            {{ signup_form.as_p }}
-            <button type="submit" name="signup">Sign Up</button>
-            <a href="?login">Back to Login</a>
-        </form>
-    {% endif %}
+    </div>
+
 </body>
 </html>
