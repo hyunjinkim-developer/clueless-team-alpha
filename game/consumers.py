@@ -43,6 +43,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"Received message: {text_data}")  # Debug log for incoming message
         data = json.loads(text_data)  # Parse JSON message
         message_type = data.get('type')  # Extract message type
+
         if message_type == 'join_game':
             await self.join_game(data)  # Handle join_game message (placeholder)
         elif message_type == 'move':
@@ -82,6 +83,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
         return Player.objects.get(game=game, username=username)  # Fetch Player by username and game
 
+    async def join_game(self, data):
+        # Placeholder for join_game logic if needed later
+        pass
+
     async def handle_move(self, data):
         """Handle a player's move request without turn restriction."""
         to_location = data.get('location')  # Extract target location from message
@@ -91,6 +96,11 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         game = await self.get_game()  # Get Game instance
+        #D
+        print(game)
+        print(self.scope['user'])
+        print(self.get_player)
+        # ME! I'm the troublemaker!
         player = await self.get_player(self.scope['user'].username)  # Get current Player
         from_location = player.location  # Store current location
 
@@ -139,6 +149,3 @@ class GameConsumer(AsyncWebsocketConsumer):
             'weapons': WEAPONS
         }
 
-    async def join_game(self, data):
-        # Placeholder for join_game logic if needed later
-        pass
