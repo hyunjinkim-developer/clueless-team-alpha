@@ -96,11 +96,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         game = await self.get_game()  # Get Game instance
-        #D
-        print(game)
-        print(self.scope['user'])
-        print(self.get_player)
-        # ME! I'm the troublemaker!
         player = await self.get_player(self.scope['user'].username)  # Get current Player
         from_location = player.location  # Store current location
 
