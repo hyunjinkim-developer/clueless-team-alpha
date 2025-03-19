@@ -46,6 +46,7 @@ Simplified version of board game Clue
 
 
 ## Directory Tree
+* All files and directories follow Python naming conventions.
 ```
 clue-less/
 ├── manage.py              # Django's command-line utility for administrative tasks
