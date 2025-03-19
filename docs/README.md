@@ -54,7 +54,6 @@ Simplified version of board game Clue
         - Modules & directories: lower_case_with_underscores
         - Private members: _single_leading_underscore
     - For more details, refer to the [PEP 8 Style Guide](https://peps.python.org/pep-0008/#naming-conventions).
-*
 ```
 clue-less/
 ├── manage.py              # Django's command-line utility for administrative tasks
