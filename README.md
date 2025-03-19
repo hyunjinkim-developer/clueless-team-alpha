@@ -4,6 +4,7 @@ Simplified version of board game Clue
 ## Demo Video
 ### Skeletal Increment System
 [![Skeletal Demo Video](https://img.youtube.com/vi/gN_xQpYRPfM/0.jpg)](https://www.youtube.com/watch?v=gN_xQpYRPfM)
+
 ### Minimal Increment System
 
 ### Target Increment System
