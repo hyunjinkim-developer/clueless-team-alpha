@@ -4,24 +4,35 @@ Simplified version of board game Clue
 ## Installation and Run server
 - The commands below are based on macOS. Modify them to match your development environment.
 1. Install dependencies (Python version 3.10.16)
-    1. % cd move-to-the-root-of-project-directory
-    2. % activate-virtual-environment
-    3. % pip install -r requirements.txt
-    * To uninstall all dependencies
-        - % python uninstall_packages.py
+    1. % cd move-to-the-root-of-the-project-directory
+    2. Create virtual environment
+        - % python -m venv myenv
+    3. Activate virtual environment
+        - MacOS: % source venv/bin/activate
+        - Windows: file-path> venv\Scripts\activate
+        - When the virtual environment is activated, (venv) appears at the beginning of the terminal prompt
+    4. Install all dependencies for the Python project
+        - % pip install -r requirements.txt
+        * Reference: Customized code to uninstall all dependencies
+            - % python uninstall_packages.py
 2. DB migration
-    1. % python manage.py makemigrations
-    2. % python manage.py migrate
+    1. Creates blueprints (migration files) for your database based on models.py
+        - % python manage.py makemigrations
+    2. Apply all migrations
+        - % python manage.py migrate
 3. Run server
     1. Run Redis server
         - % redis-server
-    2. Initial Setting for ASGI/Channels
-        - % python run_daphne.py
+    2. Initial Setting for Django Server
         * To run the server listens both HTTP (pages) and WebSocket (live) connections.
+        1. Using daphne to force ASGI, ensuring WebSockets work for multiplayer functionality
+            - % python run_daphne.py
+            * This customized code improves developer efficiency by truncating the command each time the server starts.
             [For further explanation](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d).
+        2. Close currently running server: Ctrl + c
     3. Run Django server
         - % python manage.py runserver
-        * Server log shows “Starting ASGI/Daphne version 'version' development server at 'url'"
+        * The server log displays: “Starting ASGI/Daphne version 4.1.2 development server at http://127.0.0.1:8000/"
         * [Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases.
 
 
