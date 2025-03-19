@@ -1,7 +1,15 @@
 # Clue-Less
 Simplified version of board game Clue
 
-## Installation and Run server
+## Video DEMO
+### Skeletal Increment System
+
+### Minimal Increment System
+
+### Target Increment System
+
+
+## Installation and Running the server
 - The commands below are based on macOS. Modify them to match your development environment.
 1. Install dependencies (Python version 3.10.16)
     1. % cd move-to-the-root-of-the-project-directory
@@ -20,7 +28,7 @@ Simplified version of board game Clue
         - % python manage.py makemigrations
     2. Apply all migrations
         - % python manage.py migrate
-3. Run server
+3. Run the server
     1. Run Redis server
         - % redis-server
     2. Initial Setting for Django Server
@@ -75,6 +83,7 @@ clue-less/
 ├── uninstall_packages.py # Uninstall all packages in the virtual environment
 └── run_daphne.py         # Custom script to start the Daphne server with predefined settings, bypassing the command-line daphne invocation.
 ```
+
 
 ## Features
 ### Current Features
