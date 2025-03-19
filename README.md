@@ -47,13 +47,13 @@ Simplified version of board game Clue
 
 ## Directory Tree
 * Project Naming Conventions
-    This project follows Python's PEP 8 naming conventions for consistency and readability:
+    - This project follows Python's PEP 8 naming conventions for consistency and readability:
         - Variables & functions: lower_case_with_underscores
         - Constants: ALL_CAPS_WITH_UNDERSCORES
         - Classes: PascalCase
         - Modules & directories: lower_case_with_underscores
         - Private members: _single_leading_underscore
-    For more details, refer to the [PEP 8 Style Guide](https://peps.python.org/pep-0008/#naming-conventions).
+    - For more details, refer to the [PEP 8 Style Guide](https://peps.python.org/pep-0008/#naming-conventions).
 *
 ```
 clue-less/
