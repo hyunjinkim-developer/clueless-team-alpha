@@ -47,8 +47,8 @@ Simplified version of board game Clue
 
 ## Instructions After Cloning the Repository
 * After cloning the repository, you may see the following system log:
-_"You have 18 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions. Run 'python manage.py migrate' to apply them."_
-This occurs because I intentionally **did not** inclulde `game/migrations` to prevent one person's database from affecting other's work.
+    _"You have 18 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions. Run 'python manage.py migrate' to apply them."_
+    This occurs because I intentionally **did not** inclulde `game/migrations` to prevent one person's database from affecting other's work.
 ### Initial Migration Setup
 ```sh
 python manage.py makemigrations
