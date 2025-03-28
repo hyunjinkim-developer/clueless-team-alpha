@@ -44,6 +44,7 @@ Simplified version of board game Clue
         * The server log displays: “Starting ASGI/Daphne version 4.1.2 development server at http://127.0.0.1:8000/"
         * [Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases.
 
+
 ## Instructions After Cloning the Repository
 
 After cloning the repository, you may see the following system log:
