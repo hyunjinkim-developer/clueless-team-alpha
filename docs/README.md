@@ -44,11 +44,12 @@ Simplified version of board game Clue
         * The server log displays: “Starting ASGI/Daphne version 4.1.2 development server at http://127.0.0.1:8000/"
         * [Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases.
 
-
 ## Instructions After Cloning the Repository
-* After cloning the repository, you may see the following system log:
-> *"_You have 18 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions.
-> Run 'python manage.py migrate' to apply them._"*
+
+After cloning the repository, you may see the following system log:
+>  *"_You have 18 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions.
+>  Run 'python manage.py migrate' to apply them._"*
+
 This occurs because I intentionally **did not** inclulde `game/migrations` to prevent one person's database from affecting other's work.
 ### Initial Migration Setup
 ```sh
