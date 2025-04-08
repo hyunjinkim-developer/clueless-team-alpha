@@ -143,4 +143,15 @@ class GameConsumer(AsyncWebsocketConsumer):
             'hallways': HALLWAYS,
             'weapons': WEAPONS
         }
+    
+    # go through each list in the card deck
+    # pick one card from each deck and assign it to the culprit class
+    def select_suspect(self, data):
+        game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
+        
 
+    # take given number of players
+    # total number of cards / number of current players
+    # randomly pick a mini deck from the larger Card Deck
+    # pick a card in one of those decks
+    # assign that card to the player's hand
