@@ -144,14 +144,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             'weapons': WEAPONS
         }
     
-    # go through each list in the card deck
-    # pick one card from each deck and assign it to the culprit class
-    def select_suspect(self, data):
-        game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
-        
-
-    # take given number of players
+    # take given number of players in players_list
+    # total number of cards = 21 - 3 cards in case file = 18
     # total number of cards / number of current players
-    # randomly pick a mini deck from the larger Card Deck
-    # pick a card in one of those decks
-    # assign that card to the player's hand
+
+    def split_card_deck(self):
+        game = Game.get_game(self)
+        gameFields = game._meta.get_fields()
+        for field in gameFields:
+            
