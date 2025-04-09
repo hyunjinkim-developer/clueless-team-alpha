@@ -1,39 +1,61 @@
-# macOS-specific files
+# OS-specific
+# MacOS-specific
 .DS_Store
 .AppleDouble
 .LSOverride
 Icon?
+# Windows-specific
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+System Volume Information/
 
-# Development tools
-# JetBrains IDE (e.g., PyCharm)
+# Development Tools
+# JetBrains IDEs (e.g., PyCharm, IntelliJ)
 .idea/
-# Visual Studio Code settings
+*.iml
+# Visual Studio Code
 .vscode/
-# Vim swap files
+# Visual Studio
+*.sln
+*.csproj
+.vs/
+# Vim
 *.swp
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+# Eclipse (PyDev)
+.project
+.pydevproject
+.metadata/
+
+# Virtual Environments
+env/
+venv/
+ENV/
 
 # Miscellaneous
 # Backup files
 *.bak
 *.backup
 
-# Python/Django files
+# Python/Django Files
+# Bytecode and Compiled Files
 __pycache__/
-# Compiled Python files
-*.py[cod]
 *.pyc
 *.pyo
 *.pyd
+*.egg
+*.whl
 .Python
-# Virtual environment (if you use one)
-env/
-venv/
-ENV/
 
 # Django-specific
-# Log files
+# Server/debug logs
 *.log
-# Translation files (if unused)
+# Translation templates (if unused)
 *.pot
 # Default SQLite database
 *.sqlite3
@@ -43,4 +65,3 @@ game/migrations/
 
 # Redis-specific
 dump.rdb
-
