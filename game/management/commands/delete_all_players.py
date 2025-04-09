@@ -7,7 +7,7 @@ from game.constants import ROOMS, HALLWAYS, WEAPONS
 class Command(BaseCommand):
     help = 'Deletes all Player records ever associated with a specified game and resets players_list on the game table.' \
            'Username and password for login still remain.' \
-           'Usage: python manage.py delete_all_players --game_id <game_id>.'
+           'Usage: python manage.py delete_all_players --game_id GAME_ID.'
 
     def add_arguments(self, parser):
         parser.add_argument('--game_id', type=int, help='The ID of the game to delete all players from')

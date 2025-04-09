@@ -6,7 +6,7 @@ from game.constants import ROOMS, HALLWAYS, WEAPONS
 
 class Command(BaseCommand):
     help = 'Logs out all players from a specified game by setting is_active=False' \
-           'Usage: python manage.py logout_all_players --game_id <game_id>.'
+           'Usage: python manage.py logout_all_players --game_id GAME_ID.'
 
     def add_arguments(self, parser):
         parser.add_argument('--game_id', type=int, help='The ID of the game to log out players from')
