@@ -37,6 +37,19 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection when a client leaves"""
         if hasattr(self, 'game_group_name'):  # Check if group was set
+            # Update player's is_active state to False on disconnect
+            player = await self.get_player(self.scope['user'].username)
+            if player.is_active:  # Only update if active
+                player.is_active = False
+                await database_sync_to_async(player.save)()
+            # Broadcast player_out without reason for disconnection
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'player_out',
+                    'player': player.username
+                }
+            )
             # Remove this client from the game’s WebSocket group
             await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
             print(f"WebSocket disconnected for game {self.game_id}")
@@ -184,7 +197,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'player_out',
                     'player': player.username,
-                    'reason': 'incorrect_accusation'  # Client notification
+                    'reason': 'incorrect_accusation'  # Client notification: send reason only for incorrect accusation
                 }
             )
             await self.send(text_data=json.dumps({'message': 'Your accusation was incorrect. You are out of the game but can still disprove suggestions.'}))
