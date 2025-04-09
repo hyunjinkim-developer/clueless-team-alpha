@@ -3,6 +3,7 @@ from channels.db import database_sync_to_async
 import json
 from .models import *
 from .constants import *
+import random
 
 # For debugging purpose, disable in production
 DEBUG = False
@@ -144,12 +145,37 @@ class GameConsumer(AsyncWebsocketConsumer):
             'weapons': WEAPONS
         }
     
+    #Assign random card
+    #pick random list from either SUSPECTS, ROOMS, WEAPONS
+    #pick random string from one of those lists
+    @database_sync_to_async
+    def pickRandCard(self):
+        cardList = [SUSPECTS, ROOMS, WEAPONS]
+        cardListLen = len(cardList)
+        randInt = random.randint(0, cardListLen)
+        cardSubList = cardList[randInt]
+        cardSubListLen = len(cardSubList)
+        randCardInt = random.randint(0, cardSubListLen)
+        randCard = cardSubList[randCardInt]
+        return randCard
+
     # take given number of players in players_list
     # total number of cards = 21 - 3 cards in case file = 18
     # total number of cards / number of current players
-
+    @database_sync_to_async
     def split_card_deck(self):
-        game = Game.get_game(self)
+        players = []
+        game = self.get_game()  # Get Game instance
         gameFields = game._meta.get_fields()
         for field in gameFields:
-            
+            if (field == "players_list"):
+                players = field
+        numPlayers = len(players)
+        cardsPerPlayer = 18/numPlayers
+        remainingCards = 18-(numPlayers*cardsPerPlayer)
+        for player in players:
+            playerDeck = player.hand
+            for i in range(0,cardsPerPlayer):
+                randomCard = self.pickRandCard()
+                playerDeck.append(randomCard)
+        print(f"Player card hand: {playerDeck}")
