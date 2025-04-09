@@ -166,9 +166,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         #     return
 
         # Check if player is still active (can make accusations)
-        # if DEBUG and  DEBUG_HANDLE_ACCUSE: #D
-        #     print(f"DEBUG_HANDLE_ACCUSE: Forcing player {player.username} to inactive for testing")
-        #     player.is_active = False
         if not player.is_active:
             await self.send(text_data=json.dumps({'error: You are eliminated and cannot make accusations'}))
             return
