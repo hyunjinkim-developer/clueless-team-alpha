@@ -5,7 +5,7 @@ from asgiref.sync import async_to_sync
 from game.constants import ROOMS, HALLWAYS, WEAPONS
 
 class Command(BaseCommand):
-    help = 'Deletes all Player records ever associated with a specified game and resets players_list'
+    help = 'Deletes all Player records ever associated with a specified game and resets players_list.'
 
     def add_arguments(self, parser):
         parser.add_argument('game_id', type=int, help='The ID of the game to delete all players from')
