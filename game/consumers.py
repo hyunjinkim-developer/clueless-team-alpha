@@ -146,16 +146,13 @@ class GameConsumer(AsyncWebsocketConsumer):
         }
     
     #Assign random card
-    #pick random list from either SUSPECTS, ROOMS, WEAPONS
-    #pick random string from one of those lists
+    #pick random string from list containing SUSPECTS, ROOMS, and WEAPONS
     @database_sync_to_async
-    def pickRandCard(self, cardList):
+    def pickRandCard(self, inputCardList):
+        cardList = inputCardList
         cardListLen = len(cardList)
         randInt = random.randint(0, cardListLen)
-        cardSubList = cardList[randInt]
-        cardSubListLen = len(cardSubList)
-        randCardInt = random.randint(0, cardSubListLen)
-        randCard = cardSubList[randCardInt]
+        randCard = cardList[randInt]
         cardList.remove(randCard)
         return randCard
 
@@ -183,8 +180,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             for i in range(0,cardsPerPlayer):
                 randomCard = self.pickRandCard()
                 playerDeck.append(randomCard)
-            for j in range(0, remainingCards):
-                randomCard = self.pickRandCard()
+        for player in players:
+            if remainingCards != 0:
+                for j in range(0, remainingCards):
+                    randomCard = self.pickRandCard()
                 playerDeck.append(randomCard)
         print(f"Player card hand: {playerDeck}")
 
