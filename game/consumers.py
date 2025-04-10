@@ -49,7 +49,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         elif message_type == 'move':
             await self.handle_move(data)  # Handle player move request
         elif message_type == 'suggest':
-            pass  # Placeholder for suggestion logic
+            await self.handle_suggest(data)  # Placeholder for suggestion logic
         elif message_type == 'accuse':
             pass  # Placeholder for accusation logic
         else:
@@ -126,6 +126,82 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
         print(f"Player {player.username} moved from {from_location} to {to_location}")  # Debug log for move
+
+    async def handle_suggest(self, data):
+        suspect = data.get('suspect')
+        weapon = data.get('weapon')
+        room = data.get('room')
+
+        if not all([suspect, weapon, room]):
+            await self.send(text_data=json.dumps({'error': 'Missing suggestion details (suspect, weapon, or room)'}))
+            return
+
+        game = await self.get_game()
+        player = await self.get_player(self.scope['user'].username)
+
+        # Validate the player is in a room
+        if player.location != room or room not in ROOMS:
+            await self.send(text_data=json.dumps({'error': 'You must be in the suggested room to make a suggestion'}))
+            return
+
+        # Move the suggested suspect to the room (if they’re a player)
+        try:
+            suspect_player = await self.get_player(suspect)
+            suspect_player.location = room
+            await database_sync_to_async(suspect_player.save)()
+        except Player.DoesNotExist:
+            # It's possible the suspect is not an actual player (e.g., an unused character)
+            pass
+
+        suggestion = {'suspect': suspect, 'weapon': weapon, 'room': room}
+        disproved_by = None
+        shown_card = None
+
+        # Get all players in turn order
+        players = await database_sync_to_async(lambda: list(game.players.order_by('turn_order')))()
+        player_index = next((i for i, p in enumerate(players) if p.username == player.username), -1)
+
+        for i in range(1, len(players)):
+            other_player = players[(player_index + i) % len(players)]
+            if not other_player.is_active:
+                continue
+
+            cards = json.loads(other_player.cards)
+            matching_cards = [c for c in [suspect, weapon, room] if c in cards]
+
+            if matching_cards:
+                disproved_by = other_player.username
+                shown_card = matching_cards[0]  # Just show the first matching card
+                break
+
+        # Notify suggesting player privately with result
+        await self.send(text_data=json.dumps({
+            'type': 'suggestion_result',
+            'disproved_by': disproved_by,
+            'shown_card': shown_card if disproved_by == player.username else None
+        }))
+
+        # Notify all players that a suggestion was made
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'suggestion_made',
+                'player': player.username,
+                'suggestion': suggestion,
+                'disproved_by': disproved_by if disproved_by != player.username else None
+            }
+        )
+
+        # Update game state for all clients
+        game_state = await self.get_game_state()
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'game_update',
+                'game_state': game_state
+            }
+        )
+
 
     # Async wrapper for synchronous database query to get game state
     # Sync with views.py
