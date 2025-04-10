@@ -107,6 +107,13 @@ body {
             <button onclick="window.location.href='{% url 'logout' %}'">Logout</button></h2> <!-- Current user and logout button -->
         <div id="game-state"></div> <!-- Placeholder for future game state display -->
     </div>
+	
+	<!-- Action Buttons -->
+<div id="action-buttons" style="margin: 20px;">
+    <button onclick="openSuggestionPrompt()">Make a Suggestion</button>
+    <button onclick="openAccusationPrompt()">Make an Accusation</button>
+</div>
+
 
     <!-- Game board: 5x5 grid layout for rooms, hallways, and vacant spaces -->
     <div id="game-board">
@@ -311,6 +318,48 @@ body {
             });
         });
     }
+function openSuggestionPrompt() {
+    const suspect = prompt("Suggest a suspect:");
+    const weapon = prompt("Suggest a weapon:");
+    const room = prompt("Confirm the room you're in (must match your location):");
+
+    if (!suspect || !weapon || !room) {
+        alert("Suggestion canceled: all fields are required.");
+        return;
+    }
+
+    const message = JSON.stringify({
+        type: "suggest",
+        suspect: suspect.trim(),
+        weapon: weapon.trim(),
+        room: room.trim()
+    });
+
+    console.log("Sending suggestion:", message);
+    ws.send(message);
+}
+
+function openAccusationPrompt() {
+    const suspect = prompt("Accuse a suspect:");
+    const weapon = prompt("With what weapon?");
+    const room = prompt("In which room?");
+
+    if (!suspect || !weapon || !room) {
+        alert("Accusation canceled: all fields are required.");
+        return;
+    }
+
+    const message = JSON.stringify({
+        type: "accuse",
+        suspect: suspect.trim(),
+        weapon: weapon.trim(),
+        room: room.trim()
+    });
+
+    console.log("Sending accusation:", message);
+    ws.send(message);
+}
+
 
     // Initialize the game board when the DOM is fully loaded
     document.addEventListener('DOMContentLoaded', () => {
