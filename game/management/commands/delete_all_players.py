@@ -5,10 +5,12 @@ from asgiref.sync import async_to_sync
 from game.constants import ROOMS, HALLWAYS, WEAPONS
 
 class Command(BaseCommand):
-    help = 'Deletes all Player records ever associated with a specified game and resets players_list'
+    help = 'Deletes all Player records ever associated with a specified game and resets players_list on the game table.' \
+           'Username and password for login still remain.' \
+           'Usage: python manage.py delete_all_players --game_id <game_id>.'
 
     def add_arguments(self, parser):
-        parser.add_argument('game_id', type=int, help='The ID of the game to delete all players from')
+        parser.add_argument('--game_id', type=int, help='The ID of the game to delete all players from')
         parser.add_argument('--force', action='store_true', help='Skip confirmation prompt')
 
     def handle(self, *args, **options):

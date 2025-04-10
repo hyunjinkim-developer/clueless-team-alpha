@@ -12,6 +12,7 @@ from .models import *
 from .constants import *
 
 # For debugging purpose, disable in production
+DEBUG = True # Debug flag to enable/disable all logging
 DEBUG_AUTH = True # Debug flag for authentication logging
 DEBUG_ASSIGN_RANDOM_CHARACTER = True
 
@@ -46,9 +47,23 @@ def login_view(request):
                 else:
                     login(request, user)  # Log the user in
                     assign_random_character(game, user)  # Assign or reactivate character
+
+                    # Initialize case file on the first players' login
+                    if len(game.players_list) == 1 and not game.case_file: # To ensure this runs only for the first player and only if the case file isn't already set
+                        with transaction.atomic(): # To prevent race conditions if multiple players log in simultaneously
+                            game.case_file = {
+                                "suspect": random.choice(SUSPECTS),
+                                "weapon": random.choice(WEAPONS),
+                                "room": random.choice(ROOMS)
+                            }
+                            game.save()
+                            if DEBUG and DEBUG_AUTH:
+                                print(f"Case file initialized for Game 1: {game.case_file}")
+
                     success_message = f"Logged in successfully as {user.username}!"
 
-                    if DEBUG_AUTH:
+                    if DEBUG and DEBUG_AUTH:
+                        print(success_message)
                         # Log all players to server console after login
                         print(f"\n--- Player Login: {user.username} ---")
                         print("All players in Game 1:")
@@ -118,7 +133,7 @@ def logout_view(request):
             player.is_active = False
             player.save()  # Player remains in players_list and on board
 
-            if DEBUG_AUTH:
+            if DEBUG and DEBUG_AUTH:
                 # Log all players to server console after logout
                 print(f"\n--- Player Logout: {request.user.username} ---")
                 print("All players in Game 1:")
@@ -152,7 +167,7 @@ def assign_random_character(game, user):
         if not player.is_active:
             player.is_active = True
             player.save()  # Reactivate existing player
-            if DEBUG_ASSIGN_RANDOM_CHARACTER:
+            if DEBUG and DEBUG_ASSIGN_RANDOM_CHARACTER:
                 print(f"Reactivated player: {user.username} as {player.character}")
     except Player.DoesNotExist:
         # Use atomic transaction to prevent race conditions
@@ -181,7 +196,7 @@ def assign_random_character(game, user):
             if user.username not in game.players_list:
                 game.players_list.append(user.username)
                 game.save()
-            if DEBUG_ASSIGN_RANDOM_CHARACTER:
+            if DEBUG and DEBUG_ASSIGN_RANDOM_CHARACTER:
                 print(f"Assigned new player: {user.username} as {character}")
 
     # Broadcast updated game state to all clients

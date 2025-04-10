@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 
 class Command(BaseCommand):
-    help = 'Prints all usernames and their hashed passwords from the auth_user table'
+    help = 'Prints all usernames and their hashed passwords from the auth_user table(Signin user table).'
 
     def handle(self, *args, **options):
         # Fetch all users
