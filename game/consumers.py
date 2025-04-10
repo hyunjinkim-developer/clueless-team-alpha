@@ -149,22 +149,27 @@ class GameConsumer(AsyncWebsocketConsumer):
     #pick random list from either SUSPECTS, ROOMS, WEAPONS
     #pick random string from one of those lists
     @database_sync_to_async
-    def pickRandCard(self):
-        cardList = [SUSPECTS, ROOMS, WEAPONS]
+    def pickRandCard(self, cardList):
         cardListLen = len(cardList)
         randInt = random.randint(0, cardListLen)
         cardSubList = cardList[randInt]
         cardSubListLen = len(cardSubList)
         randCardInt = random.randint(0, cardSubListLen)
         randCard = cardSubList[randCardInt]
+        cardList.remove(randCard)
         return randCard
 
     # take given number of players in players_list
     # total number of cards = 21 - 3 cards in case file = 18
     # total number of cards / number of current players
+    #FIX THIS
     @database_sync_to_async
     def split_card_deck(self):
         players = []
+        listCards = []
+        listCards.extend(SUSPECTS)
+        listCards.extend(WEAPONS)
+        listCards.extend(ROOMS)
         game = self.get_game()  # Get Game instance
         gameFields = game._meta.get_fields()
         for field in gameFields:
@@ -178,4 +183,27 @@ class GameConsumer(AsyncWebsocketConsumer):
             for i in range(0,cardsPerPlayer):
                 randomCard = self.pickRandCard()
                 playerDeck.append(randomCard)
+            for j in range(0, remainingCards):
+                randomCard = self.pickRandCard()
+                playerDeck.append(randomCard)
         print(f"Player card hand: {playerDeck}")
+
+    # for each player's turn -> ask if player wants to
+    # move -> call handle_move
+    # make accusation -> call accusation function
+    # make suggestion -> call suggestion function
+    # input string moveMsg will be either 1 - move, 2 - accuse, 3 - suggest
+    async def handle_turn(self, moveMsg):
+        if moveMsg == '1':
+            await self.handle_move()
+        # if message_type == 'join_game':
+        #     await self.join_game(data)  # Handle join_game message (placeholder)
+        # elif message_type == 'move':
+        #     await self.handle_move(data)  # Handle player move request
+        # elif message_type == 'suggest':
+        #     pass  # Placeholder for suggestion logic
+        # elif message_type == 'accuse':
+        #     pass  # Placeholder for accusation logic
+        # else:
+        #     # Echo unrecognized messages back to the client
+        #     await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
