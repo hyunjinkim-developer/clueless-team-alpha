@@ -149,11 +149,12 @@ class GameConsumer(AsyncWebsocketConsumer):
     #pick random string from list containing SUSPECTS, ROOMS, and WEAPONS
     @database_sync_to_async
     def pickRandCard(self, inputCardList):
-        cardList = inputCardList
+        cardList = list(inputCardList)
         cardListLen = len(cardList)
         randInt = random.randint(0, cardListLen)
         randCard = cardList[randInt]
         cardList.remove(randCard)
+        print(f"Random card generated{randCard}")
         return randCard
 
     # take given number of players in players_list
