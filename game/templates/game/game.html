@@ -1,111 +1,312 @@
 <!DOCTYPE html>
 <html>
-<style>
-    /* Global reset for consistent sizing */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    <label class="mode-toggle">
+        <input type="checkbox" id="mode-switch">
+        <span class="slider"></span>
+        <span class="mode-label">🌙</span>
+    </label>
+    <style>
 
-    /* Define CSS variables for board sizing */
-    :root {
-    --board-size: min(90vmin, 90vmax); /* Auto-scale to fit the window */
-    --cell-size: calc(90vmin / 5); /* Makes sure cells fit inside board */
-    --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
-    --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
-}
+        .mode-toggle {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
 
-/* Body styling */
-body {
-    margin: auto;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
-    text-align: center;
-    overflow: hidden; /* Prevents scrolling */
-}
+        .mode-toggle input[type="checkbox"] {
+            display: none;
+        }
 
-/* Notification bar styling */
-#notification {
-    padding: 10px;
-    text-align: center;
-    width: 100%;
-    max-width: 90%;
-    background: white;
-    border-bottom: 2px solid black;
-}
+        .mode-toggle .slider {
+            width: 50px;
+            height: 25px;
+            background-color: #ccc;
+            border-radius: 50px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
 
-/* Game board layout */
-#game-board {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: repeat(5, minmax(0, 1fr));
-    gap: 1px;
-    background-color: black;
-    padding: 10px;
-    border: 5px solid black;
-    width: var(--board-size);
-    height: var(--board-size);
-    margin: auto; /* Ensures it remains centered */
-}
+        .mode-toggle .slider::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2.5px;
+            left: 2.5px;
+            transition: transform 0.3s ease;
+        }
 
-    /* Common styling for rooms, hallways, and vacant cells */
-    .room, .hallway, .vacant {
-        width: var(--cell-size);
-        height: var(--cell-size);
-        border: 2px solid #000;
-        text-align: center;
-        position: relative;
-        box-sizing: border-box;
-        cursor: pointer;
-    }
+        .mode-toggle input[type="checkbox"]:checked + .slider {
+            background-color: #333;
+        }
 
-    /* Hover effect for interactivity */
-    .room:hover, .hallway:hover { background-color: #e0e0e0; }
+        .mode-toggle input[type="checkbox"]:checked + .slider::before {
+            transform: translateX(25px);
+        }
 
-    /* Character name styling */
-    .room-characters span, .hallway-characters span {
-        white-space: nowrap;
-        display: block;
-        font-weight: bold;
-    }
+        .mode-label {
+            font-size: 1.2em;
+        }
 
-    /* Player-specific styling */
-    .player-me { color: red; }      /* My player in red */
-    .player-other { color: blue; }  /* Other players in blue */
+        /* Default dark mode colors (fallback) */
+        :root {
+            --bg-color: #0b0c1a;
+            --text-color: white;
+            --room-color: #ff0066;
+            --hallway-color: #0a74da;
+            --vacant-color: rgba(255, 255, 255, 0.1);
+        }
 
-    /* Room-specific styling */
-    .room { background-color: lightpink; }
-    .room-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: hotpink; }
-    .room-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
+        /* Light mode overrides */
+        body.light-mode {
+            --bg-color: #f4f4f4;
+            --text-color: #222;
+            --room-color: #ffe0eb;
+            --hallway-color: #d0e7ff;
+            --vacant-color: rgba(0, 0, 0, 0.05);
+        }
+        /* Global reset for consistent sizing */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+        /* Define CSS variables for board sizing */
+        :root {
+            --board-size: min(80vmin, 90vw, 90vh); /* Scales with the smaller of screen width or height */
+            --cell-size: calc(var(--board-size) / 5); /* Keep 5x5 grid proportionate */
 
-    /* Hallway-specific styling */
-    .hallway { background-color: lightcyan; }
-    .hallway-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: lightskyblue; }
-    .hallway-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
+            --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
+            --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
+        }
+    
+        /* Body styling */
+        body {
+            margin: auto;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            overflow-x: hidden;
+            overflow-y: auto;
 
-    /* Vacant cell styling */
-    .vacant { background-color: white; }
+            /* 🌌 Speckled stars background */
+            background-color: var(--bg-color); /* Deep space background */
+            color: var(--text-color);
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+                radial-gradient(1px 1px at 80% 20%, #fff, transparent),
+                radial-gradient(1px 1px at 50% 70%, #fff, transparent),
+                radial-gradient(1px 1px at 90% 80%, #fff, transparent),
+                radial-gradient(1px 1px at 30% 90%, #fff, transparent),
+                radial-gradient(1px 1px at 10% 10%, #fff, transparent),
+                radial-gradient(1px 1px at 60% 40%, #fff, transparent),
+                radial-gradient(1px 1px at 70% 60%, #fff, transparent);
+            background-size: 100% 100%;
+        }
+        
+        /* Notification bar styling */
+        #notification {
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 90%;
+            background: rgba(0, 0, 0, 0.6); /* Darker background */
+            border-top: 2px solid #ff0066; /* 🔥 Top pink border */
+            border-bottom: 2px solid #ff0066; /* Bottom pink border for balance */
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.5); /* Glowing effect */
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+        }
+    
+        /* Game board layout */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-rows: repeat(5, minmax(0, 1fr));
+            gap: 1px;
+            background-color: #0a0a23;
+            padding: 10px;
+            border: 5px solid #2c2c6c;
+            width: var(--board-size);
+            height: var(--board-size);
+            margin: auto;
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
+            max-width: 90vw;  /* Optional: hard cap on width */
+            max-height: 90vh; /* Optional: hard cap on height */
+        }
+    
+        /* Common styling for rooms, hallways, and vacant cells */
+        .room, .hallway, .vacant {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border: 2px solid #000;
+            text-align: center;
+            position: relative;
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+        }
 
-    /* Animation for character movement */
-    @keyframes pulseMove {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.7); }
-        100% { transform: scale(1); }
-    }
-    .pulse-move {
-        animation: pulseMove 0.5s ease-in-out;
-    }
-</style>
+        .room {
+            background-color: var(--room-color);
+        }
+
+        .hallway {
+            background-color: var(--hallway-color);
+        }
+
+        .vacant {
+            background-color: var(--vacant-color);
+        }
+    
+        /* Hover effect for interactivity */
+        .room:hover, .hallway:hover { 
+            background-color: rgb(255, 255, 255); 
+        }
+    
+        /* Room-specific styling */
+        .room { 
+            background-color: #ff0066; /* Hot pink */
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7); /* Glowing effect */
+        }
+        .room-name { 
+            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
+            font-weight: bold; 
+            padding: 5px 0; 
+            background-color: #ff0066; /* Darker pink */
+            color: white; 
+            text-shadow: 0 0 10px #ff0066; /* Glow effect */
+        }
+        .room-characters { 
+            font-size: var(--room-hallway-character-font-size); 
+            padding: 2px; 
+            overflow-y: auto; 
+            white-space: pre-line; 
+            max-height: calc(var(--cell-size) - 40px);
+        }
+    
+        /* Hallway-specific styling */
+        .hallway { 
+            background-color: #0a74da; /* Dark blue */
+            box-shadow: 0 0 10px rgba(10, 116, 218, 0.7); /* Glowing effect */
+        }
+        .hallway-name { 
+            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
+            font-weight: bold; 
+            padding: 5px 0; 
+            background-color: #0a74da; /* Darker blue */
+            color: white; 
+            text-shadow: 0 0 10px #0a74da; /* Glow effect */
+        }
+        .hallway-characters { 
+            font-size: var(--room-hallway-character-font-size); 
+            padding: 2px; 
+            overflow-y: auto; 
+            white-space: pre-line; 
+            max-height: calc(var(--cell-size) - 40px);
+        }
+    
+        /* Vacant cell styling */
+        .vacant { 
+            background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent */
+        }
+    
+        /* Animation for character movement */
+        @keyframes pulseMove {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.7); }
+            100% { transform: scale(1); }
+        }
+        .pulse-move {
+            animation: pulseMove 0.5s ease-in-out;
+        }
+    
+        /* Player-specific styling */
+        .player-me { color: #40001a; } /* Me - Hot pink */
+        .player-other { color: #00252a; } /* Other - Light cyan */
+       
+
+        /* Game title styling */
+        #game-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 0, 102, 0.8); /* Mysterious glowing effect */
+        }
+
+        .game-title {
+            color: #ff0066; /* Hot pink color for the game title */
+        }
+
+        .game-id {
+            color: rgba(255, 255, 255, 0.6); /* Light grey for the game ID */
+        }
+
+        /* User info styling with character */
+        .user-info h2 {
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+
+        .username, .character-name {
+            font-weight: bold;
+            color: #00bcd4; /* Cyan for username and character */
+            text-shadow: 0 0 5px rgba(0, 188, 212, 0.7);
+        }
+
+        /* Mysterious logout button with glowing effect */
+        .logout-btn {
+            background-color: #ff0066; /* Pink background */
+            color: white;
+            font-size: 1em;
+            font-weight: bold;
+            padding: 6px 14px;
+            border: none;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: transform 0.3s ease-in-out, background-color 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7); /* Glowing effect */
+        }
+
+        /* Hover effect for logout button */
+        .logout-btn:hover {
+            background-color: #e6006d; /* Darker pink on hover */
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 0, 102, 0.9); /* Intensified glow */
+        }
+
+        /* Slight adjustment to text for a more mysterious font look */
+        .username, .character-name {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+        
+    </style>
 <body>
     <!-- Notification section: Displays welcome message and logout button -->
     <div id="notification">
-        <h1>Welcome to Clue-Less Game {{ game_id }}</h1> <!-- Game ID from template -->
-        <h2>You are logged in as Username: {{ username }} as Character: {{ character }}.
-            <button onclick="window.location.href='{% url 'logout' %}'">Logout</button></h2> <!-- Current user and logout button -->
-        <div id="game-state"></div> <!-- Placeholder for future game state display -->
+        <!-- Game title and mysterious tone styling -->
+        <h1 id="game-title">Welcome to <span class="game-title">Clue-Less Game</span> - <span class="game-id">{{ game_id }}</span></h1>
+        
+        <!-- User information with mysterious touch -->
+        <div class="user-info" style="font-size: 0.6em;">
+            <h2 id="user-status">
+                You are logged in as <span class="username">{{ username }}</span> as <span class="character-name">{{ character }}</span>.
+            </h2>
+            <button onclick="window.location.href='{% url 'logout' %}'" class="logout-btn">Logout</button> <!-- Updated logout button -->
+        </div>
+    </div>
+        <div id="game-state">
+            <!-- Placeholder for future game state display -->
+        </div>
     </div>
 
     <!-- Game board: 5x5 grid layout for rooms, hallways, and vacant spaces -->
@@ -319,5 +520,27 @@ body {
         addClickListeners(); // Set up click events for movement
     });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('mode-switch');
+            const body = document.body;
+        
+            // Load theme from local storage
+            if (localStorage.getItem('theme') === 'light') {
+                body.classList.add('light-mode');
+                toggle.checked = true;
+            }
+        
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+        </script>
 </body>
 </html>
