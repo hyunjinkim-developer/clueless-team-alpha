@@ -227,3 +227,84 @@ class GameConsumer(AsyncWebsocketConsumer):
             'hallways': HALLWAYS,
             'weapons': WEAPONS
         }
+    
+    #Assign random card
+    #pick random string from list containing SUSPECTS, ROOMS, and WEAPONS
+    @database_sync_to_async
+    def pickRandCard(self, inputCardList):
+        cardList = list(inputCardList)
+        cardListLen = len(cardList)
+        randInt = random.randint(0, cardListLen)
+        randCard = cardList[randInt]
+        cardList.remove(randCard)
+        print(f"Random card generated{randCard}")
+        return randCard
+
+    # take given number of players in players_list
+    # total number of cards = 21 - 3 cards in case file = 18
+    # total number of cards / number of current players
+    @database_sync_to_async
+    def split_card_deck(self):
+        players = []
+        listCards = []
+        listCards.extend(SUSPECTS)
+        listCards.extend(WEAPONS)
+        listCards.extend(ROOMS)
+        game = self.get_game()  # Get Game instance
+        gameFields = game._meta.get_fields()
+        for field in gameFields:
+            if (field == "players_list"):
+                players = field
+        numPlayers = len(players)
+        cardsPerPlayer = 18/numPlayers
+        remainingCards = 18-(numPlayers*cardsPerPlayer)
+        for player in players:
+            playerDeck = player.hand
+            for i in range(0,cardsPerPlayer):
+                randomCard = self.pickRandCard()
+                playerDeck.append(randomCard)
+        for player in players:
+            if remainingCards != 0:
+                for j in range(0, remainingCards):
+                    randomCard = self.pickRandCard()
+                playerDeck.append(randomCard)
+        print(f"Player card hand: {playerDeck}")
+
+    # for each player's turn -> ask if player wants to
+    # move -> call handle_move
+    # make accusation -> call accusation function
+    # make suggestion -> call suggestion function
+    # input string moveMsg will be either 1 - move, 2 - accuse, 3 - suggest
+    async def handle_turn(self, moveMsg):
+        if moveMsg == '1':
+            await self.handle_move()
+        # if message_type == 'join_game':
+        #     await self.join_game(data)  # Handle join_game message (placeholder)
+        # elif message_type == 'move':
+        #     await self.handle_move(data)  # Handle player move request
+        # elif message_type == 'suggest':
+        #     pass  # Placeholder for suggestion logic
+        # elif message_type == 'accuse':
+        #     pass  # Placeholder for accusation logic
+        # else:
+        #     # Echo unrecognized messages back to the client
+        #     await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
+
+    # function to start game
+    # call playerStart function to set all players to their assigned starting locations
+    # check which player is Miss Scarlet and set that player's turn attribute to True
+    # call handle_turn function?
+
+    # function to move all players to starting locations
+    # for each character in list
+    # set current location to be location in STARTING LOCATIONS table
+    async def playerStart(self):
+        playerStartLocs = STARTING_LOCATIONS
+        game = await self.get_game()  # Get Game instance
+        listPlayers = game.players_list
+        for player in listPlayers:
+            for character, location in playerStartLocs:
+                if (player.character == character):
+                    player.location = location
+                    await database_sync_to_async(player.save)()  # Save changes asynchronously
+        print(f"Player {player.username} starting at {player.location}")
