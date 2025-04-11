@@ -1,95 +1,192 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clue-Less Login</title>
+    <title>Clue-Less Game Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+
     <style>
-        /* General Styling */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f4f4f4;
-        }
+        :root {
+        --bg-color: #f0f2f5;
+        --text-color: #333;
+        --container-bg: #fff;
+        --input-bg: #fff;
+        --input-border: #ccc;
+        --button-bg: #007BFF;
+        --button-hover: #0056b3;
+        --link-color: #007BFF;
+        --error-color: #e74c3c;
+        --success-color: #2ecc71;
+    }
 
-        /* Container */
-        .container {
-            width: 100%;
-            max-width: 400px;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
+    body.dark {
+        --bg-color: #121212;
+        --container-bg: #1e1e1e;
+        --text-color: #e0e0e0;
+        --input-bg: #2a2a2a;
+        --input-border: #555;
+        --button-bg: #1a73e8;
+        --button-hover: #135abe;
+        --link-color: #4dabf7;
+        background: #121212 url('https://www.transparenttextures.com/patterns/asfalt-light.png');
+        background-repeat: repeat;
+    }
 
-        /* Headings */
-        h1 {
-            color: #333;
-            margin-bottom: 15px;
-        }
+    body.light {
+    background: linear-gradient(135deg, #f0f2f5, #e0e0e0); /* Subtle gradient for light mode */
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
+    }
 
-        /* Error & Success Messages */
-        .error { color: red; font-weight: bold; }
-        .success { color: green; font-weight: bold; }
+    body.light::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.7); /* Light overlay */
+        z-index: 0;
+    }
 
-        /* Form Fields */
-        form p {
-            margin-bottom: 12px;
-            text-align: left;
-        }
+    .container {
+        position: relative;
+        z-index: 1;
+    }
 
-        input[type="text"], 
-        input[type="password"], 
-        input[type="email"] {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-        }
+    body {
+    font-family: 'Source Sans Pro', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: var(--bg-color) url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+    background-repeat: repeat;
+    color: var(--text-color);
+    transition: background 0.3s, color 0.3s;
+}
 
-        /* Buttons */
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
+    .container {
+        width: 100%;
+        max-width: 400px;
+        background: var(--container-bg);
+        padding: 30px 25px;
+        border-radius: 10px;
+        box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        position: relative;
+    }
 
-        button:hover {
-            background: #0056b3;
-        }
+    h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+}
 
-        /* Links */
-        .toggle-link {
-            display: block;
-            margin-top: 10px;
-            text-decoration: none;
-            color: #007BFF;
-            font-weight: bold;
-        }
+    .error { 
+        color: var(--error-color); 
+        font-weight: bold; 
+        margin-bottom: 10px;
+    }
 
-        .toggle-link:hover {
-            text-decoration: underline;
-        }
+    .success { 
+        color: var(--success-color); 
+        font-weight: bold; 
+        margin-bottom: 10px;
+    }
 
+    form p {
+        margin-bottom: 15px;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    input[type="text"], 
+    input[type="password"], 
+    input[type="email"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid var(--input-border);
+        border-radius: 5px;
+        font-size: 14px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        box-sizing: border-box;
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        background: var(--button-bg);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 15px;
+    }
+
+    button:hover {
+        background: var(--button-hover);
+    }
+
+    .toggle-link {
+        display: block;
+        margin-top: 15px;
+        text-decoration: none;
+        color: var(--link-color);
+        font-weight: bold;
+    }
+
+    .toggle-link:hover {
+        text-decoration: underline;
+    }
+
+    #toggle-theme {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: var(--text-color);
+    }
+
+    form, input, button, .toggle-link, .theme-toggle {
+    font-family: 'Source Sans Pro', sans-serif;
+}
+    .theme-toggle {
+    margin-top: 20px;
+    padding: 10px 16px;
+    width: 100%;
+    font-size: 15px;
+    font-weight: bold;
+    border: 2px solid var(--text-color); /* This is key */
+    background-color: transparent;
+    color: var(--text-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.theme-toggle:hover {
+    background-color: var(--text-color);
+    color: var(--container-bg);
+}
     </style>
 </head>
 <body>
 
     <div class="container">
         {% if not show_signup %}
-            <h1>Clue-Less Login</h1>
+            <h1>Clue-Less Game Login</h1>
             {% if error_message %}
                 <p class="error">{{ error_message }}</p>
             {% endif %}
@@ -103,7 +200,7 @@
                 <a href="?signup" class="toggle-link">Sign Up</a>
             </form>
         {% else %}
-            <h1>Clue-Less Sign Up</h1>
+            <h1>Clue-Less Game Sign Up</h1>
             {% if error_message %}
                 <p class="error">{{ error_message }}</p>
             {% endif %}
@@ -117,7 +214,28 @@
                 <a href="?login" class="toggle-link">Back to Login</a>
             </form>
         {% endif %}
+        <button id="toggle-theme" class="theme-toggle">Dark Mode</button>
     </div>
-
+    <script>
+    const toggleBtn = document.getElementById('toggle-theme');
+    
+    function updateToggleLabel() {
+        const isDark = document.body.classList.contains('dark');
+        toggleBtn.textContent = isDark ? '🌞 Light Mode' : '🌙 Dark Mode';
+    }
+    
+    toggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        updateToggleLabel();
+    });
+    
+    window.addEventListener('DOMContentLoaded', () => {
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark');
+        }
+        updateToggleLabel();
+    });
+</script>
 </body>
 </html>
