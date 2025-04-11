@@ -8,7 +8,7 @@
     :root {
     --board-size: min(90vmin, 90vmax); /* Auto-scale to fit the window */
     --cell-size: calc(90vmin / 5); /* Makes sure cells fit inside board */
-    --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
+    --room-hallway-name-font-size: calc(var(--cell-size) * 0.15); 
     --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
 }
 
@@ -98,6 +98,67 @@ body {
     .pulse-move {
         animation: pulseMove 0.5s ease-in-out;
     }
+
+    /* Accusations button styling */
+    #accusations-button-container {
+        position: fixed;
+        bottom: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    #accusations-button {
+        background-color: #000000;
+        color: white;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #accusations-button:hover {
+        background-color: #f30404;
+    }
+    /* Accusations form styling */
+    #accusations-form-container {
+        position: fixed;
+        bottom: 80px;  /* Slightly above the button */
+        width: 100%;
+        background-color: white;
+        padding: 20px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        max-width: 500px;
+        margin: auto;
+        text-align: left;
+    }
+
+    #accusations-form label {
+        display: block;
+        margin: 10px 0 5px;
+    }
+
+    #accusations-form select,
+    #accusations-form button {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    #accusations-form button {
+        background-color: #ff6347;
+        color: white;
+        cursor: pointer;
+    }
+
+    #accusations-form button:hover {
+        background-color: #ff6347;
+    }
 </style>
 <body>
     <!-- Notification section: Displays welcome message and logout button -->
@@ -146,6 +207,56 @@ body {
         <div id="Kitchen" class="room"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
     </div>
 
+   <!-- Accusations Button -->
+<div id="accusations-button-container">
+    <button id="accusations-button">Accusations</button>
+</div>
+
+<!-- Accusations Form (Initially Hidden) -->
+<div id="accusations-form-container" style="display: none;">
+    <form id="accusations-form">
+        <h3>Make an Accusation</h3>
+        <label for="suspect">Suspect:</label>
+        <select id="suspect" name="suspect">
+            <option value="Miss Scarlet">Miss Scarlet</option>
+            <option value="Col. Mustard">Col. Mustard</option>
+            <option value="Professor Plum">Professor Plum</option>
+            <option value="Mrs. Peacock">Mrs. Peacock</option>
+            <option value="Reverend Green">Reverend Green</option>
+            <option value="Mrs. White">Mrs. White</option>
+        </select>
+        <br>
+
+        <label for="weapon">Weapon:</label>
+        <select id="weapon" name="weapon">
+            <option value="Knife">Knife</option>
+            <option value="Revolver">Revolver</option>
+            <option value="Lead Pipe">Lead Pipe</option>
+            <option value="Wrench">Wrench</option>
+            <option value="Candlestick">Candlestick</option>
+            <option value="Rope">Rope</option>
+            <option value="Poison">Poison</option>
+            <option value="Axe">Axe</option>
+        </select>
+        <br>
+
+        <label for="room">Room:</label>
+        <select id="room" name="room">
+            <option value="Study">Study</option>
+            <option value="Hall">Hall</option>
+            <option value="Lounge">Lounge</option>
+            <option value="Library">Library</option>
+            <option value="Billiard Room">Billiard Room</option>
+            <option value="Dining Room">Dining Room</option>
+            <option value="Conservatory">Conservatory</option>
+            <option value="Ballroom">Ballroom</option>
+            <option value="Kitchen">Kitchen</option>
+        </select>
+        <br>
+
+        <button type="submit">Submit Accusation</button>
+    </form>
+</div>
     <!-- Serialize initial players data from views.py for JavaScript use -->
     {{ players|json_script:"players-data" }}
     {% if request.user.is_authenticated %}
@@ -317,6 +428,39 @@ body {
         console.log('Initial players data:', playersData); // Debug log for initial data
         updateGameBoard({ players: playersData }); // Initial update with server-rendered data
         addClickListeners(); // Set up click events for movement
+    });
+
+    // Show the accusations form when the button is clicked
+    document.getElementById('accusations-button').addEventListener('click', function() {
+        const formContainer = document.getElementById('accusations-form-container');
+        formContainer.style.display = 'block';  // Show the form
+    });
+
+    // Handle form submission
+    document.getElementById('accusations-form').addEventListener('submit', function(event) {
+        event.preventDefault();  // Prevent the form from submitting the traditional way
+
+        const suspect = document.getElementById('suspect').value;
+        const weapon = document.getElementById('weapon').value;
+        const room = document.getElementById('room').value;
+		
+		//Send accusation via websocket 
+		const message = {
+			type: "accuse",
+			suspect: suspect, 
+			weapon: weapon, 
+			room: room 
+			};
+
+        // Here you can handle the accusation (e.g., send data to the server via WebSocket or an AJAX request)
+        console.log("Sending accusation:", message);
+		ws.send(JSON.stringify(message));
+
+        // Optionally, hide the form after submission or show a confirmation message
+        alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+
+        // Hide the form again
+        document.getElementById('accusations-form-container').style.display = 'none';
     });
     </script>
 </body>

@@ -87,11 +87,26 @@ class GameConsumer(AsyncWebsocketConsumer):
             'type': 'game_update',
             'game_state': game_state
         }))
-
+    """
     # Async wrapper for synchronous database query to get Game instance
     @database_sync_to_async
     def get_game(self):
         return Game.objects.get(id=self.game_id)  # Fetch Game by ID
+     """
+     
+     # Async wrapper for synchronous database query to get Game instance
+    @database_sync_to_async
+    def get_game(self):
+        game = Game.objects.get(id=self.game_id)
+
+        #Hardcode case file for testing — must match dropdown values in UI
+        game.case_file = {
+            "suspect": "Miss Scarlet",
+            "weapon": "Lead Pipe",
+            "room": "Ballroom"
+        }
+
+        return game
 
     # Async wrapper for synchronous database query to get Player instance
     @database_sync_to_async
@@ -172,6 +187,10 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         # Compare accusation to case file
         accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
+        print("[DEBUG] Accusation received:", accusation)
+        print("[DEBUG] Actual case file:", game.case_file)
+        print("[DEBUG] Comparison result:", accusation == game.case_file)
+
         if accusation == game.case_file:
             # Correct accusation: End the game
             game.is_active = False
@@ -215,10 +234,18 @@ class GameConsumer(AsyncWebsocketConsumer):
     # Sync with views.py
     @database_sync_to_async
     def get_game_state(self):
-        game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
-        # Fetch all players (active or inactive) with all fields
-        fields = [f.name for f in Player._meta.fields]  # Dynamically get all field names from Player model
-        players = list(game.players.values(*fields)) # Fetch all fields for all players
+        game = Game.objects.get(id=self.game_id)
+
+    # Hardcode case file for testing
+        game.case_file = {
+            "suspect": "Miss Scarlet",
+            "weapon": "Candlestick",
+            "room": "Library"
+        }
+
+        fields = [f.name for f in Player._meta.fields]
+        players = list(game.players.values(*fields))
+
         return {
             'case_file': game.case_file if not game.is_active else None,
             'game_is_active': game.is_active,
