@@ -206,3 +206,22 @@ class GameConsumer(AsyncWebsocketConsumer):
         # else:
         #     # Echo unrecognized messages back to the client
         #     await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
+
+    # function to start game
+    # call playerStart function to set all players to their assigned starting locations
+    # check which player is Miss Scarlet and set that player's turn attribute to True
+    # call handle_turn function?
+
+    # function to move all players to starting locations
+    # for each character in list
+    # set current location to be location in STARTING LOCATIONS table
+    async def playerStart(self):
+        playerStartLocs = STARTING_LOCATIONS
+        game = await self.get_game()  # Get Game instance
+        listPlayers = game.players_list
+        for player in listPlayers:
+            for character, location in playerStartLocs:
+                if (player.character == character):
+                    player.location = location
+                    await database_sync_to_async(player.save)()  # Save changes asynchronously
+        print(f"Player {player.username} starting at {player.location}")
