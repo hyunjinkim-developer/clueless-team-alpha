@@ -257,6 +257,7 @@ body {
         <br>
 
         <button type="submit">Submit Accusation</button>
+        <button type="button" id="cancel-accusation">Cancel</button> <!-- New Cancel Button -->
     </form>
 </div>
     <!-- Serialize initial players data from views.py for JavaScript use -->
@@ -476,24 +477,28 @@ body {
         const suspect = document.getElementById('suspect').value;
         const weapon = document.getElementById('weapon').value;
         const room = document.getElementById('room').value;
-		
-		//Send accusation via websocket 
-		const message = {
-			type: "accuse",
-			suspect: suspect, 
-			weapon: weapon, 
-			room: room 
-			};
 
-        // Here you can handle the accusation (e.g., send data to the server via WebSocket or an AJAX request)
+        // Send accusation via WebSocket
+        const message = {
+            type: "accuse",
+            suspect: suspect,
+            weapon: weapon,
+            room: room
+        };
+
         console.log("Sending accusation:", message);
-		ws.send(JSON.stringify(message));
+        ws.send(JSON.stringify(message));
 
         // Optionally, hide the form after submission or show a confirmation message
         alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
 
         // Hide the form again
         document.getElementById('accusations-form-container').style.display = 'none';
+    });
+
+    // Handle cancel button click
+    document.getElementById('cancel-accusation').addEventListener('click', function() {
+        document.getElementById('accusations-form-container').style.display = 'none'; // Hide the form
     });
     </script>
 </body>
