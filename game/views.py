@@ -106,9 +106,14 @@ def login_view(request):
 
 # View to render the game page
 def game_view(request, game_id):
-    # Redirect to login if user isn’t authenticated
     if not request.user.is_authenticated:
         return redirect('login')
+
+    game = Game.objects.get(id=game_id)
+    
+    # If game hasn't started, redirect to start page
+    if not game.begun:
+        return redirect('start_game', game_id=game_id)
 
     # Get the game instance
     game = Game.objects.get(id=game_id)
@@ -122,6 +127,25 @@ def game_view(request, game_id):
         'players': game_state['players'],
         'username': request.user.username,
         'character': player.character
+    })
+
+def start_game(request, game_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    game = Game.objects.get(id=game_id)
+    
+    # If game already started, redirect to game view
+    if game.begun:
+        return redirect('game_view', game_id=game_id)
+
+    is_first_user = game.players_list[0] == request.user.username if game.players_list else False
+
+    return render(request, 'game/start_game.html', {
+        'game_id': game_id,
+        'is_first_user': is_first_user,
+        'players_list': game.players_list,
+        'player_count': len(game.players_list)
     })
 
 # View to handle logout
@@ -198,18 +222,6 @@ def assign_random_character(game, user):
             if user.username not in game.players_list:
                 game.players_list.append(user.username)
                 game.save()
-            
-            # Check if Miss Scarlet is in the game
-            if not game.begun:
-                if character == "Miss Scarlet":
-                    player.turn = True
-                    player.save()
-                elif not game.players.filter(character="Miss Scarlet").exists():
-                    # If Miss Scarlet is not present, set turn to True for the user at index 0 in players_list
-                    first_player_username = game.players_list[0]
-                    first_player = game.players.get(username=first_player_username)
-                    first_player.turn = True
-                    first_player.save()
             
             if DEBUG and DEBUG_ASSIGN_RANDOM_CHARACTER:
                 print(f"Assigned new player: {user.username} as {character}")

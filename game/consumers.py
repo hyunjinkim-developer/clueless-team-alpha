@@ -1,6 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 import json
+import random
 from .models import *
 from .constants import *
 
@@ -60,7 +61,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)  # Parse JSON message
         message_type = data.get('type')  # Extract message type
 
-        if message_type == 'join_game':
+        if message_type == 'start_game':
+            await self.handle_start_game()
+        elif message_type == 'join_game':
             await self.join_game(data)  # Handle join_game message (placeholder)
         elif message_type == 'move':
             Game.begun = True  # Set game status to begun
@@ -72,6 +75,100 @@ class GameConsumer(AsyncWebsocketConsumer):
         else:
             # Echo unrecognized messages back to the client
             await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
+
+    async def handle_start_game(self):
+        game = await self.get_game()
+        
+        # Verify sender is first player
+        if self.scope['user'].username != game.players_list[0]:
+            return
+        
+        # Initialize case file and distribute cards
+        await self.initialize_game(game)
+        
+        # Mark game as started
+        game.begun = True
+        await database_sync_to_async(game.save)()
+
+        # Notify all clients that game has started
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'game_started'
+            }
+        )
+
+    async def game_started(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'game_started'
+        }))
+
+    async def initialize_game(self, game):
+        # Randomly select case file cards
+        case_suspect = random.choice(SUSPECTS)
+        case_weapon = random.choice(WEAPONS)
+        case_room = random.choice(ROOMS)
+        # Set case file
+        game.case_file = {
+            'suspect': case_suspect,
+            'weapon': case_weapon,
+            'room': case_room
+        }
+        print(f"Case file set: {game.case_file}")
+
+        # Get all players
+        players = await database_sync_to_async(list)(game.players.all())
+
+        # Check if Miss Scarlet is in the game
+        miss_scarlet_player = next((player for player in players if player.character == "Miss Scarlet"), None)
+        if miss_scarlet_player:
+            miss_scarlet_player.turn = True
+            await database_sync_to_async(miss_scarlet_player.save)()
+        else:
+            # If Miss Scarlet is not present, set turn to True for the first player in players_list
+            first_player_username = game.players_list[0]
+            first_player = next(player for player in players if player.username == first_player_username)
+            first_player.turn = True
+            await database_sync_to_async(first_player.save)()
+            
+        # Generate hands for each player
+        await self.generate_hands(game, players)
+        
+        # Save the game state
+        await database_sync_to_async(game.save)()
+        
+    async def generate_hands(self, game, players):
+        # Get all cards excluding the case file
+        all_cards = SUSPECTS + WEAPONS + ROOMS
+        all_cards.remove(game.case_file['suspect'])
+        all_cards.remove(game.case_file['weapon'])
+        all_cards.remove(game.case_file['room'])
+
+        # Shuffle the remaining cards
+        random.shuffle(all_cards)
+
+        # Create a mapping of username to player object for quick lookup
+        player_map = {player.username: player for player in players}
+
+        # Find the starting player (the one with turn = True)
+        starting_player = next(player for player in players if player.turn)
+        starting_index = game.players_list.index(starting_player.username)
+
+        # Distribute cards in a round-robin fashion
+        num_players = len(game.players_list)
+        for i, card in enumerate(all_cards):
+            # Determine the current player index
+            current_index = (starting_index + i) % num_players
+            current_player_username = game.players_list[current_index]
+            current_player = player_map[current_player_username]
+
+            # Append the card to the player's hand
+            current_player.hand.append(card)
+
+        # Save all players' updated hands
+        for player in players:
+            await database_sync_to_async(player.save)()
+            
 
     async def game_update(self, event):
         """Handle game_update events broadcast to the group"""
@@ -115,6 +212,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         game = await self.get_game()  # Get Game instance
         player = await self.get_player(self.scope['user'].username)  # Get current Player
         from_location = player.location  # Store current location
+        
+        # print(f"Case file set: {game.case_file}") 
+        print(f"Player {player.username} holds: {player.hand}")  # Debugging: print player hand
 
         # Check if it’s this player’s turn
         if not player.turn:

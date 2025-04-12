@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #000;
+            border-radius: 10px;
+        }
+        #start-button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .player-list {
+            margin: 20px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Clue-Less Game {{ game_id }}</h1>
+        {% if is_first_user %}
+            <h2>Welcome Game Host!</h2>
+            <p>Current Players ({{ player_count }}/6):</p>
+            <div class="player-list">
+                {% for player in players_list %}
+                    <div>{{ player }}</div>
+                {% endfor %}
+            </div>
+            <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
+                Start Game
+            </button>
+        {% else %}
+            <h2>Waiting for host to start the game...</h2>
+            <p>Current Players ({{ player_count }}/6):</p>
+            <div class="player-list">
+                {% for player in players_list %}
+                    <div>{{ player }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const gameId = {{ game_id }};
+        const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'game_started') {
+                window.location.href = '/game/' + gameId + '/';
+            } else if (data.type === 'player_joined') {
+                location.reload(); // Refresh to update player list
+            }
+        };
+
+        document.getElementById('start-button').onclick = function() {
+            ws.send(JSON.stringify({
+                'type': 'start_game',
+                'game_id': gameId
+            }));
+        };
+    </script>
+</body>
+</html>
