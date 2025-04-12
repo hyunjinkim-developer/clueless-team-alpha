@@ -66,7 +66,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             Game.begun = True  # Set game status to begun
             await self.handle_move(data)  # Handle player move request
         elif message_type == 'suggest':
-            pass  # Placeholder for suggestion logic
+            await self.handle_suggest  # Placeholder for suggestion logic
         elif message_type == 'accuse':
             await self.handle_accuse(data)
         else:
@@ -238,6 +238,70 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'game_state': game_state
                 }
             )
+            
+    async def handle_suggest(self, data):
+        suspect = data.get('suspect')
+        weapon = data.get('weapon')
+        room = data.get('room')
+
+        if not all([suspect, weapon, room]):
+            await self.send(text_data=json.dumps({'error': 'Incomplete suggestion (suspect, weapon, or room missing)'}))
+            return
+
+        suggesting_player = await self.get_player(self.scope['user'].username)
+        if not suggesting_player.is_active:
+            await self.send(text_data=json.dumps({'error': 'Eliminated players cannot make suggestions'}))
+            return
+
+        if suggesting_player.location != room:
+            await self.send(text_data=json.dumps({'error': f'You must be in the {room} to suggest it'}))
+            return
+
+    game = await self.get_game()
+    players = await database_sync_to_async(list)(Player.objects.filter(game=game, is_active=True))
+    
+    # Check all other players’ hands
+    suggested_cards = {suspect, weapon, room}
+    disproved_by = None
+    matching_card = None
+
+    for player in players:
+        if player.username == suggesting_player.username:
+            continue
+
+        player_cards = set(player.cards) if isinstance(player.cards, list) else set(json.loads(player.cards))
+        intersection = suggested_cards & player_cards
+        if intersection:
+            disproved_by = player.username
+            matching_card = list(intersection)[0]  # Return first matching card
+            break
+
+    if disproved_by:
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'suggestion_result',
+                'suggestion': {'suspect': suspect, 'weapon': weapon, 'room': room},
+                'disproved_by': disproved_by,
+                'card_shown': matching_card,
+                'from': suggesting_player.username
+            }
+        )
+        print(f"Suggestion disproved by {disproved_by} showing {matching_card}")
+    else:
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'suggestion_result',
+                'suggestion': {'suspect': suspect, 'weapon': weapon, 'room': room},
+                'disproved_by': None,
+                'card_shown': None,
+                'from': suggesting_player.username
+            }
+        )
+        print("No player could disprove the suggestion.")
+
+
 
 
     # Async wrapper for synchronous database query to get game state
