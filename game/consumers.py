@@ -3,6 +3,7 @@ from channels.db import database_sync_to_async
 import json
 from .models import *
 from .constants import *
+import random
 
 # For debugging purpose, disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
@@ -243,6 +244,8 @@ class GameConsumer(AsyncWebsocketConsumer):
     # take given number of players in players_list
     # total number of cards = 21 - 3 cards in case file = 18
     # total number of cards / number of current players
+    # REMOVE CASE FILE CARDS
+    # card assignment should follow turn order
     @database_sync_to_async
     def split_card_deck(self):
         players = []
