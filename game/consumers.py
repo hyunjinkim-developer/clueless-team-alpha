@@ -138,36 +138,47 @@ class GameConsumer(AsyncWebsocketConsumer):
         await database_sync_to_async(game.save)()
         
     async def generate_hands(self, game, players):
-        # Get all cards excluding the case file
-        all_cards = SUSPECTS + WEAPONS + ROOMS
-        all_cards.remove(game.case_file['suspect'])
-        all_cards.remove(game.case_file['weapon'])
-        all_cards.remove(game.case_file['room'])
+        # Combined list of suspects, weapons, and rooms
+        combined_list = SUSPECTS + WEAPONS + ROOMS
+
+        # Exclude the case file cards
+        remaining_cards = [item for item in combined_list if item not in game.case_file.values()]
 
         # Shuffle the remaining cards
-        random.shuffle(all_cards)
+        shuffled_cards = remaining_cards[:]
+        random.shuffle(shuffled_cards)
 
-        # Create a mapping of username to player object for quick lookup
-        player_map = {player.username: player for player in players}
+        # Find the characters who have been assigned to players
+        character_in_play = [player.character for player in players if player.character is not None]
 
-        # Find the starting player (the one with turn = True)
-        starting_player = next(player for player in players if player.turn)
-        starting_index = game.players_list.index(starting_player.username)
+        if len(character_in_play) == 0:
+            raise ValueError("Please select characters before starting the game.")
 
-        # Distribute cards in a round-robin fashion
-        num_players = len(game.players_list)
-        for i, card in enumerate(all_cards):
-            # Determine the current player index
-            current_index = (starting_index + i) % num_players
-            current_player_username = game.players_list[current_index]
-            current_player = player_map[current_player_username]
+        # Find the player whose turn is True
+        starting_player = next((player.character for player in players if player.turn), None)
+        if not starting_player:
+            raise ValueError("No starting player found. Ensure a player has their turn set to True.")
 
-            # Append the card to the player's hand
-            current_player.hand.append(card)
+        # Create an empty hand for each player in play
+        hands = {character: [] for character in character_in_play}
 
-        # Save all players' updated hands
+        # List of players in play
+        player_list = character_in_play
+
+        # Start dealing from the player with turn=True
+        starting_index = player_list.index(starting_player)
+
+        # Distribute cards round-robin starting with the correct player
+        current_player_index = starting_index
+        while shuffled_cards:
+            hands[player_list[current_player_index]].append(shuffled_cards.pop(0))
+            current_player_index = (current_player_index + 1) % len(player_list)
+
+        # Update player hands with the distributed cards
         for player in players:
-            await database_sync_to_async(player.save)()
+            if player.character in hands:
+                player.hand = hands[player.character]
+                await database_sync_to_async(player.save)()
             
 
     async def game_update(self, event):
