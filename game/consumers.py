@@ -103,8 +103,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         # Placeholder for join_game logic if needed later
         pass
 
-    async def handle_move(self, data):
-        """Handle a player's move request without turn restriction."""
+    async def handle_move(self, data): 
+        """Handle a player's move request with turn restriction."""
         to_location = data.get('location')  # Extract target location from message
         if not to_location:
             # Send error if no location provided
@@ -116,20 +116,48 @@ class GameConsumer(AsyncWebsocketConsumer):
         from_location = player.location  # Store current location
 
         # Check if it’s this player’s turn
+        if not player.turn:
+            await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
+            return
 
-        # Check if the target location is the same as the current location
+        # Check if the target location is the same as the current location  
         if to_location == from_location:
             await self.send(text_data=json.dumps({'error': f'You are already at {to_location}'}))
             return
 
         # Validate move: Check if to_location is adjacent to from_location
         valid_moves = ADJACENCY.get(from_location, [])  # Get list of valid adjacent locations
+        # Check if valid_moves contains a hallway that is currently occupied by a different player
+        if to_location in valid_moves:
+            players = await database_sync_to_async(list)(Player.objects.filter(game=game))
+            for p in players:
+                # Check if location is a hallway
+                if p.location in HALLWAYS and p.location == to_location:
+                    if p.location == to_location and p.username != player.username:
+                        await self.send(text_data=json.dumps({'error': f'Cannot move to {to_location}, it is occupied by {p.username}'}))
+                        return
+        
         if to_location not in valid_moves:
             await self.send(
                 text_data=json.dumps({'error': f'Invalid move: {to_location} is not adjacent to {from_location}'}))
             return
 
         player.location = to_location  # Update player’s location
+        players = await database_sync_to_async(list)(Player.objects.filter(game=game))  # Fetch all players
+        total_player = len(players)  # Get total number of players
+        try:
+            player_index = players.index(player) # Get index of the current player
+        except ValueError:
+            player_index = None
+        
+        # Update turn for the next player
+        if player_index is not None:
+            player.turn = False  # End current player's turn
+            next_player_index = (player_index + 1) % total_player  # Calculate next player index
+            next_player = players[next_player_index]  # Get next player
+            next_player.turn = True  # Set next player’s turn to True
+            await database_sync_to_async(next_player.save)()  # Save changes asynchronously
+        
         await database_sync_to_async(player.save)()  # Save changes asynchronously
 
         # Broadcast updated game state to all clients
