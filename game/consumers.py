@@ -63,6 +63,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         if message_type == 'join_game':
             await self.join_game(data)  # Handle join_game message (placeholder)
         elif message_type == 'move':
+            Game.begun = True  # Set game status to begun
             await self.handle_move(data)  # Handle player move request
         elif message_type == 'suggest':
             pass  # Placeholder for suggestion logic

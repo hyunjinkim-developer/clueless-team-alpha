@@ -191,12 +191,26 @@ def assign_random_character(game, user):
                 character=character,
                 location=STARTING_LOCATIONS[character],  # Set initial location from constants
                 is_active=True,
-                turn=character == "Miss Scarlet" and game.players.filter(is_active=True).count() == 0  # First player gets turn
+                turn=False
             )
+            
             # Add user ever joined the game
             if user.username not in game.players_list:
                 game.players_list.append(user.username)
                 game.save()
+            
+            # Check if Miss Scarlet is in the game
+            if not game.begun:
+                if character == "Miss Scarlet":
+                    player.turn = True
+                    player.save()
+                elif not game.players.filter(character="Miss Scarlet").exists():
+                    # If Miss Scarlet is not present, set turn to True for the user at index 0 in players_list
+                    first_player_username = game.players_list[0]
+                    first_player = game.players.get(username=first_player_username)
+                    first_player.turn = True
+                    first_player.save()
+            
             if DEBUG and DEBUG_ASSIGN_RANDOM_CHARACTER:
                 print(f"Assigned new player: {user.username} as {character}")
 

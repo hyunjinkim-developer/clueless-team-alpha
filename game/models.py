@@ -6,6 +6,7 @@ class Game(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     players_list = models.JSONField(default=list) # Username ever joined the game
+    begun = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Game {self.id} - {'Active' if self.is_active else 'Inactive'}/ Players ever joined: {self.players_list}"

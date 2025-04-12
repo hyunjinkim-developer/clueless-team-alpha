@@ -166,6 +166,8 @@ body {
         <h1>Welcome to Clue-Less Game {{ game_id }}</h1> <!-- Game ID from template -->
         <h2>You are logged in as Username: {{ username }} as Character: {{ character }}.
             <button onclick="window.location.href='{% url 'logout' %}'">Logout</button></h2> <!-- Current user and logout button -->
+        <br>
+        <h2 id="current-turn">Waiting for the first turn...</h2> <!-- New header for current turn -->
         <div id="game-state"></div> <!-- Placeholder for future game state display -->
     </div>
 
@@ -330,6 +332,37 @@ body {
 
         // Update previous state for the next comparison
         previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
+    }
+
+    function updateGameBoard(gameState) {
+        console.log('Updating game board with state:', gameState);
+        const players = gameState.players || [];
+        console.log('Players array:', players);
+    
+        // Determine the current player whose turn is True
+        const currentTurnPlayer = players.find(player => player.turn);
+        const currentTurnElement = document.getElementById('current-turn');
+        if (currentTurnPlayer) {
+            currentTurnElement.textContent = `It's ${currentTurnPlayer.username}'s turn (${currentTurnPlayer.character})!`;
+        } else {
+            currentTurnElement.textContent = 'Waiting for the next turn...';
+        }
+    
+        // Determine which player moved by comparing with previous state
+        let movedPlayer = null;
+        if (previousGameState) {
+            const prevPlayers = previousGameState.players || [];
+            movedPlayer = players.find(player => {
+                const prevPlayer = prevPlayers.find(p => p.username === player.username);
+                return prevPlayer && prevPlayer.location !== player.location;
+            })?.username;
+        }
+    
+        updateRoomCharacters(players, movedPlayer);
+        updateHallwayCharacters(players, movedPlayer);
+        currentPlayer = players.find(player => player.username === currentUsername) || null;
+    
+        previousGameState = JSON.parse(JSON.stringify(gameState));
     }
 
     // Update room characters with animation only for the moved player,
