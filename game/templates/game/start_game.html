@@ -1,38 +1,155 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --container-bg: #fff;
+            --button-bg: #007BFF;
+            --button-hover: #0056b3;
+            --link-color: #007BFF;
+        }
+
+        body.dark {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --button-bg: #1a73e8;
+            --button-hover: #135abe;
+            --link-color: #4dabf7;
+        }
+
         body {
+            font-family: 'Source Sans Pro', sans-serif;
+            margin: 0;
+            padding: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
-            font-family: Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: background 0.3s, color 0.3s;
         }
+
         .container {
-            text-align: center;
-            padding: 20px;
-            border: 2px solid #000;
+            width: 100%;
+            max-width: 400px;
+            background: var(--container-bg);
+            padding: 30px 25px;
             border-radius: 10px;
+            box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
-        #start-button {
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
+
+        h1 {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 32px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow:
+                0 0 5px #ff00cc,
+                0 0 10px #ff00cc,
+                0 0 20px #ff00cc,
+                0 0 40px #ff00cc,
+                0 0 80px #ff00cc;
         }
+        @keyframes neonFlicker {
+            0%, 100% { text-shadow:
+                0 0 5px #ff00cc,
+                0 0 10px #ff00cc,
+                0 0 20px #ff00cc,
+                0 0 40px #ff00cc,
+                0 0 80px #ff00cc; }
+            50% { text-shadow:
+                0 0 3px #ff66cc,
+                0 0 6px #ff66cc,
+                0 0 12px #ff66cc,
+                0 0 24px #ff66cc,
+                0 0 48px #ff66cc; }
+        }
+
         .player-list {
             margin: 20px 0;
             text-align: left;
         }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background: var(--button-hover);
+        }
+
+        .mode-toggle {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-toggle input[type="checkbox"] {
+            display: none;
+        }
+
+        .mode-toggle .slider {
+            width: 50px;
+            height: 25px;
+            background-color: #ccc;
+            border-radius: 50px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .mode-toggle .slider::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2.5px;
+            left: 2.5px;
+            transition: transform 0.3s ease;
+        }
+
+        .mode-toggle input[type="checkbox"]:checked + .slider {
+            background-color: #333;
+        }
+
+        .mode-toggle input[type="checkbox"]:checked + .slider::before {
+            transform: translateX(25px);
+        }
+
+        .mode-label {
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
+    <label class="mode-toggle">
+        <input id="mode-switch" type="checkbox" />
+        <span class="slider"></span>
+        <span class="mode-label">🌙</span>
+    </label>
     <div class="container">
         <h1>Clue-Less Game {{ game_id }}</h1>
         {% if is_first_user %}
@@ -56,8 +173,28 @@
             </div>
         {% endif %}
     </div>
-
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('mode-switch');
+            const body = document.body;
+
+            // Load theme from local storage
+            if (localStorage.getItem('theme') === 'dark') {
+                body.classList.add('dark');
+                toggle.checked = true;
+            }
+
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    body.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    body.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        });
+
         const gameId = {{ game_id }};
         const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
 
