@@ -336,7 +336,17 @@ class GameConsumer(AsyncWebsocketConsumer):
         
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
-        players = await database_sync_to_async(list)(Player.objects.filter(game=game, is_active=True))
+        players = await database_sync_to_async(list)(Player.objects.filter(game=game))  # Fetch all players
+        
+        # Check if it’s this player’s turn
+        if not player.turn:
+            await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
+            return
+        
+        # Check if player has moved
+        if not player.moved and not player.suggested:
+            await self.send(text_data=json.dumps({'error': 'You must move before making a suggestion unless you were moved to the room'}))
+            return
         
         # Check if player has already made an accusation
         if player.accused:
@@ -356,46 +366,74 @@ class GameConsumer(AsyncWebsocketConsumer):
         
         print(f"Player {player.username} suggests: {suspect}, {weapon}, {room}")  # Debugging: print suggestion
     
-        # Check all other players’ hands
-        suggested_cards = {suspect, weapon, room}
-        disproved_by = None
-        matching_card = None
-
-        for player in players:
-            if player.username == player.username:
-                continue
-
-            player_cards = set(player.cards) if isinstance(player.cards, list) else set(json.loads(player.cards))
-            intersection = suggested_cards & player_cards
-            if intersection:
-                disproved_by = player.username
-                matching_card = list(intersection)[0]  # Return first matching card
-                break
-
-        if disproved_by:
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'suggestion_result',
-                    'suggestion': {'suspect': suspect, 'weapon': weapon, 'room': room},
-                    'disproved_by': disproved_by,
-                    'card_shown': matching_card,
-                    'from': player.username
-                }
-            )
-            print(f"Suggestion disproved by {disproved_by} showing {matching_card}")
+        # Move suspect to the room if they are not already
+        suspect_player = None
+        for p in players:
+            if p.character == suspect:
+                suspect_player = p
+        
+        if suspect_player is None:
+            # If the suspect does not have any of the cards, check other players
+            for p in players:
+                if p.username != player.username:
+                    if suspect in p.hand or weapon in p.hand or room in p.hand:
+                        print(f"Player {p.username} shows a card to {player.username}")
+                        await self.send(text_data=json.dumps({
+                            'message': f"{p.username} shows you a card from their hand."
+                        }))
+                        await self.handle_end_turn(data)  # End the turn after suggestion
+                        break
+            else:
+                # If no one has the cards, send a message to the player
+                print(f"No one has the cards {suspect}, {weapon}, or {room}")
+                await self.send(text_data=json.dumps({
+                    'message': "No one has the cards you suggested."
+                }))
         else:
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'suggestion_result',
-                    'suggestion': {'suspect': suspect, 'weapon': weapon, 'room': room},
-                    'disproved_by': None,
-                    'card_shown': None,
-                    'from': player.username
-                }
-            )
-            print("No player could disprove the suggestion.")
+            if suspect_player and suspect_player.location != room:
+                suspect_player.location = room  # Move suspect to the suggested room
+                suspect_player.suggested = True  # Mark suspect as suggested
+                await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
+            else:
+                suspect_player.suggested = True  # Mark suspect as suggested
+                await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
+            
+            # Check other players’ hands starting with the suspect
+            if suspect in suspect_player.hand or weapon in suspect_player.hand or room in suspect_player.hand:
+                # If the suspect has any of the cards, they show it to the player
+                print(f"Player {suspect} shows a card to {player.username}")
+                await self.send(text_data=json.dumps({
+                    'message': f"{suspect} shows you a card from their hand."
+                }))
+                await self.handle_end_turn(data)  # End the turn after suggestion
+            else:
+                # If the suspect does not have any of the cards, check other players
+                for p in players:
+                    if p.username != player.username and p.username != suspect:
+                        if suspect in p.hand or weapon in p.hand or room in p.hand:
+                            print(f"Player {p.username} shows a card to {player.username}")
+                            await self.send(text_data=json.dumps({
+                                'message': f"{p.username} shows you a card from their hand."
+                            }))
+                            await self.handle_end_turn(data)  # End the turn after suggestion
+                            break
+                else:
+                    # If no one has the cards, send a message to the player
+                    print(f"No one has the cards {suspect}, {weapon}, or {room}")
+                    await self.send(text_data=json.dumps({
+                        'message': "No one has the cards you suggested."
+                    }))
+                    
+        # Broadcast updated game state
+        game_state = await self.get_game_state()
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'game_update',
+                'game_state': game_state
+            }
+        )
+        
 
     async def handle_end_turn(self, data):
         """Handle end of turn for the current player."""
