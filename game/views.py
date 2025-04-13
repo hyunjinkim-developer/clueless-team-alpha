@@ -49,18 +49,6 @@ def login_view(request):
                     login(request, user)  # Log the user in
                     assign_random_character(game, user)  # Assign or reactivate character
 
-                    # Initialize case file on the first players' login
-                    if len(game.players_list) == 1 and not game.case_file: # To ensure this runs only for the first player and only if the case file isn't already set
-                        with transaction.atomic(): # To prevent race conditions if multiple players log in simultaneously
-                            game.case_file = {
-                                "suspect": random.choice(SUSPECTS),
-                                "weapon": random.choice(WEAPONS),
-                                "room": random.choice(ROOMS)
-                            }
-                            game.save()
-                            if DEBUG and DEBUG_AUTH:
-                                print(f"Case file initialized for Game 1: {game.case_file}")
-
                     success_message = f"Logged in successfully as {user.username}!"
 
                     if DEBUG and DEBUG_AUTH:
@@ -215,7 +203,11 @@ def assign_random_character(game, user):
                 character=character,
                 location=STARTING_LOCATIONS[character],  # Set initial location from constants
                 is_active=True,
-                turn=False
+                turn=False,
+                hand=[],
+                moved=False,
+                accused=False,  
+                suggested=False
             )
             
             # Add user ever joined the game

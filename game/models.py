@@ -19,6 +19,9 @@ class Player(models.Model):
     is_active = models.BooleanField(default=True)
     turn = models.BooleanField(default=False)
     hand = models.JSONField(default=list)
+    moved = models.BooleanField(default=False)  # Indicates if the player has moved
+    accused = models.BooleanField(default=False)  # Indicates if the player has accused someone
+    suggested = models.BooleanField(default=False)  # Indicates if the player has been moved to the suggestion room
 
     def __str__(self):
         return f"{self.username} as {self.character} in Game {self.game.id}"
