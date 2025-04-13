@@ -180,6 +180,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             if player.character in hands:
                 player.hand = hands[player.character]
                 await database_sync_to_async(player.save)()
+                print(f"Player {player.character}'s hand: {player.hand}")
             
 
     async def game_update(self, event):
@@ -293,6 +294,10 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         # Compare accusation to case file
         accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
+        print("[DEBUG] Accusation received:", accusation)
+        print("[DEBUG] Actual case file:", game.case_file)
+        print("[DEBUG] Comparison result:", accusation == game.case_file)
+        
         if accusation == game.case_file:
             # Correct accusation: End the game
             game.is_active = False
@@ -377,9 +382,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             for p in players:
                 if p.username != player.username:
                     if suspect in p.hand or weapon in p.hand or room in p.hand:
-                        print(f"Player {p.username} shows a card to {player.username}")
+                        disproved_card = next(card for card in [suspect, weapon, room] if card in p.hand)
+                        print(f"Player {p.username} disproves the suggestion with the card: {disproved_card}")
                         await self.send(text_data=json.dumps({
-                            'message': f"{p.username} shows you a card from their hand."
+                            'message': f"{p.username} shows you the card: {disproved_card}."
                         }))
                         await self.handle_end_turn(data)  # End the turn after suggestion
                         break
@@ -401,9 +407,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             # Check other players’ hands starting with the suspect
             if suspect in suspect_player.hand or weapon in suspect_player.hand or room in suspect_player.hand:
                 # If the suspect has any of the cards, they show it to the player
-                print(f"Player {suspect} shows a card to {player.username}")
+                disproved_card = next(card for card in [suspect, weapon, room] if card in suspect_player.hand)
+                print(f"Player {suspect} disproves the suggestion with the card: {disproved_card}")
                 await self.send(text_data=json.dumps({
-                    'message': f"{suspect} shows you a card from their hand."
+                    'message': f"{suspect} shows you the card: {disproved_card}."
                 }))
                 await self.handle_end_turn(data)  # End the turn after suggestion
             else:
@@ -411,9 +418,10 @@ class GameConsumer(AsyncWebsocketConsumer):
                 for p in players:
                     if p.username != player.username and p.username != suspect:
                         if suspect in p.hand or weapon in p.hand or room in p.hand:
-                            print(f"Player {p.username} shows a card to {player.username}")
+                            disproved_card = next(card for card in [suspect, weapon, room] if card in p.hand)
+                            print(f"Player {p.username} disproves the suggestion with the card: {disproved_card}")
                             await self.send(text_data=json.dumps({
-                                'message': f"{p.username} shows you a card from their hand."
+                                'message': f"{p.username} shows you the card: {disproved_card}."
                             }))
                             await self.handle_end_turn(data)  # End the turn after suggestion
                             break
