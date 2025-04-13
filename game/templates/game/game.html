@@ -100,6 +100,66 @@
         animation: pulseMove 0.5s ease-in-out;
     }
 
+	#suggestion-button-container {
+		position: fixed;
+		bottom: 80px;
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+	#suggestion-button {
+		background-color: darkgreen;
+		color: white;
+		padding: 10px 20px;
+		font-size: 16px;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+		margin-bottom: 10px;
+		box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+	}
+	#suggestion-button:hover {
+		background-color: green;
+	}
+
+	#suggestion-form-container {
+		position: fixed;
+		bottom: 160px;  /* Place above accusation form */
+		width: 100%;
+		background-color: white;
+		padding: 20px;
+		box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+		border-radius: 10px;
+		max-width: 500px;
+		margin: auto;
+		text-align: left;
+		display: none;  /* Start hidden */
+	}
+
+	#suggestion-form label {
+		display: block;
+		margin: 10px 0 5px;
+	}
+
+	#suggestion-form select,
+	#suggestion-form button {
+		width: 100%;
+		padding: 10px;
+		margin-bottom: 10px;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+	}
+
+	#suggestion-form button {
+		background-color: darkgreen;
+		color: white;
+		cursor: pointer;
+	}
+
+	#suggestion-form button:hover {
+		background-color: green;
+	}
+
     /* Accusations button styling */
     #accusations-button-container {
         position: fixed;
@@ -583,6 +643,42 @@
         </form>
     </div>
 
+    <!-- Suggestion Button -->
+    <div id="suggestion-button-container">
+        <button id="suggestion-button">Make a Suggestion</button>
+    </div>
+
+    <!-- Suggestion Form (Initially Hidden) -->
+    <div id="suggestion-form-container" style="display: none;">
+        <form id="suggestion-form">
+            <h3>Make a Suggestion</h3>
+            <label for="suggest-suspect">Suspect:</label>
+            <select id="suggest-suspect" name="suggest-suspect">
+                <option value="Miss Scarlet">Miss Scarlet</option>
+                <option value="Col. Mustard">Col. Mustard</option>
+                <option value="Professor Plum">Professor Plum</option>
+                <option value="Mrs. Peacock">Mrs. Peacock</option>
+                <option value="Reverend Green">Reverend Green</option>
+                <option value="Mrs. White">Mrs. White</option>
+            </select>
+
+            <label for="suggest-weapon">Weapon:</label>
+            <select id="suggest-weapon" name="suggest-weapon">
+                <option value="Knife">Knife</option>
+                <option value="Revolver">Revolver</option>
+                <option value="Lead Pipe">Lead Pipe</option>
+                <option value="Wrench">Wrench</option>
+                <option value="Candlestick">Candlestick</option>
+                <option value="Rope">Rope</option>
+                <option value="Poison">Poison</option>
+                <option value="Axe">Axe</option>
+            </select>
+
+            <button type="submit">Submit Suggestion</button>
+            <button type="button" id="cancel-suggestion">Cancel</button>
+        </form>
+    </div>
+
     <!-- Serialize initial players data from views.py for JavaScript use -->
     {{ players|json_script:"players-data" }}
     {% if request.user.is_authenticated %}
@@ -823,6 +919,43 @@
     document.getElementById('cancel-accusation').addEventListener('click', function() {
         document.getElementById('accusations-form-container').style.display = 'none'; // Hide the form
     });
+
+    // Show the suggestion form when the button is clicked
+	document.getElementById('suggestion-button').addEventListener('click', function() {
+		document.getElementById('suggestion-form-container').style.display = 'block';
+	});
+
+	// Handle Suggestion form submission
+	document.getElementById('suggestion-form').addEventListener('submit', function(event) {
+		event.preventDefault();
+
+		const suspect = document.getElementById('suggest-suspect').value;
+		const weapon = document.getElementById('suggest-weapon').value;
+		const room = currentPlayer ? currentPlayer.location : null; // Use current room as the suggested room
+
+		if (!room) {
+			alert("You must be in a room to make a suggestion.");
+			return;
+		}
+
+		const message = {
+			type: "suggest",
+			suspect: suspect,
+			weapon: weapon,
+			room: room
+		};
+
+		console.log("Sending suggestion:", message);
+		ws.send(JSON.stringify(message));
+
+		alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+		document.getElementById('suggestion-form-container').style.display = 'none';
+	});
+
+	// Cancel Suggestion Form
+	document.getElementById('cancel-suggestion').addEventListener('click', function() {
+		document.getElementById('suggestion-form-container').style.display = 'none';
+	});
 
     document.addEventListener('DOMContentLoaded', () => {
         const toggle = document.getElementById('mode-switch');
