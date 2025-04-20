@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <style>
     /* Global reset for consistent sizing */
@@ -162,15 +163,16 @@ body {
     /* Accusations button styling */
     #accusations-button-container {
         position: fixed;
-        bottom: 20px;
+        bottom: 5px;
+
         width: 100%;
         display: flex;
         justify-content: center;
     }
 
     #accusations-button {
-        background-color: #000000;
-        color: white;
+        background-color: #fbe59d;
+        color: rgb(0, 0, 0);
         padding: 10px 20px;
         font-size: 16px;
         border: none;
@@ -180,7 +182,7 @@ body {
     }
 
     #accusations-button:hover {
-        background-color: #f30404;
+        background-color: #fffefa;
     }
     /* Accusations form styling */
     #accusations-form-container {
@@ -231,133 +233,419 @@ body {
         <div id="game-state"></div> <!-- Placeholder for future game state display -->
     </div>
 
-    <!-- Game board: 5x5 grid layout for rooms, hallways, and vacant spaces -->
-    <div id="game-board">
-        <!-- Row 1 -->
-        <div id="Study" class="room"><div class="room-name">Study</div><div class="room-characters" id="Study-characters"></div></div> <!-- Room with name and character area -->
-        <div id="Hallway1" class="hallway"><div class="hallway-name">Hallway1</div><div class="hallway-characters" id="Hallway1-characters"></div></div> <!-- Hallway connecting Study and Hall -->
-        <div id="Hall" class="room"><div class="room-name">Hall</div><div class="room-characters" id="Hall-characters"></div></div>
-        <div id="Hallway2" class="hallway"><div class="hallway-name">Hallway2</div><div class="hallway-characters" id="Hallway2-characters"></div></div> <!-- Hallway connecting Hall and Lounge -->
-        <div id="Lounge" class="room"><div class="room-name">Lounge</div><div class="room-characters" id="Lounge-characters"></div></div>
+        .mode-toggle {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
 
-        <!-- Row 2 -->
-        <div id="Hallway3" class="hallway"><div class="hallway-name">Hallway3</div><div class="hallway-characters" id="Hallway3-characters"></div></div> <!-- Hallway connecting Study and Library -->
-        <div id="Vacant1" class="vacant"></div> <!-- Empty space -->
-        <div id="Hallway4" class="hallway"><div class="hallway-name">Hallway4</div><div class="hallway-characters" id="Hallway4-characters"></div></div> <!-- Hallway connecting Hall and Billiard Room -->
-        <div id="Vacant2" class="vacant"></div>
-        <div id="Hallway5" class="hallway"><div class="hallway-name">Hallway5</div><div class="hallway-characters" id="Hallway5-characters"></div></div> <!-- Hallway connecting Lounge and Dining Room -->
+        .mode-toggle input[type="checkbox"] {
+            display: none;
+        }
 
-        <!-- Row 3 -->
-        <div id="Library" class="room"><div class="room-name">Library</div><div class="room-characters" id="Library-characters"></div></div>
-        <div id="Hallway6" class="hallway"><div class="hallway-name">Hallway6</div><div class="hallway-characters" id="Hallway6-characters"></div></div> <!-- Hallway connecting Library and Billiard Room -->
-        <div id="BilliardRoom" class="room"><div class="room-name">Billiard Room</div><div class="room-characters" id="BilliardRoom-characters"></div></div>
-        <div id="Hallway7" class="hallway"><div class="hallway-name">Hallway7</div><div class="hallway-characters" id="Hallway7-characters"></div></div> <!-- Hallway connecting Billiard Room and Dining Room -->
-        <div id="DiningRoom" class="room"><div class="room-name">Dining Room</div><div class="room-characters" id="DiningRoom-characters"></div></div>
+        .mode-toggle .slider {
+            width: 50px;
+            height: 25px;
+            background-color: #ccc;
+            border-radius: 50px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
 
-        <!-- Row 4 -->
-        <div id="Hallway8" class="hallway"><div class="hallway-name">Hallway8</div><div class="hallway-characters" id="Hallway8-characters"></div></div> <!-- Hallway connecting Library and Conservatory -->
-        <div id="Vacant3" class="vacant"></div>
-        <div id="Hallway9" class="hallway"><div class="hallway-name">Hallway9</div><div class="hallway-characters" id="Hallway9-characters"></div></div> <!-- Hallway connecting Billiard Room and Ballroom -->
-        <div id="Vacant4" class="vacant"></div>
-        <div id="Hallway10" class="hallway"><div class="hallway-name">Hallway10</div><div class="hallway-characters" id="Hallway10-characters"></div></div> <!-- Hallway connecting Dining Room and Kitchen -->
+        .mode-toggle .slider::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2.5px;
+            left: 2.5px;
+            transition: transform 0.3s ease;
+        }
 
-        <!-- Row 5 -->
-        <div id="Conservatory" class="room"><div class="room-name">Conservatory</div><div class="room-characters" id="Conservatory-characters"></div></div>
-        <div id="Hallway11" class="hallway"><div class="hallway-name">Hallway11</div><div class="hallway-characters" id="Hallway11-characters"></div></div> <!-- Hallway connecting Conservatory and Ballroom -->
-        <div id="Ballroom" class="room"><div class="room-name">Ballroom</div><div class="room-characters" id="Ballroom-characters"></div></div>
-        <div id="Hallway12" class="hallway"><div class="hallway-name">Hallway12</div><div class="hallway-characters" id="Hallway12-characters"></div></div> <!-- Hallway connecting Ballroom and Kitchen -->
-        <div id="Kitchen" class="room"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
+        .mode-toggle input[type="checkbox"]:checked + .slider {
+            background-color: #333;
+        }
+
+        .mode-toggle input[type="checkbox"]:checked + .slider::before {
+            transform: translateX(25px);
+        }
+
+        .mode-label {
+            font-size: 1.2em;
+        }
+
+        /* Default dark mode colors (fallback) */
+        :root {
+            --bg-color: #0b0c1a;
+            --text-color: white;
+            --room-color: #ff0066;
+            --hallway-color: #0a74da;
+            --vacant-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Light mode overrides */
+        body.light-mode {
+            --bg-color: #f4f4f4;
+            --text-color: #222;
+            --room-color: #ffe0eb;
+            --hallway-color: #d0e7ff;
+            --vacant-color: rgba(0, 0, 0, 0.05);
+        }
+        /* Global reset for consistent sizing */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+        /* Define CSS variables for board sizing */
+        :root {
+            --board-size: min(80vmin, 90vw, 90vh); /* Scales with the smaller of screen width or height */
+            --cell-size: calc(var(--board-size) / 5); /* Keep 5x5 grid proportionate */
+
+            --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
+            --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
+        }
+    
+        /* Body styling */
+        body {
+            margin: auto;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            overflow-x: hidden;
+            overflow-y: auto;
+
+            /* 🌌 Speckled stars background */
+            background-color: var(--bg-color); /* Deep space background */
+            color: var(--text-color);
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+                radial-gradient(1px 1px at 80% 20%, #fff, transparent),
+                radial-gradient(1px 1px at 50% 70%, #fff, transparent),
+                radial-gradient(1px 1px at 90% 80%, #fff, transparent),
+                radial-gradient(1px 1px at 30% 90%, #fff, transparent),
+                radial-gradient(1px 1px at 10% 10%, #fff, transparent),
+                radial-gradient(1px 1px at 60% 40%, #fff, transparent),
+                radial-gradient(1px 1px at 70% 60%, #fff, transparent);
+            background-size: 100% 100%;
+        }
+        
+        /* Notification bar styling */
+        #notification {
+            padding: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 90%;
+            background: rgba(0, 0, 0, 0.6); /* Darker background */
+            border-top: 2px solid #ff0066; /* 🔥 Top pink border */
+            border-bottom: 2px solid #ff0066; /* Bottom pink border for balance */
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.5); /* Glowing effect */
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+        }
+    
+        /* Game board layout */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-rows: repeat(5, minmax(0, 1fr));
+            gap: 1px;
+            background-color: #0a0a23;
+            padding: 10px;
+            border: 5px solid #2c2c6c;
+            width: var(--board-size);
+            height: var(--board-size);
+            margin: auto;
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
+            max-width: 90vw;  /* Optional: hard cap on width */
+            max-height: 90vh; /* Optional: hard cap on height */
+        }
+    
+        /* Common styling for rooms, hallways, and vacant cells */
+        .room, .hallway, .vacant {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border: 2px solid #000;
+            text-align: center;
+            position: relative;
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .room {
+            background-color: var(--room-color);
+        }
+
+        .hallway {
+            background-color: var(--hallway-color);
+        }
+
+        .vacant {
+            background-color: var(--vacant-color);
+        }
+    
+        /* Hover effect for interactivity */
+        .room:hover, .hallway:hover { 
+            background-color: rgb(255, 255, 255); 
+        }
+    
+        /* Room-specific styling */
+        .room { 
+            background-color: #ff0066; /* Hot pink */
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7); /* Glowing effect */
+        }
+        .room-name { 
+            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
+            font-weight: bold; 
+            padding: 5px 0; 
+            background-color: #ff0066; /* Darker pink */
+            color: white; 
+            text-shadow: 0 0 10px #ff0066; /* Glow effect */
+        }
+        .room-characters { 
+            font-size: var(--room-hallway-character-font-size); 
+            padding: 2px; 
+            overflow-y: auto; 
+            white-space: pre-line; 
+            max-height: calc(var(--cell-size) - 40px);
+        }
+    
+        /* Hallway-specific styling */
+        .hallway { 
+            background-color: #0a74da; /* Dark blue */
+            box-shadow: 0 0 10px rgba(10, 116, 218, 0.7); /* Glowing effect */
+        }
+        .hallway-name { 
+            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
+            font-weight: bold; 
+            padding: 5px 0; 
+            background-color: #0a74da; /* Darker blue */
+            color: white; 
+            text-shadow: 0 0 10px #0a74da; /* Glow effect */
+        }
+        .hallway-characters { 
+            font-size: var(--room-hallway-character-font-size); 
+            padding: 2px; 
+            overflow-y: auto; 
+            white-space: pre-line; 
+            max-height: calc(var(--cell-size) - 40px);
+        }
+    
+        /* Vacant cell styling */
+        .vacant { 
+            background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent */
+        }
+    
+        /* Animation for character movement */
+        @keyframes pulseMove {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.7); }
+            100% { transform: scale(1); }
+        }
+        .pulse-move {
+            animation: pulseMove 0.5s ease-in-out;
+        }
+    
+        /* Player-specific styling */
+        .player-me { color: #40001a; } /* Me - Hot pink */
+        .player-other { color: #00252a; } /* Other - Light cyan */
+       
+
+        /* Game title styling */
+        #game-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 0, 102, 0.8); /* Mysterious glowing effect */
+        }
+
+        .game-title {
+            color: #ff0066; /* Hot pink color for the game title */
+        }
+
+        .game-id {
+            color: rgba(255, 255, 255, 0.6); /* Light grey for the game ID */
+        }
+
+        /* User info styling with character */
+        .user-info h2 {
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+
+        .username, .character-name {
+            font-weight: bold;
+            color: #00bcd4; /* Cyan for username and character */
+            text-shadow: 0 0 5px rgba(0, 188, 212, 0.7);
+        }
+
+        /* Mysterious logout button with glowing effect */
+        .logout-btn {
+            background-color: #ff0066; /* Pink background */
+            color: white;
+            font-size: 1em;
+            font-weight: bold;
+            padding: 6px 14px;
+            border: none;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: transform 0.3s ease-in-out, background-color 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7); /* Glowing effect */
+        }
+
+        /* Hover effect for logout button */
+        .logout-btn:hover {
+            background-color: #e6006d; /* Darker pink on hover */
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 0, 102, 0.9); /* Intensified glow */
+        }
+
+        /* Slight adjustment to text for a more mysterious font look */
+        .username, .character-name {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+        
+        #accusations-button-container {
+            margin: 20px 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            position: relative; /* instead of fixed */
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff0066;
+            cursor: pointer;
+            z-index: 1001;
+            transition: transform 0.2s ease;
+        }
+
+        .close-button:hover {
+            transform: scale(1.3);
+            color: #e6006d;
+        }
+    </style>
+
+<body><label class="mode-toggle">
+<input id="mode-switch" type="checkbox"/>
+<span class="slider"></span>
+<span class="mode-label">🌙</span>
+</label>
+<!-- Notification section: Displays welcome message and logout button -->
+<div id="notification">
+    <h1 id="game-title">
+        Welcome to <span class="game-title">Clue-Less Game</span> - 
+        <span class="game-id">{{ game_id }}</span>
+    </h1>
+
+    <div class="user-info" style="font-size: 0.6em;">
+        <h2 id="user-status">
+            You are logged in as <span class="username">{{ username }}</span> 
+            as <span class="character-name">{{ character }}</span>.
+        </h2>
+        <button onclick="window.location.href='{% url 'logout' %}'" class="logout-btn">Logout</button>
     </div>
-
-
-	<!-- Suggestion Button -->
-<div id="suggestion-button-container">
-    <button id="suggestion-button">Make a Suggestion</button>
 </div>
 
-<!-- Suggestion Form (Initially Hidden) -->
-<div id="suggestion-form-container" style="display: none;">
-    <form id="suggestion-form">
-        <h3>Make a Suggestion</h3>
-        <label for="suggest-suspect">Suspect:</label>
-        <select id="suggest-suspect" name="suggest-suspect">
-            <option value="Miss Scarlet">Miss Scarlet</option>
-            <option value="Col. Mustard">Col. Mustard</option>
-            <option value="Professor Plum">Professor Plum</option>
-            <option value="Mrs. Peacock">Mrs. Peacock</option>
-            <option value="Reverend Green">Reverend Green</option>
-            <option value="Mrs. White">Mrs. White</option>
-        </select>
-
-        <label for="suggest-weapon">Weapon:</label>
-        <select id="suggest-weapon" name="suggest-weapon">
-            <option value="Knife">Knife</option>
-            <option value="Revolver">Revolver</option>
-            <option value="Lead Pipe">Lead Pipe</option>
-            <option value="Wrench">Wrench</option>
-            <option value="Candlestick">Candlestick</option>
-            <option value="Rope">Rope</option>
-            <option value="Poison">Poison</option>
-            <option value="Axe">Axe</option>
-        </select>
-
-        <button type="submit">Submit Suggestion</button>
-        <button type="button" id="cancel-suggestion">Cancel</button>
-    </form>
-</div>
-
-   <!-- Accusations Button -->
 <div id="accusations-button-container">
     <button id="accusations-button">Accusations</button>
+</div>
+<!-- Game board: 5x5 grid layout for rooms, hallways, and vacant spaces -->
+<div id="game-board">
+<!-- Row 1 -->
+<div class="room" id="Study"><div class="room-name">Study</div><div class="room-characters" id="Study-characters"></div></div> <!-- Room with name and character area -->
+<div class="hallway" id="Hallway1"><div class="hallway-name">Hallway1</div><div class="hallway-characters" id="Hallway1-characters"></div></div> <!-- Hallway connecting Study and Hall -->
+<div class="room" id="Hall"><div class="room-name">Hall</div><div class="room-characters" id="Hall-characters"></div></div>
+<div class="hallway" id="Hallway2"><div class="hallway-name">Hallway2</div><div class="hallway-characters" id="Hallway2-characters"></div></div> <!-- Hallway connecting Hall and Lounge -->
+<div class="room" id="Lounge"><div class="room-name">Lounge</div><div class="room-characters" id="Lounge-characters"></div></div>
+<!-- Row 2 -->
+<div class="hallway" id="Hallway3"><div class="hallway-name">Hallway3</div><div class="hallway-characters" id="Hallway3-characters"></div></div> <!-- Hallway connecting Study and Library -->
+<div class="vacant" id="Vacant1"></div> <!-- Empty space -->
+<div class="hallway" id="Hallway4"><div class="hallway-name">Hallway4</div><div class="hallway-characters" id="Hallway4-characters"></div></div> <!-- Hallway connecting Hall and Billiard Room -->
+<div class="vacant" id="Vacant2"></div>
+<div class="hallway" id="Hallway5"><div class="hallway-name">Hallway5</div><div class="hallway-characters" id="Hallway5-characters"></div></div> <!-- Hallway connecting Lounge and Dining Room -->
+<!-- Row 3 -->
+<div class="room" id="Library"><div class="room-name">Library</div><div class="room-characters" id="Library-characters"></div></div>
+<div class="hallway" id="Hallway6"><div class="hallway-name">Hallway6</div><div class="hallway-characters" id="Hallway6-characters"></div></div> <!-- Hallway connecting Library and Billiard Room -->
+<div class="room" id="BilliardRoom"><div class="room-name">Billiard Room</div><div class="room-characters" id="BilliardRoom-characters"></div></div>
+<div class="hallway" id="Hallway7"><div class="hallway-name">Hallway7</div><div class="hallway-characters" id="Hallway7-characters"></div></div> <!-- Hallway connecting Billiard Room and Dining Room -->
+<div class="room" id="DiningRoom"><div class="room-name">Dining Room</div><div class="room-characters" id="DiningRoom-characters"></div></div>
+<!-- Row 4 -->
+<div class="hallway" id="Hallway8"><div class="hallway-name">Hallway8</div><div class="hallway-characters" id="Hallway8-characters"></div></div> <!-- Hallway connecting Library and Conservatory -->
+<div class="vacant" id="Vacant3"></div>
+<div class="hallway" id="Hallway9"><div class="hallway-name">Hallway9</div><div class="hallway-characters" id="Hallway9-characters"></div></div> <!-- Hallway connecting Billiard Room and Ballroom -->
+<div class="vacant" id="Vacant4"></div>
+<div class="hallway" id="Hallway10"><div class="hallway-name">Hallway10</div><div class="hallway-characters" id="Hallway10-characters"></div></div> <!-- Hallway connecting Dining Room and Kitchen -->
+<!-- Row 5 -->
+<div class="room" id="Conservatory"><div class="room-name">Conservatory</div><div class="room-characters" id="Conservatory-characters"></div></div>
+<div class="hallway" id="Hallway11"><div class="hallway-name">Hallway11</div><div class="hallway-characters" id="Hallway11-characters"></div></div> <!-- Hallway connecting Conservatory and Ballroom -->
+<div class="room" id="Ballroom"><div class="room-name">Ballroom</div><div class="room-characters" id="Ballroom-characters"></div></div>
+<div class="hallway" id="Hallway12"><div class="hallway-name">Hallway12</div><div class="hallway-characters" id="Hallway12-characters"></div></div> <!-- Hallway connecting Ballroom and Kitchen -->
+<div class="room" id="Kitchen"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
 </div>
 
 <!-- Accusations Form (Initially Hidden) -->
 <div id="accusations-form-container" style="display: none;">
-    <form id="accusations-form">
-        <h3>Make an Accusation</h3>
-        <label for="suspect">Suspect:</label>
-        <select id="suspect" name="suspect">
-            <option value="Miss Scarlet">Miss Scarlet</option>
-            <option value="Col. Mustard">Col. Mustard</option>
-            <option value="Professor Plum">Professor Plum</option>
-            <option value="Mrs. Peacock">Mrs. Peacock</option>
-            <option value="Reverend Green">Reverend Green</option>
-            <option value="Mrs. White">Mrs. White</option>
-        </select>
-        <br>
+    <button id="close-accusations-form" class="close-button" type="button">&times;</button>
+<form id="accusations-form">
+<h3>Make an Accusation</h3>
+<label for="suspect">Suspect:</label>
+<select id="suspect" name="suspect">
+<option value="Miss Scarlet">Miss Scarlet</option>
+<option value="Col. Mustard">Col. Mustard</option>
+<option value="Professor Plum">Professor Plum</option>
+<option value="Mrs. Peacock">Mrs. Peacock</option>
+<option value="Reverend Green">Reverend Green</option>
+<option value="Mrs. White">Mrs. White</option>
+</select>
+<br/>
+<label for="weapon">Weapon:</label>
+<select id="weapon" name="weapon">
+<option value="Knife">Knife</option>
+<option value="Revolver">Revolver</option>
+<option value="Lead Pipe">Lead Pipe</option>
+<option value="Wrench">Wrench</option>
+<option value="Candlestick">Candlestick</option>
+<option value="Rope">Rope</option>
+<option value="Poison">Poison</option>
+<option value="Axe">Axe</option>
+</select>
+<br/>
+<label for="room">Room:</label>
+<select id="room" name="room">
+<option value="Study">Study</option>
+<option value="Hall">Hall</option>
+<option value="Lounge">Lounge</option>
+<option value="Library">Library</option>
+<option value="Billiard Room">Billiard Room</option>
+<option value="Dining Room">Dining Room</option>
+<option value="Conservatory">Conservatory</option>
+<option value="Ballroom">Ballroom</option>
+<option value="Kitchen">Kitchen</option>
+</select>
+<br/>
+<button type="submit">Submit Accusation</button>
+</form>
 
-        <label for="weapon">Weapon:</label>
-        <select id="weapon" name="weapon">
-            <option value="Knife">Knife</option>
-            <option value="Revolver">Revolver</option>
-            <option value="Lead Pipe">Lead Pipe</option>
-            <option value="Wrench">Wrench</option>
-            <option value="Candlestick">Candlestick</option>
-            <option value="Rope">Rope</option>
-            <option value="Poison">Poison</option>
-            <option value="Axe">Axe</option>
-        </select>
-        <br>
-
-        <label for="room">Room:</label>
-        <select id="room" name="room">
-            <option value="Study">Study</option>
-            <option value="Hall">Hall</option>
-            <option value="Lounge">Lounge</option>
-            <option value="Library">Library</option>
-            <option value="Billiard Room">Billiard Room</option>
-            <option value="Dining Room">Dining Room</option>
-            <option value="Conservatory">Conservatory</option>
-            <option value="Ballroom">Ballroom</option>
-            <option value="Kitchen">Kitchen</option>
-        </select>
-        <br>
-
-        <button type="submit">Submit Accusation</button>
-        <button type="button" id="cancel-accusation">Cancel</button> <!-- New Cancel Button -->
-    </form>
 </div>
-    <!-- Serialize initial players data from views.py for JavaScript use -->
+<!-- Serialize initial players data from views.py for JavaScript use -->
     {{ players|json_script:"players-data" }}
     {% if request.user.is_authenticated %}
         <!-- Serialize current username if authenticated, used to identify the current player -->
@@ -592,50 +880,32 @@ body {
         // Hide the form again
         document.getElementById('accusations-form-container').style.display = 'none';
     });
-
-    // Handle cancel button click
-    document.getElementById('cancel-accusation').addEventListener('click', function() {
-        document.getElementById('accusations-form-container').style.display = 'none'; // Hide the form
+      
+    document.getElementById('close-accusations-form').addEventListener('click', function() {
+    document.getElementById('accusations-form-container').style.display = 'none';
     });
-	
-	// Show the suggestion form when the button is clicked
-	document.getElementById('suggestion-button').addEventListener('click', function() {
-		document.getElementById('suggestion-form-container').style.display = 'block';
-	});
 
-	// Handle Suggestion form submission
-	document.getElementById('suggestion-form').addEventListener('submit', function(event) {
-		event.preventDefault();
-
-		const suspect = document.getElementById('suggest-suspect').value;
-		const weapon = document.getElementById('suggest-weapon').value;
-		const room = currentPlayer ? currentPlayer.location : null; // Use current room as the suggested room
-
-		if (!room) {
-			alert("You must be in a room to make a suggestion.");
-			return;
-		}
-
-		const message = {
-			type: "suggest",
-			suspect: suspect,
-			weapon: weapon,
-			room: room
-		};
-
-		console.log("Sending suggestion:", message);
-		ws.send(JSON.stringify(message));
-
-		alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
-		document.getElementById('suggestion-form-container').style.display = 'none';
-	});
-
-	// Cancel Suggestion Form
-	document.getElementById('cancel-suggestion').addEventListener('click', function() {
-		document.getElementById('suggestion-form-container').style.display = 'none';
-	});
-
-	
     </script>
-</body>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('mode-switch');
+            const body = document.body;
+        
+            // Load theme from local storage
+            if (localStorage.getItem('theme') === 'light') {
+                body.classList.add('light-mode');
+                toggle.checked = true;
+            }
+        
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+        </script></body>
 </html>
