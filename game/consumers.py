@@ -63,9 +63,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         if message_type == 'join_game':
             await self.join_game(data)  # Handle join_game message (placeholder)
         elif message_type == 'move':
+            Game.begun = True  # Set game status to begun
             await self.handle_move(data)  # Handle player move request
         elif message_type == 'suggest':
-            pass  # Placeholder for suggestion logic
+            await self.handle_suggest(data)  # Placeholder for suggestion logic
         elif message_type == 'accuse':
             await self.handle_accuse(data)
         else:
@@ -103,8 +104,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         # Placeholder for join_game logic if needed later
         pass
 
-    async def handle_move(self, data):
-        """Handle a player's move request without turn restriction."""
+    async def handle_move(self, data): 
+        """Handle a player's move request with turn restriction."""
         to_location = data.get('location')  # Extract target location from message
         if not to_location:
             # Send error if no location provided
@@ -116,20 +117,48 @@ class GameConsumer(AsyncWebsocketConsumer):
         from_location = player.location  # Store current location
 
         # Check if it’s this player’s turn
+        if not player.turn:
+            await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
+            return
 
-        # Check if the target location is the same as the current location
+        # Check if the target location is the same as the current location  
         if to_location == from_location:
             await self.send(text_data=json.dumps({'error': f'You are already at {to_location}'}))
             return
 
         # Validate move: Check if to_location is adjacent to from_location
         valid_moves = ADJACENCY.get(from_location, [])  # Get list of valid adjacent locations
+        # Check if valid_moves contains a hallway that is currently occupied by a different player
+        if to_location in valid_moves:
+            players = await database_sync_to_async(list)(Player.objects.filter(game=game))
+            for p in players:
+                # Check if location is a hallway
+                if p.location in HALLWAYS and p.location == to_location:
+                    if p.location == to_location and p.username != player.username:
+                        await self.send(text_data=json.dumps({'error': f'Cannot move to {to_location}, it is occupied by {p.username}'}))
+                        return
+        
         if to_location not in valid_moves:
             await self.send(
                 text_data=json.dumps({'error': f'Invalid move: {to_location} is not adjacent to {from_location}'}))
             return
 
         player.location = to_location  # Update player’s location
+        players = await database_sync_to_async(list)(Player.objects.filter(game=game))  # Fetch all players
+        total_player = len(players)  # Get total number of players
+        try:
+            player_index = players.index(player) # Get index of the current player
+        except ValueError:
+            player_index = None
+        
+        # Update turn for the next player
+        if player_index is not None:
+            player.turn = False  # End current player's turn
+            next_player_index = (player_index + 1) % total_player  # Calculate next player index
+            next_player = players[next_player_index]  # Get next player
+            next_player.turn = True  # Set next player’s turn to True
+            await database_sync_to_async(next_player.save)()  # Save changes asynchronously
+        
         await database_sync_to_async(player.save)()  # Save changes asynchronously
 
         # Broadcast updated game state to all clients
@@ -209,6 +238,70 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'game_state': game_state
                 }
             )
+            
+    async def handle_suggest(self, data):
+        suspect = data.get('suspect')
+        weapon = data.get('weapon')
+        room = data.get('room')
+
+        if not all([suspect, weapon, room]):
+            await self.send(text_data=json.dumps({'error': 'Incomplete suggestion (suspect, weapon, or room missing)'}))
+            return
+
+        suggesting_player = await self.get_player(self.scope['user'].username)
+        if not suggesting_player.is_active:
+            await self.send(text_data=json.dumps({'error': 'Eliminated players cannot make suggestions'}))
+            return
+
+        if suggesting_player.location != room:
+            await self.send(text_data=json.dumps({'error': f'You must be in the {room} to suggest it'}))
+            return
+
+        game = await self.get_game()
+        players = await database_sync_to_async(list)(Player.objects.filter(game=game, is_active=True))
+    
+        # Check all other players’ hands
+        suggested_cards = {suspect, weapon, room}
+        disproved_by = None
+        matching_card = None
+
+        for player in players:
+            if player.username == suggesting_player.username:
+                continue
+
+            player_cards = set(player.cards) if isinstance(player.cards, list) else set(json.loads(player.cards))
+            intersection = suggested_cards & player_cards
+            if intersection:
+                disproved_by = player.username
+                matching_card = list(intersection)[0]  # Return first matching card
+                break
+
+        if disproved_by:
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'suggestion_result',
+                    'suggestion': {'suspect': suspect, 'weapon': weapon, 'room': room},
+                    'disproved_by': disproved_by,
+                    'card_shown': matching_card,
+                    'from': suggesting_player.username
+                }
+            )
+            print(f"Suggestion disproved by {disproved_by} showing {matching_card}")
+        else:
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'suggestion_result',
+                    'suggestion': {'suspect': suspect, 'weapon': weapon, 'room': room},
+                    'disproved_by': None,
+                    'card_shown': None,
+                    'from': suggesting_player.username
+                }
+            )
+            print("No player could disprove the suggestion.")
+
+
 
 
     # Async wrapper for synchronous database query to get game state

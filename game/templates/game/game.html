@@ -100,6 +100,66 @@ body {
         animation: pulseMove 0.5s ease-in-out;
     }
 
+	#suggestion-button-container {
+		position: fixed;
+		bottom: 80px;
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+	#suggestion-button {
+		background-color: darkgreen;
+		color: white;
+		padding: 10px 20px;
+		font-size: 16px;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+		margin-bottom: 10px;
+		box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+	}
+	#suggestion-button:hover {
+		background-color: green;
+	}
+
+	#suggestion-form-container {
+		position: fixed;
+		bottom: 160px;  /* Place above accusation form */
+		width: 100%;
+		background-color: white;
+		padding: 20px;
+		box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+		border-radius: 10px;
+		max-width: 500px;
+		margin: auto;
+		text-align: left;
+		display: none;  /* Start hidden */
+	}
+
+	#suggestion-form label {
+		display: block;
+		margin: 10px 0 5px;
+	}
+
+	#suggestion-form select,
+	#suggestion-form button {
+		width: 100%;
+		padding: 10px;
+		margin-bottom: 10px;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+	}
+
+	#suggestion-form button {
+		background-color: darkgreen;
+		color: white;
+		cursor: pointer;
+	}
+
+	#suggestion-form button:hover {
+		background-color: green;
+	}
+
     /* Accusations button styling */
     #accusations-button-container {
         position: fixed;
@@ -161,7 +221,17 @@ body {
     #accusations-form button:hover {
         background-color: #ff6347;
     }
-
+</style>
+<body>
+    <!-- Notification section: Displays welcome message and logout button -->
+    <div id="notification">
+        <h1>Welcome to Clue-Less Game {{ game_id }}</h1> <!-- Game ID from template -->
+        <h2>You are logged in as Username: {{ username }} as Character: {{ character }}.
+            <button onclick="window.location.href='{% url 'logout' %}'">Logout</button></h2> <!-- Current user and logout button -->
+        <br>
+        <h2 id="current-turn">Waiting for the first turn...</h2> <!-- New header for current turn -->
+        <div id="game-state"></div> <!-- Placeholder for future game state display -->
+    </div>
 
         .mode-toggle {
             position: absolute;
@@ -493,6 +563,7 @@ body {
         <button onclick="window.location.href='{% url 'logout' %}'" class="logout-btn">Logout</button>
     </div>
 </div>
+
 <div id="accusations-button-container">
     <button id="accusations-button">Accusations</button>
 </div>
@@ -572,6 +643,7 @@ body {
 <br/>
 <button type="submit">Submit Accusation</button>
 </form>
+
 </div>
 <!-- Serialize initial players data from views.py for JavaScript use -->
     {{ players|json_script:"players-data" }}
@@ -646,6 +718,37 @@ body {
 
         // Update previous state for the next comparison
         previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
+    }
+
+    function updateGameBoard(gameState) {
+        console.log('Updating game board with state:', gameState);
+        const players = gameState.players || [];
+        console.log('Players array:', players);
+    
+        // Determine the current player whose turn is True
+        const currentTurnPlayer = players.find(player => player.turn);
+        const currentTurnElement = document.getElementById('current-turn');
+        if (currentTurnPlayer) {
+            currentTurnElement.textContent = `It's ${currentTurnPlayer.username}'s turn (${currentTurnPlayer.character})!`;
+        } else {
+            currentTurnElement.textContent = 'Waiting for the next turn...';
+        }
+    
+        // Determine which player moved by comparing with previous state
+        let movedPlayer = null;
+        if (previousGameState) {
+            const prevPlayers = previousGameState.players || [];
+            movedPlayer = players.find(player => {
+                const prevPlayer = prevPlayers.find(p => p.username === player.username);
+                return prevPlayer && prevPlayer.location !== player.location;
+            })?.username;
+        }
+    
+        updateRoomCharacters(players, movedPlayer);
+        updateHallwayCharacters(players, movedPlayer);
+        currentPlayer = players.find(player => player.username === currentUsername) || null;
+    
+        previousGameState = JSON.parse(JSON.stringify(gameState));
     }
 
     // Update room characters with animation only for the moved player,
@@ -759,18 +862,17 @@ body {
         const suspect = document.getElementById('suspect').value;
         const weapon = document.getElementById('weapon').value;
         const room = document.getElementById('room').value;
-		
-		//Send accusation via websocket 
-		const message = {
-			type: "accuse",
-			suspect: suspect, 
-			weapon: weapon, 
-			room: room 
-			};
 
-        // Here you can handle the accusation (e.g., send data to the server via WebSocket or an AJAX request)
+        // Send accusation via WebSocket
+        const message = {
+            type: "accuse",
+            suspect: suspect,
+            weapon: weapon,
+            room: room
+        };
+
         console.log("Sending accusation:", message);
-		ws.send(JSON.stringify(message));
+        ws.send(JSON.stringify(message));
 
         // Optionally, hide the form after submission or show a confirmation message
         alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
@@ -778,10 +880,11 @@ body {
         // Hide the form again
         document.getElementById('accusations-form-container').style.display = 'none';
     });
-
+      
     document.getElementById('close-accusations-form').addEventListener('click', function() {
     document.getElementById('accusations-form-container').style.display = 'none';
     });
+
     </script>
 <script>
         document.addEventListener('DOMContentLoaded', () => {
