@@ -203,6 +203,13 @@
         }
 
 
+    <!-- Combined button container -->
+    <div id="button-container">
+        <button id="suggestions-button">Suggestions</button>
+        <button id="accusations-button">Accusations</button>
+        <button id="end-turn-button">End Turn</button>
+    </div>
+
         .mode-toggle {
             position: absolute;
             top: 10px;
@@ -513,32 +520,26 @@
         }
     </style>
 
-<body>
-    <label class="mode-toggle">
-        <input id="mode-switch" type="checkbox"/>
-        <span class="slider"></span>
-        <span class="mode-label">🌙</span>
-    </label>
+<body><label class="mode-toggle">
+<input id="mode-switch" type="checkbox"/>
+<span class="slider"></span>
+<span class="mode-label">🌙</span>
+</label>
+<!-- Notification section: Displays welcome message and logout button -->
+<div id="notification">
+    <h1 id="game-title">
+        Welcome to <span class="game-title">Clue-Less Game</span> - 
+        <span class="game-id">{{ game_id }}</span>
+    </h1>
 
-    <!-- Notification section: Displays welcome message and logout button -->
-    <div id="notification">
-        <h1 id="game-title">
-            Welcome to <span class="game-title">Clue-Less Game</span> - 
-            <span class="game-id">{{ game_id }}</span>
-        </h1>
-
-        <div class="user-info" style="font-size: 0.6em;">
-            <h2 id="user-status">
-                You are logged in as <span class="username">{{ username }}</span> 
-                as <span class="character-name">{{ character }}</span>.
-            </h2>
-            <button onclick="window.location.href='{% url 'logout' %}'" class="logout-btn">Logout</button>
-            <br>
-            <h2 id="current-turn">
-                Waiting for the first turn...
-            </h2>
-        </div>
+    <div class="user-info" style="font-size: 0.6em;">
+        <h2 id="user-status">
+            You are logged in as <span class="username">{{ username }}</span> 
+            as <span class="character-name">{{ character }}</span>.
+        </h2>
+        <button onclick="window.location.href='{% url 'logout' %}'" class="logout-btn">Logout</button>
     </div>
+</div>
 
     <!-- Combined button container -->
     <div id="button-container">
@@ -651,8 +652,8 @@
             <button type="button" id="cancel-suggestions">Cancel</button>
         </form>
     </div>
-
-    <!-- Serialize initial players data from views.py for JavaScript use -->
+<!-- Serialize initial players data from views.py for JavaScript use -->
+  
     {{ players|json_script:"players-data" }}
     {% if request.user.is_authenticated %}
         <!-- Serialize current username if authenticated, used to identify the current player -->
@@ -887,10 +888,9 @@
         // Hide the form again
         document.getElementById('accusations-form-container').style.display = 'none';
     });
-
-    // Handle cancel button click
-    document.getElementById('cancel-accusation').addEventListener('click', function() {
-        document.getElementById('accusations-form-container').style.display = 'none'; // Hide the form
+      
+    document.getElementById('close-accusations-form').addEventListener('click', function() {
+    document.getElementById('accusations-form-container').style.display = 'none';
     });
 
     // Show the suggestion form when the button is clicked
@@ -964,5 +964,26 @@
     });
 
     </script>
-</body>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('mode-switch');
+            const body = document.body;
+        
+            // Load theme from local storage
+            if (localStorage.getItem('theme') === 'light') {
+                body.classList.add('light-mode');
+                toggle.checked = true;
+            }
+        
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+        </script></body>
 </html>
