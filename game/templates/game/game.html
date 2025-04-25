@@ -653,7 +653,6 @@
     </div>
 
     <!-- Serialize initial players data from views.py for JavaScript use -->
-
     {{ players|json_script:"players-data" }}
     {% if request.user.is_authenticated %}
         <!-- Serialize current username if authenticated, used to identify the current player -->
