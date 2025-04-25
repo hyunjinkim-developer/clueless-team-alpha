@@ -964,26 +964,5 @@
     });
 
     </script>
-<script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggle = document.getElementById('mode-switch');
-            const body = document.body;
-        
-            // Load theme from local storage
-            if (localStorage.getItem('theme') === 'light') {
-                body.classList.add('light-mode');
-                toggle.checked = true;
-            }
-        
-            toggle.addEventListener('change', () => {
-                if (toggle.checked) {
-                    body.classList.add('light-mode');
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    body.classList.remove('light-mode');
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-        });
-        </script></body>
+</body>
 </html>
