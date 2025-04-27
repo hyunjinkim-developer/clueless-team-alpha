@@ -372,6 +372,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             if p.character == suspect:
                 suspect_player = p
         
+        # fix lines 375 to 425 suggestion logic
+        
         if suspect_player is None:
             # If the suspect does not have any of the cards, check other players
             for p in players:
