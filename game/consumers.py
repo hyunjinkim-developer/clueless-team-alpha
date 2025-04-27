@@ -383,11 +383,11 @@ class GameConsumer(AsyncWebsocketConsumer):
         # move suspected player to suggested room
         suspect_player.location = room
 
-        # check player's hand for suspect, then weapon, then room
+        # check suspected player's hand for suspect, then weapon, then room
         # put all matches into separate list
-        # if 0 cards match
-        # if 1 card matches
-        # if more than 1 card matches
+        # if 0 cards match - move to next player and repeat process
+        # if 1 card matches - state that card disproves the suggestion
+        # if more than 1 card matches - ask suspected player which card to disprove suggestion with
         currHand = suspect_player.hand
         matchList = []
         suspectMatch = [card for card in currHand if card==suspect]
@@ -400,6 +400,16 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"suspected player's card hand: {suspect_player.hand}")
         print(f"List of matching cards: {matchList}") #test which cards match
 
+        numMatches = len(matchList)
+        if numMatches == 1:
+            await self.send(text_data=json.dumps({'message': 'Card {matchList} disproves suggestion. End of turn'}))
+            await self.handle_end_turn(data)
+        elif numMatches > 1:
+            await self.send(text_data=json.dumps({'message': 'Test message - multiple cards disprove suggestion'}))
+            await self.handle_end_turn(data)
+        else:
+            await self.send(text_data=json.dumps({'message': 'No cards to disprove suggestion. Moving to next player'}))
+            return
         # if suspect_player is None:
         #     # If the suspect does not have any of the cards, check other players
         #     for p in players:
@@ -452,7 +462,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         #                 'message': "No one has the cards you suggested."
         #             }))
 
-        # Ria's suggestion edits should end here
+        # Ria's suggestion logic should end here
                     
         # Broadcast updated game state
         game_state = await self.get_game_state()
