@@ -394,6 +394,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         playerCopyList.remove(player)
         playerSuggestList.extend(playerCopyList)
         await self.send(text_data=json.dumps({'test': 'ordered list of players to check card hand for suggestion: {playerSuggestList}'}))
+        return
 
         # check suspected player's hand for suspect, then weapon, then room
         # put all matches into separate list
