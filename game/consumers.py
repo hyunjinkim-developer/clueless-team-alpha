@@ -366,65 +366,91 @@ class GameConsumer(AsyncWebsocketConsumer):
         
         print(f"Player {player.username} suggests: {suspect}, {weapon}, {room}")  # Debugging: print suggestion
     
-        # Move suspect to the room if they are not already
+        # identify which player has the character suggested
+        # if character suggested is not assigned to a player, 
+        # then the suspect player becomes the next player in the list
         suspect_player = None
         for p in players:
             if p.character == suspect:
                 suspect_player = p
+        # if suspect_player == None:
+        #     currIndex = players.index(player)
+        #     nextIndex = currIndex + 1
+        #     suspect_player = players[nextIndex]
         
         # fix lines 375 to 425 suggestion logic
         
-        if suspect_player is None:
-            # If the suspect does not have any of the cards, check other players
-            for p in players:
-                if p.username != player.username:
-                    if suspect in p.hand or weapon in p.hand or room in p.hand:
-                        print(f"Player {p.username} shows a card to {player.username}")
-                        await self.send(text_data=json.dumps({
-                            'message': f"{p.username} shows you a card from their hand."
-                        }))
-                        await self.handle_end_turn(data)  # End the turn after suggestion
-                        break
-            else:
-                # If no one has the cards, send a message to the player
-                print(f"No one has the cards {suspect}, {weapon}, or {room}")
-                await self.send(text_data=json.dumps({
-                    'message': "No one has the cards you suggested."
-                }))
-        else:
-            if suspect_player and suspect_player.location != room:
-                suspect_player.location = room  # Move suspect to the suggested room
-                suspect_player.suggested = True  # Mark suspect as suggested
-                await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
-            else:
-                suspect_player.suggested = True  # Mark suspect as suggested
-                await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
+        # move suspected player to suggested room
+        suspect_player.location = room
+
+        # check player's hand for suspect, then weapon, then room
+        # put all matches into separate list
+        # if 0 cards match
+        # if 1 card matches
+        # if more than 1 card matches
+        currHand = suspect_player.hand
+        matchList = []
+        suspectMatch = [card for card in currHand if card==suspect]
+        roomMatch = [card for card in currHand if card==room]
+        weaponMatch = [card for card in currHand if card==weapon]
+        matchList.extend(suspectMatch)
+        matchList.extend(roomMatch)
+        matchList.extend(weaponMatch)
+        print(f"List of matching cards: {matchList}") #test which cards match
+
+        # if suspect_player is None:
+        #     # If the suspect does not have any of the cards, check other players
+        #     for p in players:
+        #         if p.username != player.username:
+        #             if suspect in p.hand or weapon in p.hand or room in p.hand:
+        #                 print(f"Player {p.username} shows a card to {player.username}")
+        #                 await self.send(text_data=json.dumps({
+        #                     'message': f"{p.username} shows you a card from their hand."
+        #                 }))
+        #                 await self.handle_end_turn(data)  # End the turn after suggestion
+        #                 break
+        #     else:
+        #         # If no one has the cards, send a message to the player
+        #         print(f"No one has the cards {suspect}, {weapon}, or {room}")
+        #         await self.send(text_data=json.dumps({
+        #             'message': "No one has the cards you suggested."
+        #         }))
+        # else:
+        #     if suspect_player and suspect_player.location != room:
+        #         suspect_player.location = room  # Move suspect to the suggested room
+        #         suspect_player.suggested = True  # Mark suspect as suggested
+        #         await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
+        #     else:
+        #         suspect_player.suggested = True  # Mark suspect as suggested
+        #         await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
             
-            # Check other players’ hands starting with the suspect
-            if suspect in suspect_player.hand or weapon in suspect_player.hand or room in suspect_player.hand:
-                # If the suspect has any of the cards, they show it to the player
-                print(f"Player {suspect} shows a card to {player.username}")
-                await self.send(text_data=json.dumps({
-                    'message': f"{suspect} shows you a card from their hand."
-                }))
-                await self.handle_end_turn(data)  # End the turn after suggestion
-            else:
-                # If the suspect does not have any of the cards, check other players
-                for p in players:
-                    if p.username != player.username and p.username != suspect:
-                        if suspect in p.hand or weapon in p.hand or room in p.hand:
-                            print(f"Player {p.username} shows a card to {player.username}")
-                            await self.send(text_data=json.dumps({
-                                'message': f"{p.username} shows you a card from their hand."
-                            }))
-                            await self.handle_end_turn(data)  # End the turn after suggestion
-                            break
-                else:
-                    # If no one has the cards, send a message to the player
-                    print(f"No one has the cards {suspect}, {weapon}, or {room}")
-                    await self.send(text_data=json.dumps({
-                        'message': "No one has the cards you suggested."
-                    }))
+        #     # Check other players’ hands starting with the suspect
+        #     if suspect in suspect_player.hand or weapon in suspect_player.hand or room in suspect_player.hand:
+        #         # If the suspect has any of the cards, they show it to the player
+        #         print(f"Player {suspect} shows a card to {player.username}")
+        #         await self.send(text_data=json.dumps({
+        #             'message': f"{suspect} shows you a card from their hand."
+        #         }))
+        #         await self.handle_end_turn(data)  # End the turn after suggestion
+        #     else:
+        #         # If the suspect does not have any of the cards, check other players
+        #         for p in players:
+        #             if p.username != player.username and p.username != suspect:
+        #                 if suspect in p.hand or weapon in p.hand or room in p.hand:
+        #                     print(f"Player {p.username} shows a card to {player.username}")
+        #                     await self.send(text_data=json.dumps({
+        #                         'message': f"{p.username} shows you a card from their hand."
+        #                     }))
+        #                     await self.handle_end_turn(data)  # End the turn after suggestion
+        #                     break
+        #         else:
+        #             # If no one has the cards, send a message to the player
+        #             print(f"No one has the cards {suspect}, {weapon}, or {room}")
+        #             await self.send(text_data=json.dumps({
+        #                 'message': "No one has the cards you suggested."
+        #             }))
+
+        # Ria's suggestion edits should end here
                     
         # Broadcast updated game state
         game_state = await self.get_game_state()
