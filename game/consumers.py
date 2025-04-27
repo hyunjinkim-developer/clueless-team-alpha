@@ -354,6 +354,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
         
         if player.location not in ROOMS:
+            print(f"player's location is: {player.location}")
             await self.send(text_data=json.dumps({'error': f'You must be in a room to make a suggestion'}))
             return
         
