@@ -384,33 +384,46 @@ class GameConsumer(AsyncWebsocketConsumer):
         suspect_player.location = room
         suspect_player.suggested = True
 
+        # make list of players in order of checking suggestion with players' card hands
+        # start with suggested player
+        # then follow turn order
+        playerCopyList = players[:]
+        playerSuggestList = [suspect_player]
+        playerCopyList.remove(suspect_player)
+        playerCopyList.remove(player)
+        playerSuggestList.extend(playerCopyList)
+        print(f"ordered list of players to check card hand for suggestion: {playerSuggestList}")
+
         # check suspected player's hand for suspect, then weapon, then room
         # put all matches into separate list
         # if 0 cards match - move to next player and repeat process
         # if 1 card matches - state that card disproves the suggestion
         # if more than 1 card matches - ask suspected player which card to disprove suggestion with
-        currHand = suspect_player.hand
-        matchList = []
-        suspectMatch = [card for card in currHand if card==suspect]
-        roomMatch = [card for card in currHand if card==room]
-        weaponMatch = [card for card in currHand if card==weapon]
-        matchList.extend(suspectMatch)
-        matchList.extend(roomMatch)
-        matchList.extend(weaponMatch)
-        print(f"suspected player: {suspect_player.username} as {suspect_player.character}")
-        print(f"suspected player's card hand: {suspect_player.hand}")
-        print(f"List of matching cards: {matchList}") #test which cards match
 
-        numMatches = len(matchList)
-        if numMatches == 1:
-            await self.send(text_data=json.dumps({'message': 'Card {matchList} disproves suggestion. End of turn'}))
-            await self.handle_end_turn(data)
-        elif numMatches > 1:
-            await self.send(text_data=json.dumps({'message': 'Test message - multiple cards disprove suggestion'}))
-            await self.handle_end_turn(data)
-        else:
-            await self.send(text_data=json.dumps({'message': 'No cards to disprove suggestion. Moving to next player'}))
-            return
+        # currHand = suspect_player.hand
+        # matchList = []
+        # suspectMatch = [card for card in currHand if card==suspect]
+        # roomMatch = [card for card in currHand if card==room]
+        # weaponMatch = [card for card in currHand if card==weapon]
+        # matchList.extend(suspectMatch)
+        # matchList.extend(roomMatch)
+        # matchList.extend(weaponMatch)
+        # print(f"suspected player: {suspect_player.username} as {suspect_player.character}")
+        # print(f"suspected player's card hand: {suspect_player.hand}")
+        # print(f"List of matching cards: {matchList}") #test which cards match
+
+        # numMatches = len(matchList)
+        # if numMatches == 1:
+        #     await self.send(text_data=json.dumps({'message': 'Card {matchList} disproves suggestion. End of turn'}))
+        #     await self.handle_end_turn(data)
+        # elif numMatches > 1:
+        #     await self.send(text_data=json.dumps({'message': 'Test message - multiple cards disprove suggestion'}))
+        #     await self.handle_end_turn(data)
+        # else:
+        #     await self.send(text_data=json.dumps({'message': 'No cards to disprove suggestion. Moving to next player'}))
+        #     return
+        # end of Ria's code 4/27/2025 18:58
+        
         # if suspect_player is None:
         #     # If the suspect does not have any of the cards, check other players
         #     for p in players:
