@@ -382,6 +382,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         
         # move suspected player to suggested room
         suspect_player.location = room
+        suspect_player.suggested = True
 
         # check suspected player's hand for suspect, then weapon, then room
         # put all matches into separate list
