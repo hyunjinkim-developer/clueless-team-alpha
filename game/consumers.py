@@ -396,6 +396,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         matchList.extend(suspectMatch)
         matchList.extend(roomMatch)
         matchList.extend(weaponMatch)
+        print(f"suspected player: {suspect_player.username} as {suspect_player.character}")
+        print(f"suspected player's card hand: {suspect_player.hand}")
         print(f"List of matching cards: {matchList}") #test which cards match
 
         # if suspect_player is None:
