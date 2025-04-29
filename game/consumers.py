@@ -63,8 +63,6 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         if message_type == 'start_game':
             await self.handle_start_game()
-        elif message_type == 'join_game':
-            await self.join_game(data)  # Handle join_game message (placeholder)
         elif message_type == 'move':
             await self.handle_move(data)  # Handle player move request
         elif message_type == 'suggest':
@@ -209,10 +207,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
         return Player.objects.get(game=game, username=username)  # Fetch Player by username and game
 
-    async def join_game(self, data):
-        # Placeholder for join_game logic if needed later
-        pass
-
     async def handle_move(self, data): 
         """Handle a player's move request with turn restriction."""
         game = await self.get_game()  # Get Game instance
@@ -269,18 +263,27 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
 
+
     async def handle_accuse(self, data):
         """ Handle player's accusation without turn enforcement. """
-        # Convert data to a dictionary if it's a JSON string from a WebSocket message;
-        # otherwise, assume it's already a dictionary (e.g., from test scripts)
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
         
-        # Check if player has already made an accusation
+        # Ensure game is active and validate player's turn and status
+        if not game.is_active:
+            await self.send(text_data=json.dumps({"error: The game is currently paused. You can pick up right wehre you left off when you're ready!"}))
+        if DEBUG_HANDLE_ACCUSE: # DEBUG: Testing for accusation feature
+            if not player.turn:
+                await self.send(text_data=json.dumps({'error: It is not your turn'}))
+                return
+        # Check if player has already made a false accusation
         if player.accused:
-            await self.send(text_data=json.dumps({'error': 'You are eliminated and cannot make accusations'}))
+            await self.send(text_data=json.dumps({'error': 'You have been eliminated due to a false accusation and can no longer make accusations'}))
             return
-        
+
+        # Validate accusation inputs
+        # Convert data to a dictionary if it's a JSON string from a WebSocket message;
+        # otherwise, assume it's already a dictionary (e.g., from test scripts)
         if isinstance(data, str):
             data = json.loads(data)
         suspect = data.get('suspect')
@@ -289,14 +292,21 @@ class GameConsumer(AsyncWebsocketConsumer):
         if not all([suspect, weapon, room]):
             await self.send(text_data=json.dumps({'error': 'Missing accusation details (suspect, weapon or room)'}))
             return
+        if suspect not in SUSPECTS or weapon not in WEAPONS or room not in ROOMS:
+            await self.send(text_data=json.dumps({'error': 'Invalid accusation: one or more selections are not valid'}))
+            return
 
+        accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
+        if DEBUG and DEBUG_HANDLE_ACCUSE:
+            print(f"Player {player.username} accuses: {accusation}")
+
+        # Mark current player as having made an accusation
+        player.accused = True
+        await database_sync_to_async(player.save)()
 
         # Compare accusation to case file
-        accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
         if accusation == game.case_file:
             # Correct accusation: End the game
-            game.is_active = False
-            await database_sync_to_async(game.save)()
             await self.channel_layer.group_send(
                 self.game_group_name,
                 {
@@ -305,32 +315,52 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'solution': game.case_file
                 }
             )
-            print(f"Player {player.username} won with correct accusation: {accusation}")
+            if DEBUG and DEBUG_HANDLE_ACCUSE:
+                print(f"Player {player.username} won with correct accusation: {accusation}")
         else:
-            # Incorrect accusation: Eliminate player from further participation in the game"
-            player.is_active = False
-            await database_sync_to_async(player.save)()
+            # Incorrect accusation: Notify the accusing player and others
+            # Notify the accusing player
+            await self.send(text_data=json.dumps({
+                'type': 'accusation_failed',
+                'message': 'Your accusation was incorrect. You are no longer make moves or accusations but can still disprove suggestions.'
+            }))
+            # Broadcast the accusing player has been eliminated
             await self.channel_layer.group_send(
                 self.game_group_name,
                 {
-                    'type': 'player_out',
+                    'type': 'player_eliminated',
                     'player': player.username,
-                    'reason': 'incorrect_accusation'  # Client notification: send reason only for incorrect accusation
+                    'accusation': 'accusation'
                 }
             )
-            await self.send(text_data=json.dumps({'message': 'Your accusation was incorrect. You are out of the game but can still disprove suggestions.'}))
-            print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
+            if DEBUG and DEBUG_HANDLE_ACCUSE:
+                print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
 
-            # Broadcast updated game state
-            game_state = await self.get_game_state()
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'game_update',
-                    'game_state': game_state
-                }
-            )
-            
+        # Broadcast updated game state
+        game_state = await self.get_game_state()
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'game_update',
+                'game_state': game_state
+            }
+        )
+
+    async def game_end(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'game_end',
+            'winner': event['winner'],
+            'solution': event['solution']
+        }))
+
+    async def player_eliminated(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'player_eliminated',
+            'player': event['player'],
+            'accusation': event['accusation']
+        }))
+
+
     async def handle_suggest(self, data):
         """Handle a player's suggestion with turn restriction."""
         
