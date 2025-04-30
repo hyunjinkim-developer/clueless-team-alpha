@@ -691,8 +691,8 @@
                 const {winner, solution} = data;
                 document.getElementById('notification').innerHTML += `<p>Game Over! ${winner} won with ${solution.suspect} in ${solution.room} with ${solution.weapon}</p>`;
                 setTimeout(() => {
-                    alert(`<p>Game Over! ${winner} won with ${solution.suspect} in ${solution.room} with ${solution.weapon}</p>`);
-                    window.location.href = '/login/'
+                    alert(`Game Over! ${winner} won with ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
+                    // window.location.href = '/login/'  // Move to login page when accusing player made correct accusation
                 }, 1000);
             } else if (data.type === 'accusation_failed') { // The accusing player has been eliminated for making a false accusation
 

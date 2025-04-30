@@ -191,7 +191,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             for player in players:
                 print(f"  - Username: {player['username']}, Character: {player['character']}, Location: {player['location']}, Is Active: {player['is_active']}")
             # Log for case file
-            print(f"Case file for game {game_state['game_id']}: {game_state['case_file']}")
+            print(f"Case file for game {game_state['game_id']}: {game_state['case_file']}\n")
 
         # Send the game state to this client
         await self.send(text_data=json.dumps({
@@ -271,11 +271,15 @@ class GameConsumer(AsyncWebsocketConsumer):
         """ Handle player's accusation without turn enforcement. """
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
-        
+
+        if DEBUG and DEBUG_HANDLE_ACCUSE: # Testing accusation logic
+            player.accused = False
+            await database_sync_to_async(player.save)()
+
         # Ensure game is active and validate player's turn and status
         if not game.is_active:
             await self.send(text_data=json.dumps({"error: The game is currently paused. You can pick up right wehre you left off when you're ready!"}))
-        if DEBUG_HANDLE_ACCUSE: # DEBUG: Testing for accusation feature
+        if DEBUG_HANDLE_ACCUSE:  # DEBUG: Testing for accusation feature
             if not player.turn:
                 await self.send(text_data=json.dumps({'error: It is not your turn'}))
                 return
@@ -319,10 +323,10 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
             if DEBUG and DEBUG_HANDLE_ACCUSE:
-                print(f"Player {player.username} won with correct accusation: {accusation}")
+                print(f"Player {player.username} won with correct accusation: {accusation}\n")
         else:
             # Incorrect accusation: Notify the accusing player and others
-            # Notify the accusing player
+            # Privately notify the accusing player
             await self.send(text_data=json.dumps({
                 'type': 'accusation_failed',
                 'message': 'Your accusation was incorrect. You are no longer make moves or accusations but can still disprove suggestions.'
@@ -337,7 +341,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
             if DEBUG and DEBUG_HANDLE_ACCUSE:
-                print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
+                print(f"Player {player.username} eliminated with incorrect accusation: {accusation}\n\n")
 
         # Broadcast updated game state
         game_state = await self.get_game_state()
