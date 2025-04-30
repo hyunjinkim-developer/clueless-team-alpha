@@ -59,7 +59,7 @@ def login_view(request):
                         for player in game.players.all():
                             print(f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
                         print(f"Total players ever joined: {len(game.players_list)}")
-                        print("----------------\n")
+                        print("-----------------------")
 
                     return redirect('game_view', game_id=game.id)  # Redirect to game page
             else:
@@ -153,7 +153,7 @@ def logout_view(request):
                 for player in game.players.all():
                     print(f"Username: {player.username}, Character: {player.character}, Is Active: {player.is_active}")
                 print(f"Total players ever joined: {len(game.players_list)}")
-                print("----------------\n")
+                print("------------------------")
 
             # Broadcast updated game state, including all players
             channel_layer = get_channel_layer()
