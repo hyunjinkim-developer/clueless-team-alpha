@@ -393,6 +393,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         playerCopyList.remove(suspect_player)
         playerCopyList.remove(player)
         playerSuggestList.extend(playerCopyList)
+        print(f"list of players to check cards for suggestion: {playerSuggestList}")
 
         # check suspected player's hand for suspect, then weapon, then room
         # put all matches into separate list
