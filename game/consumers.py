@@ -388,7 +388,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         # make list of players in order of checking suggestion with players' card hands
         # start with suggested player
         # then follow turn order
-        playerCopyList = players[:]
+        playerCopyList = players.copy()
         playerSuggestList = [suspect_player]
         playerCopyList.remove(suspect_player)
         playerCopyList.remove(player)
