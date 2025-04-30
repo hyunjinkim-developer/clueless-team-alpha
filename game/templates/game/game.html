@@ -688,7 +688,12 @@
             if (data.type === 'game_update') {
                 updateGameBoard(data.game_state); // Update the board with the new game state
             } else if (data.type === 'game_end') { // Player made a correct accusation
-
+                const {winner, solution} = data;
+                document.getElementById('notification').innerHTML += `<p>Game Over! ${winner} won with ${solution.suspect} in ${solution.room} with ${solution.weapon}</p>`;
+                setTimeout(() => {
+                    alert(`<p>Game Over! ${winner} won with ${solution.suspect} in ${solution.room} with ${solution.weapon}</p>`);
+                    window.location.href = '/login/'
+                }, 1000);
             } else if (data.type === 'accusation_failed') { // The accusing player has been eliminated for making a false accusation
 
             } else if (data.type === 'player_eliminated') { // Notify other players that the accusing player has been eliminated due to a false accusation
@@ -715,30 +720,6 @@
             const players = gameState.players || []; // Extract players array, default to empty if missing
             console.log('Players array:', players); // Debug log for players array
 
-            // Determine which player moved by comparing with previous state
-            let movedPlayer = null;
-            if (previousGameState) {
-                const prevPlayers = previousGameState.players || [];
-                movedPlayer = players.find(player => {
-                    const prevPlayer = prevPlayers.find(p => p.username === player.username);
-                    return prevPlayer && prevPlayer.location !== player.location;
-                })?.username;
-            }
-
-            updateRoomCharacters(players, movedPlayer); // Update room displays with all players
-            updateHallwayCharacters(players, movedPlayer); // Update hallway displays with all players
-            // Set currentPlayer for movement logic only, no character display update
-            currentPlayer = players.find(player => player.username === currentUsername) || null;
-
-            // Update previous state for the next comparison
-            previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
-        }
-
-        function updateGameBoard(gameState) {
-            console.log('Updating game board with state:', gameState);
-            const players = gameState.players || [];
-            console.log('Players array:', players);
-
             // Determine the current player whose turn is True
             const currentTurnPlayer = players.find(player => player.turn);
             const currentTurnElement = document.getElementById('current-turn');
@@ -758,11 +739,13 @@
                 })?.username;
             }
 
-            updateRoomCharacters(players, movedPlayer);
-            updateHallwayCharacters(players, movedPlayer);
+            updateRoomCharacters(players, movedPlayer); // Update room displays with all players
+            updateHallwayCharacters(players, movedPlayer); // Update hallway displays with all players
+            // Set currentPlayer for movement logic only, no character display update
             currentPlayer = players.find(player => player.username === currentUsername) || null;
 
-            previousGameState = JSON.parse(JSON.stringify(gameState));
+            // Update previous state for the next comparison
+            previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
         }
 
         // Update room characters with animation only for the moved player,
@@ -794,7 +777,7 @@
                     } else {
                         charElement.innerHTML = charactersInRoom || '';
                     }
-                    console.log(`Updated ${roomId} characters: ${charactersInRoom}`); // Debug log
+                    // console.log(`Updated ${roomId} characters: ${charactersInRoom}`); // Debug log
                 }
             });
         }
@@ -832,7 +815,7 @@
                     } else {
                         charElement.innerHTML = charactersInHallway || '';
                     }
-                    console.log(`Updated ${hallwayId} characters: ${charactersInHallway}`);
+                    // console.log(`Updated ${hallwayId} characters: ${charactersInHallway}`); // Debug log
                 }
             });
         }
