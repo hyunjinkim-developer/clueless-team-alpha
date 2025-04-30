@@ -393,13 +393,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         playerCopyList.remove(suspect_player)
         playerCopyList.remove(player)
         playerSuggestList.extend(playerCopyList)
-        
-        #test to check playerCopyList and playerSuggestList
-        for b in playerCopyList:
-            print(f"player username in playerCopyList: {b.username}")
-
-        for a in playerSuggestList:
-            print(f"player username in playerSuggestList: {a.username}")
 
         # check suspected player's hand for suspect, then weapon, then room
         # put all matches into separate list
@@ -423,9 +416,11 @@ class GameConsumer(AsyncWebsocketConsumer):
             if numMatches == 1:
                 await self.send(text_data=json.dumps({'message': 'Card {matchList} disproves suggestion. End of turn'}))
                 await self.handle_end_turn(data)
+                break
             elif numMatches > 1:
                 await self.send(text_data=json.dumps({'message': 'Test message - multiple cards disprove suggestion'}))
                 await self.handle_end_turn(data)
+                break
             else:
                 await self.send(text_data=json.dumps({'message': 'No cards to disprove suggestion. Moving to next player'}))
                 return
