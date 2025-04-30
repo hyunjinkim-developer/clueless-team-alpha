@@ -423,8 +423,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 break
             else:
                 await self.send(text_data=json.dumps({'message': 'No cards to disprove suggestion. Moving to next player'}))
-                return
-        # end of Ria's code 4/27/2025 18:58
+                # return
         
         # if suspect_player is None:
         #     # If the suspect does not have any of the cards, check other players
