@@ -8,6 +8,7 @@ from .constants import *
 # For debugging purpose, disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
 # Debugging Flag Conventions: DEBUG_<feature> or DEBUG_<method_name>
+DEBUG_GAME_UPDATE = True
 DEBUG_HANDLE_ACCUSE = True  # <method> based
 
 
@@ -185,11 +186,13 @@ class GameConsumer(AsyncWebsocketConsumer):
         game_state = event['game_state']  # Extract game state from event
         print(f"Received game_update event for game {self.game_id}")
         players = game_state.get('players', [])  # Get players list, default to empty
-        if DEBUG:
+        if DEBUG and DEBUG_GAME_UPDATE:
             # Log each player’s details
             for player in players:
-                print(
-                    f"  - Username: {player['username']}, Character: {player['character']}, Location: {player['location']}, Is Active: {player['is_active']}")
+                print(f"  - Username: {player['username']}, Character: {player['character']}, Location: {player['location']}, Is Active: {player['is_active']}")
+            # Log for case file
+            print(f"Case file for game {game_state['game_id']}: {game_state['case_file']}")
+
         # Send the game state to this client
         await self.send(text_data=json.dumps({
             'type': 'game_update',
@@ -495,7 +498,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             next_player = players[next_player_index]  # Get next player
             next_player.turn = True  # Set next player’s turn to True
             await database_sync_to_async(next_player.save)()  # Save changes asynchronously
-        
         await database_sync_to_async(player.save)()  # Save changes asynchronously
 
         # Broadcast updated game state to all clients
@@ -518,10 +520,12 @@ class GameConsumer(AsyncWebsocketConsumer):
         fields = [f.name for f in Player._meta.fields]  # Dynamically get all field names from Player model
         players = list(game.players.values(*fields)) # Fetch all fields for all players
         return {
-            'case_file': game.case_file if not game.is_active else None,
+            'game_id': self.game_id,
+            # 'case_file': game.case_file if not game.is_active else None, # For production
+            'case_file': game.case_file,  # For testing
             'game_is_active': game.is_active,
             'players': players,
             'rooms': ROOMS,
             'hallways': HALLWAYS,
-            'weapons': WEAPONS
+            'weapons': WEAPONS,
         }
