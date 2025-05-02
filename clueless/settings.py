@@ -81,6 +81,20 @@ CHANNEL_LAYERS = {
     },
 }
 
+# Session Management
+# # Note: If session issues persist, clear django_session table and browser cookies.
+# python manage.py dbshell
+# sqlite> DELETE FROM django_session;
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SAMESITE = 'Strict'  # To prevent cookie sharing, enforce strict same-site policy
+SESSION_COOKIE_AGE = 1800  # 30 minutes session duration
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+# For Development
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # How session data is saved on the server: Use database-backed sessions for isolation
+# # For production
+# SESSION_COOKIE_SECURE = True
+# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # With Redis for performance
+
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
