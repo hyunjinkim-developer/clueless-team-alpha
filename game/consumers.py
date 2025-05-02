@@ -436,39 +436,41 @@ class GameConsumer(AsyncWebsocketConsumer):
         
 
     async def handle_end_turn(self, data):
-        """Handle end of turn for the current player."""
-        game = await self.get_game()  # Get Game instance
-        player = await self.get_player(self.scope['user'].username)  # Get current Player
-        players = await database_sync_to_async(list)(Player.objects.filter(game=game))  # Fetch all players
-        
-        # Check if it’s this player’s turn
+        game = await self.get_game()
+        player = await self.get_player(self.scope['user'].username)
+        players = await database_sync_to_async(list)(Player.objects.filter(game=game).order_by("id"))
+
         if not player.turn:
             await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
             return
-        
-        # Check if player has moved
+
         if not player.moved:
             await self.send(text_data=json.dumps({'error': 'You must move before ending your turn'}))
             return
-        
-        total_player = len(players)  # Get total number of players
-        try:
-            player_index = players.index(player) # Get index of the current player
-        except ValueError:
-            player_index = None
-        
-        # Update turn for the next player
-        if player_index is not None:
-            player.moved = False
-            player.turn = False  # End current player's turn
-            next_player_index = (player_index + 1) % total_player  # Calculate next player index
-            next_player = players[next_player_index]  # Get next player
-            next_player.turn = True  # Set next player’s turn to True
-            await database_sync_to_async(next_player.save)()  # Save changes asynchronously
-        
-        await database_sync_to_async(player.save)()  # Save changes asynchronously
 
-        # Broadcast updated game state to all clients
+        # Reset current player
+        player.turn = False
+        player.moved = False
+        await database_sync_to_async(player.save)()
+
+        # Find current index by username (safer)
+        player_index = next(i for i, p in enumerate(players) if p.username == player.username)
+
+        # Find the next active player
+        total_players = len(players)
+        next_index = (player_index + 1) % total_players
+
+        for _ in range(total_players):
+            next_player = players[next_index]
+            if next_player.is_active:
+                next_player.turn = True
+                await database_sync_to_async(next_player.save)()
+                break
+            next_index = (next_index + 1) % total_players
+        else:
+            print("No active players available for turn.")
+
+        # Broadcast new game state
         game_state = await self.get_game_state()
         await self.channel_layer.group_send(
             self.game_group_name,
@@ -477,6 +479,16 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
+
+    async def player_out(self, event):
+        player = event['player']
+        reason = event.get('reason', 'disconnected')
+
+        await self.send(text_data=json.dumps({
+            'type': 'player_out',
+            'player': player,
+            'reason': reason
+        }))
 
 
     # Async wrapper for synchronous database query to get game state
