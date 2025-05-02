@@ -19,7 +19,7 @@ from .constants import *
 # For debugging purpose, disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
 # Debugging Flag Conventions: DEBUG_<feature> or DEBUG_<method_name>
-DEBUG_AUTH = True  # <feature> based: e.g., Debug flag for authentication logging
+DEBUG_AUTH = False  # <feature> based: e.g., Debug flag for authentication logging
 DEBUG_ASSIGN_RANDOM_CHARACTER = True  # <method> based
 
 # Custom form for user signup
