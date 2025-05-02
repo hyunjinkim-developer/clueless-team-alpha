@@ -8,8 +8,8 @@ from .constants import *
 # For debugging purpose, disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
 # Debugging Flag Conventions: DEBUG_<feature> or DEBUG_<method_name>
+DEBUG_AUTH = True  # Authentication-specific debug logging
 DEBUG_GAME_UPDATE = True
-DEBUG_AUTH = True
 DEBUG_HANDLE_ACCUSE = True  # <method> based
 
 
@@ -21,7 +21,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"Game ID set to: {self.game_id}")
         # Define the WebSocket group name for this game
         self.game_group_name = f"game_{self.game_id}"
-        # Add this client to the game’s WebSocket group
+        # Add client to the game’s WebSocket group
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
         # Accept the WebSocket connection
         await self.accept()
@@ -53,7 +53,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'player': player.username
                 }
             )
-            # Remove this client from the game’s WebSocket group
+            # Remove client from the game’s WebSocket group
             await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
             print(f"WebSocket disconnected for game {self.game_id}")
 
@@ -63,6 +63,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         try:
             data = json.loads(text_data) # Parse JSON message
         except json.JSONDecodeError:
+            # Handle invalid JSON format
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Invalid message format.'
@@ -82,12 +83,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         elif message_type == 'end_turn':
             await self.handle_end_turn(data)  # Handle end_turn request
         elif message_type == 'player_out':
-            await self.handle_player_out(data)
+            await self.handle_player_out(data)  # Handle player_out messages triggered on reload
         else:
-            print(f"No handler for message type {message_type}")
+            # Log and reject unknown message types
+            print(f"No handler for message type {message_type}: {data}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f"Unknown message type: {message_type}"
+                'message': f"Unknown message type: {message_type}",
+                'raw_message': data  # Include raw message for debugging
             }))
 
 
@@ -530,35 +533,41 @@ class GameConsumer(AsyncWebsocketConsumer):
         )
 
     async def handle_player_out(self, data):
+        """Handle player_out messages to deactivate players."""
+        # Validate message format
         if not isinstance(data, dict):
             if DEBUG and DEBUG_AUTH:
                 print(f"[handle_player_out] Invalid player_out message format for game {self.game_id}: {data}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'Invalid player_out message format.'
+                'message': 'Invalid player_out message format.',
+                'raw_message': str(data)  # Include raw message for debugging
             }))
             return
 
+        # Validate username presence
         username = data.get('username', None)
         if not username:
             if DEBUG and DEBUG_AUTH:
-                print(f"[handle_player_out] No username provided in player_out message for game {self.game_id}: {data}")
+                print(
+                    f"[handle_player_out] No username provided in player_out message for game {self.game_id}: {data}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': 'No username provided in player_out message.'
+                'message': 'No username provided in player_out message.',
+                'raw_message': data  # Include raw message for debugging
             }))
             return
 
         try:
+            # Deactivate the player
             player = Player.objects.get(game=self.game, username=username, is_active=True)
             player.is_active = False
             player.save()
-
             if DEBUG and DEBUG_AUTH:
                 print(f"Player {username} marked as inactive in game {self.game_id}")
-
+            # Broadcast updated game state
             await self.channel_layer.group_send(
-                self.group_name,
+                self.game_group_name,  # Use game_group_name for consistency
                 {
                     'type': 'game_update',
                     'game_state': self.get_game_state()
@@ -569,7 +578,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                 print(f"Player {username} not found or already inactive in game {self.game_id}: {data}")
             await self.send(text_data=json.dumps({
                 'type': 'error',
-                'message': f"Player {username} not found or already inactive."
+                'message': f"Player {username} not found or already inactive.",
+                'raw_message': data  # Include raw message for debugging
             }))
 
     # Async wrapper for synchronous database query to get game state

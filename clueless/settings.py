@@ -22,27 +22,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-n2p=z$%=_2l4&_w&tm9%^a$d(f+^sdxebwdrkj0d5y5!^o9e=_'
 
+# Enable debug mode for development
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Define allowed hosts (empty for local development)
 ALLOWED_HOSTS = []
 
-# Application definition
+# Required Django applications for session management and WebSocket support
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
+    'django.contrib.sessions',  # Session management
     'django.contrib.messages',
-    'daphne',
+    'daphne',  # ASGI server for WebSocket
     'django.contrib.staticfiles',
-    'channels',
-    'game',
+    'channels',  # WebSocket framework
+    'game',  # Custom game application
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',  # Handles session creation and management
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -68,10 +70,11 @@ TEMPLATES = [
     },
 ]
 
+# WSGI and ASGI application settings
 WSGI_APPLICATION = 'clueless.wsgi.application'
 ASGI_APPLICATION = 'clueless.asgi.application'
 
-# Configure Redis as the channel layer backend (requires Redis server running)
+# Configure Redis as the channel layer backend for WebSocket communication (requires Redis server running)
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
@@ -85,20 +88,22 @@ CHANNEL_LAYERS = {
 # # Note: If session issues persist, clear django_session table and browser cookies.
 # python manage.py dbshell
 # sqlite> DELETE FROM django_session;
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
-SESSION_COOKIE_SAMESITE = 'Strict'  # To prevent cookie sharing, enforce strict same-site policy
-SESSION_COOKIE_AGE = 1800  # 30 minutes session duration
-SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies for security
+SESSION_COOKIE_SAMESITE = 'Strict'  # Enforce strict same-site policy to prevent cookie sharing across browser windows
+SESSION_COOKIE_AGE = 1800  # Set session duration to 30 minutes to limit stale cookie usage
+SESSION_COOKIE_PATH = '/'  # Ensure cookies are scoped to the root path for consistent behavior
 # For Development
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # How session data is saved on the server: Use database-backed sessions for isolation
+SESSION_COOKIE_SECURE = False  # Disable secure flag for local development
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # How session data is saved on the server: Use database-backend sessions to ensure session isloation and persistence
 # # For production
-# SESSION_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True  # Set to True in production with HTTPS
 # SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # With Redis for performance
 
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# SQLite database configuration for session storage
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
