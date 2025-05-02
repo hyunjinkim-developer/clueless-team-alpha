@@ -661,15 +661,15 @@
     {% endif %}
 
     <script>
-        // Set up WebSocket connection using the game_id passed from the template
+        // Set up WebSocket connection
         const gameId = {{ game_id }};
         const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
 
-        // Retrieve initial players data from the DOM, fallback to empty array if not found
+        // Set up WebSocket connection
         const playersDataElement = document.getElementById('players-data');
         const playersData = playersDataElement ? JSON.parse(playersDataElement.textContent) : [];
 
-        // Retrieve current username from the DOM and lock it for this session
+        // Retrieve current username
         const currentUsernameElement = document.getElementById('current-username');
         const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';
 
@@ -688,10 +688,11 @@
             if (data.type === 'game_update') {
                 updateGameBoard(data.game_state); // Update the board with the new game state
             } else if (data.type === 'game_end') { // Player made a correct accusation
-                const {winner, solution} = data;
-                document.getElementById('notification').innerHTML += `<p>Game Over! ${winner} won with ${solution.suspect} in ${solution.room} with ${solution.weapon}</p>`;
+                const { winner, solution, message } = data;
+                document.getElementById('notification').innerHTML += `<p>${message}</p>`;
+                document.getElementById('accusations-button').disabled = true; // Disable accusations after game end
                 setTimeout(() => {
-                    alert(`Game Over! ${winner} won with ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
+                    alert(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
                     // window.location.href = '/login/'  // Move to login page when accusing player made correct accusation
                 }, 1000);
             } else if (data.type === 'accusation_failed') { // The accusing player has been eliminated for making a false accusation
@@ -846,13 +847,16 @@
             addClickListeners(); // Set up click events for movement
         });
 
-        // Show the accusations form when the button is clicked
+         // Show/hide accusation form
         document.getElementById('accusations-button').addEventListener('click', function() {
-            const formContainer = document.getElementById('accusations-form-container');
-            formContainer.style.display = 'block';  // Show the form
+            document.getElementById('accusations-form-container').style.display = 'block';
         });
 
-        // Handle form submission
+        function closeAccusationForm() {
+            document.getElementById('accusations-form-container').style.display = 'none';
+        }
+
+        // Handle accusation form submission
         document.getElementById('accusations-form').addEventListener('submit', function(event) {
             event.preventDefault();  // Prevent the form from submitting the traditional way
 
