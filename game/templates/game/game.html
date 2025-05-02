@@ -145,7 +145,6 @@
 
         #suggestions-button, #accusations-button, #end-turn-button {
             background-color: #fbe59d;
-            color: rgb(0, 0, 0);
             padding: 10px 20px;
             font-size: 16px;
             border: none;
@@ -164,6 +163,7 @@
             bottom: 160px;  /* Place above accusation form */
             width: 100%;
             background-color: white;
+            color: darkgreen;
             padding: 20px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
@@ -203,6 +203,7 @@
             bottom: 80px;  /* Slightly above the button */
             width: 100%;
             background-color: white;
+            color: #ff6347;
             padding: 20px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
@@ -629,7 +630,7 @@
         <form id="accusations-form">
             <h3>Make an Accusation</h3>
             <label for="suspect">Suspect:</label>
-            <select id="suspect" name="suspect">
+            <select id="suspect" name="suspect" required>
                 <option value="Miss Scarlet">Miss Scarlet</option>
                 <option value="Col. Mustard">Col. Mustard</option>
                 <option value="Prof. Plum">Professor Plum</option>
@@ -639,7 +640,7 @@
             </select>
             <br/>
             <label for="weapon">Weapon:</label>
-            <select id="weapon" name="weapon">
+            <select id="weapon" name="weapon" required>
                 <option value="Knife">Knife</option>
                 <option value="Revolver">Revolver</option>
                 <option value="Lead Pipe">Lead Pipe</option>
@@ -649,7 +650,7 @@
             </select>
             <br/>
             <label for="room">Room:</label>
-            <select id="room" name="room">
+            <select id="room" name="room" required>
                 <option value="Study">Study</option>
                 <option value="Hall">Hall</option>
                 <option value="Lounge">Lounge</option>
@@ -703,216 +704,301 @@
     {% endif %}
 
     <script>
-    // Set up WebSocket connection using the game_id passed from the template
-    const gameId = {{ game_id }};
-    const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
+        const itemImages = {
+          "Knife": "/static/images/weapons/knife.jpg",
+          "Revolver": "/static/images/weapons/revolver.jpg",
+          "Lead Pipe": "/static/images/weapons/lead_pipe.jpg",
+          "Wrench": "/static/images/weapons/wrench.jpg",
+          "Candlestick": "/static/images/weapons/candlestick.jpg",
+          "Rope": "/static/images/weapons/rope.jpg",
+          "Miss Scarlet": "/static/images/characters/miss_scarlet.jpg",
+          "Col. Mustard": "/static/images/characters/col_mustard.jpg",
+          "Prof. Plum": "/static/images/characters/prof_plum.jpg",
+          "Mrs. Peacock": "/static/images/characters/mrs_peacock.jpg",
+          "Mr. Green": "/static/images/characters/rev_green.jpg",
+          "Mrs. White": "/static/images/characters/mrs_white.jpg",
+          "Study": "/static/images/rooms/study.png",
+          "Lounge": "/static/images/rooms/lounge.png",
+          "Hall": "/static/images/rooms/hall.png",
+          "Library": "/static/images/rooms/library.png",
+          "Billiard Room": "/static/images/rooms/billiard_room.png",
+          "Dining Room": "/static/images/rooms/dining_room.png",
+          "Conservatory": "/static/images/rooms/conservatory.png",
+          "Ballroom": "/static/images/rooms/ballroom.png",
+          "Kitchen": "/static/images/rooms/kitchen.png"
+        };
+        
+      
+        // Set up WebSocket connection
+        const gameId = {{ game_id }};
+        const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
 
-    // Retrieve initial players data from the DOM, fallback to empty array if not found
-    const playersDataElement = document.getElementById('players-data');
-    const playersData = playersDataElement ? JSON.parse(playersDataElement.textContent) : [];
+        // Set up WebSocket connection
+        const playersDataElement = document.getElementById('players-data');
+        const playersData = playersDataElement ? JSON.parse(playersDataElement.textContent) : [];
 
-    // Retrieve current username from the DOM and lock it for this session
-    const currentUsernameElement = document.getElementById('current-username');
-    const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';
+        // Retrieve current username
+        const currentUsernameElement = document.getElementById('current-username');
+        const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';
 
-    const itemImages = {
-        "Knife": "/static/images/weapons/knife.jpg",
-        "Revolver": "/static/images/weapons/revolver.jpg",
-        "Lead Pipe": "/static/images/weapons/lead_pipe.jpg",
-        "Wrench": "/static/images/weapons/wrench.jpg",
-        "Candlestick": "/static/images/weapons/candlestick.jpg",
-        "Rope": "/static/images/weapons/rope.jpg",
-        "Miss Scarlet": "/static/images/characters/miss_scarlet.jpg",
-        "Col. Mustard": "/static/images/characters/col_mustard.jpg",
-        "Prof. Plum": "/static/images/characters/prof_plum.jpg",
-        "Mrs. Peacock": "/static/images/characters/mrs_peacock.jpg",
-        "Mr. Green": "/static/images/characters/rev_green.jpg",
-        "Mrs. White": "/static/images/characters/mrs_white.jpg",
-        "Study": "/static/images/rooms/study.png",
-        "Lounge": "/static/images/rooms/lounge.png",
-        "Hall": "/static/images/rooms/hall.png",
-        "Library": "/static/images/rooms/library.png",
-        "Billiard Room": "/static/images/rooms/billiard_room.png",
-        "Dining Room": "/static/images/rooms/dining_room.png",
-        "Conservatory": "/static/images/rooms/conservatory.png",
-        "Ballroom": "/static/images/rooms/ballroom.png",
-        "Kitchen": "/static/images/rooms/kitchen.png"
-    };
+        let currentPlayer = null; // Store the current player's data for move validation
+        let previousGameState = null; // Store the previous game state to detect movement
 
-    let currentPlayer = null; // Store the current player's data for move validation
-    let previousGameState = null; // Store the previous game state to detect movement
+        // Log when the WebSocket connection is established
+        ws.onopen = function() {
+            console.log("WebSocket connected successfully");
+        };
 
-    // Log when the WebSocket connection is established
-    ws.onopen = function() {
-        console.log("WebSocket connected successfully");
-    };
+        // Handle incoming WebSocket messages from the server
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data); // Parse JSON data from the message
+            console.log('Received WebSocket message:', data);
+            const notification = document.getElementById('notification');
 
-    // Handle incoming WebSocket messages from the server
-    ws.onmessage = function(event) {
-        const data = JSON.parse(event.data); // Parse JSON data from the message
-        console.log('Received WebSocket message:', data); // Debug log for received messages
-        if (data.type === 'game_update') {
-            updateGameBoard(data.game_state); // Update the board with the new game state
-        } else if (data.error) {
-            console.error('Error:', data.error); // Log any errors
-            alert(data.error); // Notify the user of errors (e.g., invalid move)
-        }
-    };
-
-    // Log any WebSocket connection errors
-    ws.onerror = function(error) {
-        console.error("WebSocket connection error:", error);
-    };
-
-    // Log when the WebSocket connection closes
-    ws.onclose = function() {
-        console.log("WebSocket closed");
-    };
-
-    // Update the game board with the provided game state
-    function updateGameBoard(gameState) {
-        console.log('Updating game board with state:', gameState); // Debug log for game state
-        const players = gameState.players || []; // Extract players array, default to empty if missing
-        console.log('Players array:', players); // Debug log for players array
-
-        // Determine which player moved by comparing with previous state
-        let movedPlayer = null;
-        if (previousGameState) {
-            const prevPlayers = previousGameState.players || [];
-            movedPlayer = players.find(player => {
-                const prevPlayer = prevPlayers.find(p => p.username === player.username);
-                return prevPlayer && prevPlayer.location !== player.location;
-            })?.username;
-        }
-
-        updateRoomCharacters(players, movedPlayer); // Update room displays with all players
-        updateHallwayCharacters(players, movedPlayer); // Update hallway displays with all players
-        // Set currentPlayer for movement logic only, no character display update
-        currentPlayer = players.find(player => player.username === currentUsername) || null;
-
-        // Update previous state for the next comparison
-        previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
-    }
-
-    function updateGameBoard(gameState) {
-        console.log('Updating game board with state:', gameState);
-        const players = gameState.players || [];
-        console.log('Players array:', players);
-    
-        // Determine the current player whose turn is True
-        const currentTurnPlayer = players.find(player => player.turn);
-        const currentTurnElement = document.getElementById('current-turn');
-        if (currentTurnPlayer) {
-            currentTurnElement.textContent = `It's ${currentTurnPlayer.username}'s turn (${currentTurnPlayer.character})!`;
-        } else {
-            currentTurnElement.textContent = 'Waiting for the next turn...';
-        }
-    
-        // Determine which player moved by comparing with previous state
-        let movedPlayer = null;
-        if (previousGameState) {
-            const prevPlayers = previousGameState.players || [];
-            movedPlayer = players.find(player => {
-                const prevPlayer = prevPlayers.find(p => p.username === player.username);
-                return prevPlayer && prevPlayer.location !== player.location;
-            })?.username;
-        }
-    
-        updateRoomCharacters(players, movedPlayer);
-        updateHallwayCharacters(players, movedPlayer);
-        currentPlayer = players.find(player => player.username === currentUsername) || null;
-    
-        previousGameState = JSON.parse(JSON.stringify(gameState));
-    }
-
-    // Update room characters with animation only for the moved player,
-    // showing all players regardless of is_active
-    function updateRoomCharacters(players, movedPlayer) {
-        const rooms = ['Study', 'Hall', 'Lounge', 'Library', 'BilliardRoom', 'DiningRoom', 'Conservatory', 'Ballroom', 'Kitchen'];
-        rooms.forEach(roomId => {
-            const charElement = document.getElementById(`${roomId}-characters`);
-            if (charElement) {
-                const previousContent = charElement.innerHTML;
-                const charactersInRoom = players
-                    .filter(player => player.location === roomId)
-                    .map(player => {
-                        const isCurrentPlayer = player.username === currentUsername;
-                        const isMoved = player.username === movedPlayer;
-                        const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
-                        const className = isMoved ? `${baseClass} pulse-move` : baseClass;
-                        return `<span class="${className}">${player.character}</span>`;
-                    })
-                    .join('');
-
-                // Update content and remove animation class after it runs
-                if (previousContent !== charactersInRoom) {
-                    charElement.innerHTML = charactersInRoom || '';
-                    setTimeout(() => {
-                        const spans = charElement.querySelectorAll('.pulse-move');
-                        spans.forEach(span => span.classList.remove('pulse-move'));
-                    }, 500); // Match animation duration
-                } else {
-                    charElement.innerHTML = charactersInRoom || '';
-                }
-                console.log(`Updated ${roomId} characters: ${charactersInRoom}`); // Debug log
+            if (data.type === 'game_update') {
+                updateGameBoard(data.game_state); // Update the board with the new game state
+            } else if (data.type === 'game_end') { // Player made a correct accusation
+                const { winner, solution, message } = data;
+                notification.innerHTML = `<p>${data.message}</p>`;
+                document.getElementById('accusations-button').disabled = true; // Disable accusations after game end
+                setTimeout(() => {
+                    alert(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
+                    // window.location.href = '/login/'  // Move to login page when accusing player made correct accusation
+                }, 1000);
+            } else if (data.type === 'accusation_failed') { // The accusing player has been eliminated for making a false accusation
+                document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                alert(data.message);
+                document.getElementById('accusations-button').disabled = true;
+                document.getElementById('suggestions-button').disabled = true;
+                document.getElementById('end-turn-button').disabled = true;
+            } else if (data.type === 'player_eliminated') { // Notify other players that the accusing player has been eliminated due to a false accusation
+                document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                alert(data.message);
+            } else if (data.type === 'game_tie') {
+                notification.innerHTML = `<p>${data.message}</p>`;
+                document.getElementById('accusations-button').disabled = true;
+                document.getElementById('suggestions-button').disabled = true;
+                document.getElementById('end-turn-button').disabled = true;
+                alert(data.message);
+            } else if (data.error) {
+                console.error('Error:', data.error); // Log any errors
+                alert(data.error); // Notify the user of errors (e.g., invalid move)
             }
-        });
-    }
+        };
 
-    // Update hallway characters with animation only for the moved player,
-    // showing all players regardless of is_active
-    function updateHallwayCharacters(players, movedPlayer) {
-        const hallways = ['Hallway1', 'Hallway2',
-                            'Hallway3', 'Hallway4', 'Hallway5',
-                            'Hallway6', 'Hallway7',
-                            'Hallway8', 'Hallway9', 'Hallway10',
-                            'Hallway11', 'Hallway12'];
-        hallways.forEach(hallwayId => {
-            const charElement = document.getElementById(`${hallwayId}-characters`);
-            if (charElement) {
-                const previousContent = charElement.innerHTML;
-                const charactersInHallway = players
-                    .filter(player => player.location === hallwayId)
-                    .map(player => {
-                        const isCurrentPlayer = player.username === currentUsername;
-                        const isMoved = player.username === movedPlayer;
-                        const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';
-                        const className = isMoved ? `${baseClass} pulse-move` : baseClass;
-                        return `<span class="${className}">${player.character}</span>`;
-                    })
-                    .join('');
+        // Log any WebSocket connection errors
+        ws.onerror = function(error) {
+            console.error("WebSocket connection error:", error);
+        };
 
-                // Update content and remove animation class after it runs
-                if (previousContent !== charactersInHallway) {
-                    charElement.innerHTML = charactersInHallway || '';
-                    setTimeout(() => {
-                        const spans = charElement.querySelectorAll('.pulse-move');
-                        spans.forEach(span => span.classList.remove('pulse-move'));
-                    }, 500); // Match animation duration
-                } else {
-                    charElement.innerHTML = charactersInHallway || '';
-                }
-                console.log(`Updated ${hallwayId} characters: ${charactersInHallway}`);
+        // Log when the WebSocket connection closes
+        ws.onclose = function() {
+            console.log("WebSocket closed");
+        };
+
+        // Update the game board with the provided game state
+        function updateGameBoard(gameState) {
+            console.log('Updating game board with state:', gameState); // Debug log for game state
+            const players = gameState.players || []; // Extract players array, default to empty if missing
+            console.log('Players array:', players); // Debug log for players array
+
+            // Determine the current player whose turn is True
+            const currentTurnPlayer = players.find(player => player.turn);
+            const currentTurnElement = document.getElementById('current-turn');
+            if (currentTurnPlayer) {
+                currentTurnElement.textContent = `It's ${currentTurnPlayer.username}'s turn (${currentTurnPlayer.character})!`;
+            } else {
+                currentTurnElement.textContent = 'Waiting for the next turn...';
             }
-        });
-    }
 
-    // Add click event listeners to rooms and hallways for player movement
-    function addClickListeners() {
-        const rooms = document.querySelectorAll('.room'); // Select all room elements
-        const hallways = document.querySelectorAll('.hallway'); // Select all hallway elements
-        const clickableElements = [...rooms, ...hallways]; // Combine into a single array
+            // Determine which player moved by comparing with previous state
+            let movedPlayer = null;
+            if (previousGameState) {
+                const prevPlayers = previousGameState.players || [];
+                movedPlayer = players.find(player => {
+                    const prevPlayer = prevPlayers.find(p => p.username === player.username);
+                    return prevPlayer && prevPlayer.location !== player.location;
+                })?.username;
+            }
 
-        clickableElements.forEach(element => {
-            element.addEventListener('click', () => {
-                const location = element.id;
-                const message = JSON.stringify({
-                    'type': 'move',
-                    'location': location
-                });
-                console.log('Sending move:', message);
-                ws.send(message);
+            updateRoomCharacters(players, movedPlayer); // Update room displays with all players
+            updateHallwayCharacters(players, movedPlayer); // Update hallway displays with all players
+            // Set currentPlayer for movement logic only, no character display update
+            currentPlayer = players.find(player => player.username === currentUsername) || null;
+
+            // Update previous state for the next comparison
+            previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
+        }
+
+        // Update room characters with animation only for the moved player,
+        // showing all players regardless of is_active
+        function updateRoomCharacters(players, movedPlayer) {
+            const rooms = ['Study', 'Hall', 'Lounge', 'Library', 'BilliardRoom', 'DiningRoom', 'Conservatory', 'Ballroom', 'Kitchen'];
+            rooms.forEach(roomId => {
+                const charElement = document.getElementById(`${roomId}-characters`);
+                if (charElement) {
+                    const previousContent = charElement.innerHTML;
+                    const charactersInRoom = players
+                        .filter(player => player.location === roomId)
+                        .map(player => {
+                            const isCurrentPlayer = player.username === currentUsername;
+                            const isMoved = player.username === movedPlayer;
+                            const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
+                            const className = isMoved ? `${baseClass} pulse-move` : baseClass;
+                            return `<span class="${className}">${player.character}</span>`;
+                        })
+                        .join('');
+
+                    // Update content and remove animation class after it runs
+                    if (previousContent !== charactersInRoom) {
+                        charElement.innerHTML = charactersInRoom || '';
+                        setTimeout(() => {
+                            const spans = charElement.querySelectorAll('.pulse-move');
+                            spans.forEach(span => span.classList.remove('pulse-move'));
+                        }, 500); // Match animation duration
+                    } else {
+                        charElement.innerHTML = charactersInRoom || '';
+                    }
+                    // console.log(`Updated ${roomId} characters: ${charactersInRoom}`); // Debug log
+                }
             });
+        }
+
+        // Update hallway characters with animation only for the moved player,
+        // showing all players regardless of is_active
+        function updateHallwayCharacters(players, movedPlayer) {
+            const hallways = ['Hallway1', 'Hallway2',
+                                'Hallway3', 'Hallway4', 'Hallway5',
+                                'Hallway6', 'Hallway7',
+                                'Hallway8', 'Hallway9', 'Hallway10',
+                                'Hallway11', 'Hallway12'];
+            hallways.forEach(hallwayId => {
+                const charElement = document.getElementById(`${hallwayId}-characters`);
+                if (charElement) {
+                    const previousContent = charElement.innerHTML;
+                    const charactersInHallway = players
+                        .filter(player => player.location === hallwayId)
+                        .map(player => {
+                            const isCurrentPlayer = player.username === currentUsername;
+                            const isMoved = player.username === movedPlayer;
+                            const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';
+                            const className = isMoved ? `${baseClass} pulse-move` : baseClass;
+                            return `<span class="${className}">${player.character}</span>`;
+                        })
+                        .join('');
+
+                    // Update content and remove animation class after it runs
+                    if (previousContent !== charactersInHallway) {
+                        charElement.innerHTML = charactersInHallway || '';
+                        setTimeout(() => {
+                            const spans = charElement.querySelectorAll('.pulse-move');
+                            spans.forEach(span => span.classList.remove('pulse-move'));
+                        }, 500); // Match animation duration
+                    } else {
+                        charElement.innerHTML = charactersInHallway || '';
+                    }
+                    // console.log(`Updated ${hallwayId} characters: ${charactersInHallway}`); // Debug log
+                }
+            });
+        }
+
+        // Add click event listeners to rooms and hallways for player movement
+        function addClickListeners() {
+            const rooms = document.querySelectorAll('.room'); // Select all room elements
+            const hallways = document.querySelectorAll('.hallway'); // Select all hallway elements
+            const clickableElements = [...rooms, ...hallways]; // Combine into a single array
+
+            clickableElements.forEach(element => {
+                element.addEventListener('click', () => {
+                    const location = element.id;
+                    const message = JSON.stringify({
+                        'type': 'move',
+                        'location': location
+                    });
+                    console.log('Sending move:', message);
+                    ws.send(message);
+                });
+            });
+        }
+
+        // Initialize the game board when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initial players data:', playersData); // Debug log for initial data
+            updateGameBoard({ players: playersData }); // Initial update with server-rendered data
+            addClickListeners(); // Set up click events for movement
+        });
+
+         // Show accusation form
+        document.getElementById('accusations-button').addEventListener('click', function() {
+            document.getElementById('accusations-form-container').style.display = 'block';
+        });
+
+        // Handle accusation form submission
+        document.getElementById('accusations-form').addEventListener('submit', function(event) {
+            event.preventDefault();  // Prevent the form from submitting the traditional way
+
+            const suspect = document.getElementById('suspect').value;
+            const weapon = document.getElementById('weapon').value;
+            const room = document.getElementById('room').value;
+
+            // Send accusation via WebSocket
+            const message = {
+                type: "accuse",
+                suspect: suspect,
+                weapon: weapon,
+                room: room
+            };
+
+            console.log("Sending accusation:", message);
+            ws.send(JSON.stringify(message));
+
+            // Optionally, hide the form after submission or show a confirmation message
+            alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+
+            // Hide the form again
+            document.getElementById('accusations-form-container').style.display = 'none';
+        });
+
+        // Handle cancel button click
+        document.getElementById('cancel-accusation').addEventListener('click', function() {
+            document.getElementById('accusations-form-container').style.display = 'none'; // Hide the form
+        });
+
+        // Show the suggestion form when the button is clicked
+        document.getElementById('suggestions-button').addEventListener('click', function() {
+            document.getElementById('suggestions-form-container').style.display = 'block';
+        });
+
+        // Handle Suggestion form submission
+        document.getElementById('suggestions-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const suspect = document.getElementById('suggest-suspect').value;
+            const weapon = document.getElementById('suggest-weapon').value;
+            const room = currentPlayer ? currentPlayer.location : null; // Use current room as the suggested room
+
+            if (!room) {
+                alert("You must be in a room to make a suggestion.");
+                return;
+            }
+
+            const message = {
+                type: "suggest",
+                suspect: suspect,
+                weapon: weapon,
+                room: room
+            };
+
+            console.log("Sending suggestion:", message);
+            ws.send(JSON.stringify(message));
+
+            alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+            document.getElementById('suggestions-form-container').style.display = 'none';
+        });
+
+        // Cancel Suggestion Form
+        document.getElementById('cancel-suggestions').addEventListener('click', function() {
+            document.getElementById('suggestions-form-container').style.display = 'none';
         });
     }
 
@@ -999,90 +1085,38 @@
             room: room
         };
 
-        console.log("Sending accusation:", message);
-        ws.send(JSON.stringify(message));
+        // Handle "End Turn" button click
+        document.getElementById('end-turn-button').addEventListener('click', function() {
+            const message = {
+                type: "end_turn"
+            };
 
-        // Optionally, hide the form after submission or show a confirmation message
-        alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+            console.log("Ending turn:", message);
+            ws.send(JSON.stringify(message));
 
-        // Hide the form again
-        document.getElementById('accusations-form-container').style.display = 'none';
-    });
-
-    // Handle cancel button click
-    document.getElementById('cancel-accusation').addEventListener('click', function() {
-        document.getElementById('accusations-form-container').style.display = 'none'; // Hide the form
-    });
-
-    // Show the suggestion form when the button is clicked
-	document.getElementById('suggestions-button').addEventListener('click', function() {
-		document.getElementById('suggestions-form-container').style.display = 'block';
-	});
-
-	// Handle Suggestion form submission
-	document.getElementById('suggestions-form').addEventListener('submit', function(event) {
-		event.preventDefault();
-
-		const suspect = document.getElementById('suggest-suspect').value;
-		const weapon = document.getElementById('suggest-weapon').value;
-		const room = currentPlayer ? currentPlayer.location : null; // Use current room as the suggested room
-
-		if (!room) {
-			alert("You must be in a room to make a suggestion.");
-			return;
-		}
-
-		const message = {
-			type: "suggest",
-			suspect: suspect,
-			weapon: weapon,
-			room: room
-		};
-
-		console.log("Sending suggestion:", message);
-		ws.send(JSON.stringify(message));
-
-		alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
-		document.getElementById('suggestions-form-container').style.display = 'none';
-	});
-
-	// Cancel Suggestion Form
-	document.getElementById('cancel-suggestions').addEventListener('click', function() {
-		document.getElementById('suggestions-form-container').style.display = 'none';
-	});
-
-    // Handle "End Turn" button click
-    document.getElementById('end-turn-button').addEventListener('click', function() {
-        const message = {
-            type: "end_turn"
-        };
-
-        console.log("Ending turn:", message);
-        ws.send(JSON.stringify(message));
-
-        alert("Your turn has ended. Waiting for the next player...");
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggle = document.getElementById('mode-switch');
-        const body = document.body;
-    
-        // Load theme from local storage
-        if (localStorage.getItem('theme') === 'light') {
-            body.classList.add('light-mode');
-            toggle.checked = true;
-        }
-    
-        toggle.addEventListener('change', () => {
-            if (toggle.checked) {
-                body.classList.add('light-mode');
-                localStorage.setItem('theme', 'light');
-            } else {
-                body.classList.remove('light-mode');
-                localStorage.setItem('theme', 'dark');
-            }
+            alert("Your turn has ended. Waiting for the next player...");
         });
-    });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('mode-switch');
+            const body = document.body;
+
+            // Load theme from local storage
+            if (localStorage.getItem('theme') === 'light') {
+                body.classList.add('light-mode');
+                toggle.checked = true;
+            }
+
+            toggle.addEventListener('change', () => {
+                if (toggle.checked) {
+                    body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
 
     </script>
 </body>

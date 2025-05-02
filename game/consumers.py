@@ -1,70 +1,108 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-import json
 import random
+import asyncio
 from .models import *
 from .constants import *
 
 # For debugging purpose, disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
 # Debugging Flag Conventions: DEBUG_<feature> or DEBUG_<method_name>
+DEBUG_AUTH = False  # Authentication-specific debug logging
+DEBUG_GAME_UPDATE = True
 DEBUG_HANDLE_ACCUSE = True  # <method> based
+HANDLE_END_TURN = True
 
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        """Establish WebSocket connection and join game group."""
         print("Connecting to WebSocket...")
         # Extract game_id from the WebSocket URL (e.g., /ws/game/1/)
         self.game_id = self.scope['url_route']['kwargs']['game_id']
         print(f"Game ID set to: {self.game_id}")
-        # Define the WebSocket group name for this game
         self.game_group_name = f"game_{self.game_id}"
-        # Add this client to the game’s WebSocket group
+        # Delay to avoid rapid reconnects
+        await asyncio.sleep(0.2)
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
-        # Accept the WebSocket connection
         await self.accept()
-        print(f"WebSocket connected for game {self.game_id}")
+        print(f"WebSocket connected for game {self.game_id}, channel: {self.channel_name}")
 
-        # Broadcast the initial game state to all clients in the group
+        # Retry session loading if empty
+        session_key = None
+        for _ in range(3):  # Retry up to 3 times
+            session_key = self.scope.get('session', {}).get('session_key')
+            if session_key:
+                break
+            if DEBUG and DEBUG_AUTH:
+                print(f"Session retry: self.scope['session'] = {self.scope.get('session', 'None')}")
+            await asyncio.sleep(0.1)  # Wait 0.1s before retry
+        if DEBUG and DEBUG_AUTH:
+            print(f"Session key: {session_key or 'None'}")
+            print(f"User: {self.scope['user'].username if self.scope['user'].is_authenticated else 'Anonymous'}")
+            cookies = self.scope.get('cookies', {})
+            print(f"Cookies: sessionid={cookies.get('sessionid', 'None')}, "
+                  f"sessionid_{session_key or 'None'}={cookies.get(f'sessionid_{session_key}', 'None')}, "
+                  f"clueless_session_{session_key or 'None'}={cookies.get(f'clueless_session_{session_key}', 'None')}")
         game_state = await self.get_game_state()
-        await self.channel_layer.group_send(
-            self.game_group_name,
-            {
-                'type': 'game_update',  # Message type for clients to process
-                'game_state': game_state  # Current game state
-            }
-        )
+        await self._send_game_update(game_state, source="connect")
 
     async def disconnect(self, close_code):
-        """Handle WebSocket disconnection when a client leaves"""
-        if hasattr(self, 'game_group_name'):  # Check if group was set
-            # Update player's is_active state to False on disconnect
-            player = await self.get_player(self.scope['user'].username)
-            if player.is_active:  # Only update if active
-                player.is_active = False
-                await database_sync_to_async(player.save)()
-            # Broadcast player_out without reason for disconnection
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'player_out',
-                    'player': player.username
-                }
-            )
-            # Remove this client from the game’s WebSocket group
-            await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
-            print(f"WebSocket disconnected for game {self.game_id}")
+        """Handle WebSocket disconnection and remove client from group."""
+        if hasattr(self, 'game_group_name'):
+            try:
+                game = await self.get_game()
+                await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
+                # Only send player_out if game is active and not in DEBUG mode after game end
+                if game.is_active and not (DEBUG and game.begun):
+                    player = await self.get_player(self.scope['user'].username)
+                    if player.is_active:
+                        player.is_active = False
+                        await database_sync_to_async(player.save)()
+                    await self.channel_layer.group_send(
+                        self.game_group_name,
+                        {
+                            'type': 'player_out',
+                            'player': player.username,
+                            'username': player.username,
+                            'channel_name': self.channel_name
+                        }
+                    )
+                else:
+                    if DEBUG:
+                        print(
+                            f"Skipping player_out for game {self.game_id} (active: {game.is_active}, begun: {game.begun}), channel: {self.channel_name}")
+                print(f"WebSocket disconnected for game {self.game_id}, channel: {self.channel_name}")
+            except (Game.DoesNotExist, Player.DoesNotExist):
+                print(
+                    f"Game or player not found during disconnect for game {self.game_id}, channel: {self.channel_name}")
 
-    # Handle incoming messages from clients via WebSocket
     async def receive(self, text_data):
-        print(f"Received message: {text_data}")
-        data = json.loads(text_data)  # Parse JSON message
-        message_type = data.get('type')  # Extract message type
+        """Process incoming WebSocket messages."""
+        if not hasattr(self, 'game_group_name') or not hasattr(self, 'channel_name'):
+            if DEBUG:
+                print(f"Ignoring message due to uninitialized consumer: {text_data}")
+            return
+        if DEBUG:
+            print(f"Received WebSocket message: {text_data}, channel: {self.channel_name}")
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            if DEBUG:
+                print(f"Invalid JSON message: {text_data}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Invalid message format.'
+            }))
+            return
 
+        message_type = data.get('type')
+        if not message_type:
+            if DEBUG:
+                print(f"No message type in data: {data}")
+            return
         if message_type == 'start_game':
             await self.handle_start_game()
-        elif message_type == 'join_game':
-            await self.join_game(data)  # Handle join_game message (placeholder)
         elif message_type == 'move':
             await self.handle_move(data)  # Handle player move request
         elif message_type == 'suggest':
@@ -73,20 +111,28 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.handle_accuse(data)
         elif message_type == 'end_turn':
             await self.handle_end_turn(data)  # Handle end_turn request
+        elif message_type == 'player_out':
+            await self.handle_player_out(data)  # Handle player_out messages triggered on reload
         else:
-            # Echo unrecognized messages back to the client
-            await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
+            if DEBUG:
+                print(f"No handler for message type {message_type}: {data}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f"Unknown message type: {message_type}",
+                'raw_message': data  # Include raw message for debugging
+            }))
+
 
     async def handle_start_game(self):
         game = await self.get_game()
-        
+
         # Verify sender is first player
         if self.scope['user'].username != game.players_list[0]:
             return
-        
+
         # Initialize case file and distribute cards
         await self.initialize_game(game)
-        
+
         # Mark game as started
         game.begun = True
         await database_sync_to_async(game.save)()
@@ -131,13 +177,13 @@ class GameConsumer(AsyncWebsocketConsumer):
             first_player = next(player for player in players if player.username == first_player_username)
             first_player.turn = True
             await database_sync_to_async(first_player.save)()
-            
+
         # Generate hands for each player
         await self.generate_hands(game, players)
-        
+
         # Save the game state
         await database_sync_to_async(game.save)()
-        
+
     async def generate_hands(self, game, players):
         # Combined list of suspects, weapons, and rooms
         combined_list = SUSPECTS + WEAPONS + ROOMS
@@ -180,40 +226,56 @@ class GameConsumer(AsyncWebsocketConsumer):
             if player.character in hands:
                 player.hand = hands[player.character]
                 await database_sync_to_async(player.save)()
-            
 
+                
     async def game_update(self, event):
-        """Handle game_update events broadcast to the group"""
-        game_state = event['game_state']  # Extract game state from event
-        print(f"Received game_update event for game {self.game_id}")
-        players = game_state.get('players', [])  # Get players list, default to empty
-        if DEBUG:
-            # Log each player’s details
+        """Handle game_update events broadcast to the group."""
+        game_state = event.get('game_state', {})
+        source = event.get('source', 'unknown')
+        if DEBUG and DEBUG_GAME_UPDATE:
+            print(f"Received game_update event for game {self.game_id} (source: {source})")
+            # print(f"Full game_state: {game_state}")
+            players = game_state.get('players', [])
             for player in players:
                 print(
-                    f"  - Username: {player['username']}, Character: {player['character']}, Location: {player['location']}, Is Active: {player['is_active']}")
-        # Send the game state to this client
+                    f"  - Username: {player.get('username', 'Unknown')}, "
+                    f"Character: {player.get('character', 'None')}, Location: {player.get('location', 'None')}, "
+                    f"Is Active: {player.get('is_active', 'Unknown')}, Accused: {player.get('accused', 'Unknown')}")
+            game_id = game_state.get('game_id', 'Unknown')
+            case_file = game_state.get('case_file', 'Not set')
+            print(f"Case file for game {game_id}: {case_file}\n")
+
         await self.send(text_data=json.dumps({
             'type': 'game_update',
             'game_state': game_state
         }))
 
-    # Async wrapper for synchronous database query to get Game instance
+    async def _send_game_update(self, game_state, source):
+        """Helper method to send game_update with source tracking."""
+        if DEBUG:
+            print(f"Sending game_update for game {self.game_id} (source: {source})")
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'game_update',
+                'game_state': game_state,
+                'source': source
+            }
+        )
+        
     @database_sync_to_async
     def get_game(self):
+        """Fetch Game instance from the database."""
         return Game.objects.get(id=self.game_id)  # Fetch Game by ID
 
-    # Async wrapper for synchronous database query to get Player instance
     @database_sync_to_async
     def get_player(self, username):
+        """Fetch Player instance from the database."""
         game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
         return Player.objects.get(game=game, username=username)  # Fetch Player by username and game
 
-    async def join_game(self, data):
-        # Placeholder for join_game logic if needed later
-        pass
 
-    async def handle_move(self, data): 
+    async def handle_move(self, data):
         """Handle a player's move request with turn restriction."""
         game = await self.get_game()  # Get Game instance
         player = await self.get_player(self.scope['user'].username)  # Get current Player
@@ -228,14 +290,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                 return
 
             from_location = player.location  # Store current location
-            
+
             print(f"Player {player.username} holds: {player.hand}")  # Debugging: print player hand
 
             # Check if it’s this player’s turn
             if not player.turn:
                 await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
                 return
-        
+
             # Check if the target location is the same as the current location  
             if to_location == from_location:
                 await self.send(text_data=json.dumps({'error': f'You are already at {to_location}'}))
@@ -249,7 +311,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     if p.location in HALLWAYS and p.location == to_location and p.username != player.username:
                         await self.send(text_data=json.dumps({'error': f'Cannot move to {to_location}, it is occupied by {p.username}'}))
                         return
-            
+
             if to_location not in valid_moves:
                 await self.send(
                     text_data=json.dumps({'error': f'Invalid move: {to_location} is not adjacent to {from_location}'}))
@@ -269,18 +331,49 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
 
+
     async def handle_accuse(self, data):
         """ Handle player's accusation without turn enforcement. """
-        # Convert data to a dictionary if it's a JSON string from a WebSocket message;
-        # otherwise, assume it's already a dictionary (e.g., from test scripts)
-        game = await self.get_game()
-        player = await self.get_player(self.scope['user'].username)
-        
-        # Check if player has already made an accusation
-        if player.accused:
-            await self.send(text_data=json.dumps({'error': 'You are eliminated and cannot make accusations'}))
+        try:
+            game = await self.get_game()
+            player = await self.get_player(self.scope['user'].username)
+        except (Game.DoesNotExist, Player.DoesNotExist):
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Game or player not found.'
+            }))
             return
-        
+
+        # Ensure game is active
+        if not game.is_active:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'The game is currently paused or has ended.'
+            }))
+            return
+
+        # Ensure player is active
+        if not player.is_active:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'You are no longer active in the game.'
+            }))
+            return
+
+        # Ensure player's turn
+        if not player.turn:
+            await self.send(text_data=json.dumps({'error: It is not your turn'}))
+            return
+
+        # Ensure if player has already made an accusation
+        if player.accused:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'You have already made an accusation and cannot accuse again.'
+            }))
+            return
+
+        # Validate accusation inputs
         if isinstance(data, str):
             data = json.loads(data)
         suspect = data.get('suspect')
@@ -289,89 +382,132 @@ class GameConsumer(AsyncWebsocketConsumer):
         if not all([suspect, weapon, room]):
             await self.send(text_data=json.dumps({'error': 'Missing accusation details (suspect, weapon or room)'}))
             return
+        if suspect not in SUSPECTS or weapon not in WEAPONS or room not in ROOMS:
+            await self.send(text_data=json.dumps({'error': 'Invalid accusation: one or more selections are not valid'}))
+            return
 
+        if DEBUG and DEBUG_HANDLE_ACCUSE:  # Testing accusation logic
+            game.case_file = {'suspect': 'Miss Scarlet', 'weapon': 'Knife', 'room': 'Study'}
+            await database_sync_to_async(game.save)()
+            print(f"Case file for Testing: {game.case_file}")
+
+        accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
+        if DEBUG and DEBUG_HANDLE_ACCUSE:
+            print(f"Player {player.username} accuses: {accusation}")
+
+        # Mark current player as having made an accusation
+        player.accused = True
+        await database_sync_to_async(player.save)()
 
         # Compare accusation to case file
-        accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
         if accusation == game.case_file:
-            # Correct accusation: End the game
-            game.is_active = False
+            # Correct accusation
+            # End the game
+            game.is_active = False # Set to False for production
+            if DEBUG: # Override for development testing
+                game.is_active = True
             await database_sync_to_async(game.save)()
             await self.channel_layer.group_send(
                 self.game_group_name,
                 {
                     'type': 'game_end',
                     'winner': player.username,
-                    'solution': game.case_file
+                    'solution': game.case_file,
+                    'message': f"{player.username} won with the correct accusation!"
                 }
             )
-            print(f"Player {player.username} won with correct accusation: {accusation}")
+            if DEBUG and DEBUG_HANDLE_ACCUSE:
+                print(f"Player {player.username} won with correct accusation: {accusation}\n")
         else:
-            # Incorrect accusation: Eliminate player from further participation in the game"
-            player.is_active = False
-            await database_sync_to_async(player.save)()
+            # Incorrect accusation: Eliminate the accusing player from actions and broadcast elimination
+            # Privately notify the accusing player
+            await self.send(text_data=json.dumps({
+                'type': 'accusation_failed',
+                'message': 'Your accusation was incorrect. You are no longer able to move or make accusations but remain a suspect.'
+            }))
+            # Broadcast elimination to all clients
             await self.channel_layer.group_send(
                 self.game_group_name,
                 {
-                    'type': 'player_out',
+                    'type': 'player_eliminated',
                     'player': player.username,
-                    'reason': 'incorrect_accusation'  # Client notification: send reason only for incorrect accusation
+                    'message': f"{player.username} has been eliminated due to an incorrect accusation."
                 }
             )
-            await self.send(text_data=json.dumps({'message': 'Your accusation was incorrect. You are out of the game but can still disprove suggestions.'}))
-            print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
+            if DEBUG and DEBUG_HANDLE_ACCUSE:
+                print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
+            # Advance turn to next player
+            await self.handle_end_turn({})
 
-            # Broadcast updated game state
-            game_state = await self.get_game_state()
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'game_update',
-                    'game_state': game_state
-                }
-            )
-            
+        # Broadcast updated game state
+        game_state = await self.get_game_state()
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'game_update',
+                'game_state': game_state
+            }
+        )
+
+    async def game_end(self, event):
+        """Notify clients of game end with winner and solution."""
+        await self.send(text_data=json.dumps({
+            'type': 'game_end',
+            'winner': event['winner'],
+            'solution': event['solution'],
+            'message': event.get('message', f"Game over! {event['winner']} won!")
+        }))
+
+    async def player_eliminated(self, event):
+        """Notify clients of a player's elimination."""
+        await self.send(text_data=json.dumps({
+            'type': 'player_eliminated',
+            'player': event['player'],
+            'message': event['message']
+        }))
+
+
     async def handle_suggest(self, data):
         """Handle a player's suggestion with turn restriction."""
-        
+
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
         players = await database_sync_to_async(list)(Player.objects.filter(game=game))  # Fetch all players
-        
+
         # Check if it’s this player’s turn
         if not player.turn:
             await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
             return
-        
+
         # Check if player has moved
         if not player.moved and not player.suggested:
             await self.send(text_data=json.dumps({'error': 'You must move before making a suggestion unless you were moved to the room'}))
             return
-        
+
         # Check if player has already made an accusation
         if player.accused:
             await self.send(text_data=json.dumps({'error': 'Eliminated players cannot make suggestions'}))
             return
-        
+
         if player.location not in ROOMS:
             await self.send(text_data=json.dumps({'error': f'You must be in a room to make a suggestion'}))
             return
-        
+
         suspect = data.get('suspect')
         weapon = data.get('weapon')
         room = data.get('room')
         if not all([suspect, weapon, room]):
             await self.send(text_data=json.dumps({'error': 'Incomplete suggestion (suspect, weapon, or room missing)'}))
             return
-        
+
         print(f"Player {player.username} suggests: {suspect}, {weapon}, {room}")  # Debugging: print suggestion
-    
+
         # Move suspect to the room if they are not already
         suspect_player = None
         for p in players:
             if p.character == suspect:
                 suspect_player = p
-        
+
         if suspect_player is None:
             # If the suspect does not have any of the cards, check other players
             for p in players:
@@ -397,7 +533,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             else:
                 suspect_player.suggested = True  # Mark suspect as suggested
                 await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
-            
+
             # Check other players’ hands starting with the suspect
             if suspect in suspect_player.hand or weapon in suspect_player.hand or room in suspect_player.hand:
                 # If the suspect has any of the cards, they show it to the player
@@ -423,7 +559,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({
                         'message': "No one has the cards you suggested."
                     }))
-                    
+
         # Broadcast updated game state
         game_state = await self.get_game_state()
         await self.channel_layer.group_send(
@@ -433,44 +569,84 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
-        
+
 
     async def handle_end_turn(self, data):
-        game = await self.get_game()
-        player = await self.get_player(self.scope['user'].username)
-        players = await database_sync_to_async(list)(Player.objects.filter(game=game).order_by("id"))
+        """Handle end of turn for the current player."""
+        game = await self.get_game()  # Get Game instance
+        player = await self.get_player(self.scope['user'].username)  # Get current Player
+        players = await database_sync_to_async(list)(Player.objects.filter(game=game))  # Fetch all players
 
+        # Check if it’s this player’s turn
         if not player.turn:
             await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
             return
 
-        if not player.moved:
+        # Check if player has moved
+        # Allow turn advancement without a move if the player has made an accusation
+        if not player.moved and not player.accused:
             await self.send(text_data=json.dumps({'error': 'You must move before ending your turn'}))
             return
-
-        # Reset current player
-        player.turn = False
+        # Handle the edge case where no non-eliminated players remain, sending an error (can be modified to end the game if needed)
+        non_eliminated_players = [p for p in players if not p.accused]
+        if DEBUG and HANDLE_END_TURN:
+            print(f"Non-eliminated players: {[p.username for p in non_eliminated_players]}")
+        if len(non_eliminated_players) == 0:
+            game.is_active = False
+            await database_sync_to_async(game.save)()
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'game_tie',
+                    'message': 'Game over! All players have been eliminated, resulting in a tie.'
+                }
+            )
+            if DEBUG:
+                print(f"Game {self.game_id} ended in a tie: no non-eliminated players remain.")
+            return
+        # If only one non-eliminated player remains, keep the turn with the current player, resetting moved to allow further actions
         player.moved = False
+        player.turn = False
         await database_sync_to_async(player.save)()
-
-        # Find current index by username (safer)
-        player_index = next(i for i, p in enumerate(players) if p.username == player.username)
-
-        # Find the next active player
-        total_players = len(players)
-        next_index = (player_index + 1) % total_players
-
-        for _ in range(total_players):
-            next_player = players[next_index]
-            if next_player.is_active:
-                next_player.turn = True
-                await database_sync_to_async(next_player.save)()
-                break
-            next_index = (next_index + 1) % total_players
+        if len(non_eliminated_players) == 1:
+            next_player = non_eliminated_players[0]
+            if DEBUG:
+                print(f"Single non-eliminated player: {next_player.username}, assigning turn")
+            next_player.turn = True
+            await database_sync_to_async(next_player.save)()
         else:
-            print("No active players available for turn.")
+            # Update turn for the next player
+            try:
+                player_index = players.index(player)
+            except ValueError:
+                player_index = None
+            if player_index is not None:
+                # Replaced round-robin logic with a loop that searches for the next non-eliminated player (accused = False)
+                total_players = len(players)
+                for i in range(1, total_players):
+                    next_index = (player_index + i) % total_players
+                    next_player = players[next_index]
+                    if not next_player.accused:
+                        if DEBUG:
+                            print(f"Assigning turn to next non-eliminated player: {next_player.username}")
+                        next_player.turn = True
+                        await database_sync_to_async(next_player.save)()
+                        break
+                else:
+                    game.is_active = False
+                    await database_sync_to_async(game.save)()
+                    await self.channel_layer.group_send(
+                        self.game_group_name,
+                        {
+                            'type': 'game_tie',
+                            'message': 'Game over! All players have been eliminated, resulting in a tie.'
+                        }
+                    )
+                    if DEBUG:
+                        print(f"Game {self.game_id} ended in a tie: no non-eliminated players available for turn.")
+                    return
 
-        # Broadcast new game state
+        # Broadcast updated game state to all clients
         game_state = await self.get_game_state()
         await self.channel_layer.group_send(
             self.game_group_name,
@@ -480,30 +656,66 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    async def player_out(self, event):
-        player = event['player']
-        reason = event.get('reason', 'disconnected')
 
+    async def game_tie(self, event):
+        """Notify clients that the game has ended in a tie."""
         await self.send(text_data=json.dumps({
-            'type': 'player_out',
-            'player': player,
-            'reason': reason
+            'type': 'game_tie',
+            'message': event.get('message', 'Game over! All players have been eliminated, resulting in a tie.')
         }))
 
 
-    # Async wrapper for synchronous database query to get game state
-    # Sync with views.py
+    async def handle_player_out(self, data):
+        """Handle player_out messages to deactivate players."""
+        username = data.get('username')
+        if not username:
+            if DEBUG and DEBUG_AUTH:
+                print(f"[handle_player_out] No username provided in player_out message for game {self.game_id}: {data}, "
+                      f"channel: {self.channel_name}")
+            return
+        if DEBUG:
+            print(f"Processing player_out for username {username} in game {self.game_id}, channel: {self.channel_name}")
+        try:
+            game = await self.get_game()
+            if game.is_active:
+                player = await self.get_player(username)
+                if player.is_active:
+                    player.is_active = False
+                    await database_sync_to_async(player.save)()
+                if DEBUG and DEBUG_AUTH:
+                    print(f"Player {username} marked as inactive in game {self.game_id}")
+                game_state = await self.get_game_state()
+                await self._send_game_update(game_state, source="handle_player_out")
+        except (Game.DoesNotExist, Player.DoesNotExist):
+            if DEBUG and DEBUG_AUTH:
+                print(f"Player {username} or game {self.game_id} not found in handle_player_out: {data}")
+
+
     @database_sync_to_async
     def get_game_state(self):
-        game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
-        # Fetch all players (active or inactive) with all fields
-        fields = [f.name for f in Player._meta.fields]  # Dynamically get all field names from Player model
-        players = list(game.players.values(*fields)) # Fetch all fields for all players
-        return {
-            'case_file': game.case_file if not game.is_active else None,
-            'game_is_active': game.is_active,
-            'players': players,
-            'rooms': ROOMS,
-            'hallways': HALLWAYS,
-            'weapons': WEAPONS
-        }
+        """Fetch game state for WebSocket updates."""
+        try:
+            game = Game.objects.get(id=self.game_id)
+            fields = [f.name for f in Player._meta.fields]
+            players = list(game.players.values(*fields))
+            return {
+                'game_id': self.game_id,
+                'case_file': game.case_file or {},
+                'game_is_active': game.is_active,
+                'players': players,
+                'rooms': ROOMS,
+                'hallways': HALLWAYS,
+                'weapons': WEAPONS,
+            }
+        except Game.DoesNotExist:
+            if DEBUG:
+                print(f"Game {self.game_id} not found in get_game_state")
+            return {
+                'game_id': self.game_id,
+                'case_file': {},
+                'game_is_active': False,
+                'players': [],
+                'rooms': ROOMS,
+                'hallways': HALLWAYS,
+                'weapons': WEAPONS,
+            }
