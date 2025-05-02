@@ -9,6 +9,7 @@ from .constants import *
 DEBUG = True  # Debug flag to enable/disable all logging
 # Debugging Flag Conventions: DEBUG_<feature> or DEBUG_<method_name>
 DEBUG_GAME_UPDATE = True
+DEBUG_AUTH = True
 DEBUG_HANDLE_ACCUSE = True  # <method> based
 
 
@@ -59,7 +60,15 @@ class GameConsumer(AsyncWebsocketConsumer):
     # Handle incoming messages from clients via WebSocket
     async def receive(self, text_data):
         print(f"Received message: {text_data}")
-        data = json.loads(text_data)  # Parse JSON message
+        try:
+            data = json.loads(text_data) # Parse JSON message
+        except json.JSONDecodeError:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Invalid message format.'
+            }))
+            return
+
         message_type = data.get('type')  # Extract message type
 
         if message_type == 'start_game':
@@ -72,9 +81,15 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.handle_accuse(data)
         elif message_type == 'end_turn':
             await self.handle_end_turn(data)  # Handle end_turn request
+        elif message_type == 'player_out':
+            await self.handle_player_out(data)
         else:
-            # Echo unrecognized messages back to the client
-            await self.send(text_data=json.dumps({'message': 'Echo: ' + text_data}))
+            print(f"No handler for message type {message_type}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f"Unknown message type: {message_type}"
+            }))
+
 
     async def handle_start_game(self):
         game = await self.get_game()
@@ -190,8 +205,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             # Log each player’s details
             for player in players:
                 print(f"  - Username: {player['username']}, Character: {player['character']}, Location: {player['location']}, Is Active: {player['is_active']}")
-            # Log for case file
-            print(f"Case file for game {game_state['game_id']}: {game_state['case_file']}\n")
+            # # Log for case file
+            # print(f"Case file for game {game_state['game_id']}: {game_state['case_file']}\n")
 
         # Send the game state to this client
         await self.send(text_data=json.dumps({
@@ -514,6 +529,48 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
+    async def handle_player_out(self, data):
+        if not isinstance(data, dict):
+            if DEBUG and DEBUG_AUTH:
+                print(f"[handle_player_out] Invalid player_out message format for game {self.game_id}: {data}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Invalid player_out message format.'
+            }))
+            return
+
+        username = data.get('username', None)
+        if not username:
+            if DEBUG and DEBUG_AUTH:
+                print(f"[handle_player_out] No username provided in player_out message for game {self.game_id}: {data}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'No username provided in player_out message.'
+            }))
+            return
+
+        try:
+            player = Player.objects.get(game=self.game, username=username, is_active=True)
+            player.is_active = False
+            player.save()
+
+            if DEBUG and DEBUG_AUTH:
+                print(f"Player {username} marked as inactive in game {self.game_id}")
+
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'game_update',
+                    'game_state': self.get_game_state()
+                }
+            )
+        except Player.DoesNotExist:
+            if DEBUG and DEBUG_AUTH:
+                print(f"Player {username} not found or already inactive in game {self.game_id}: {data}")
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f"Player {username} not found or already inactive."
+            }))
 
     # Async wrapper for synchronous database query to get game state
     # Sync with views.py
