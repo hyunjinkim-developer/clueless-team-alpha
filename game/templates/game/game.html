@@ -110,6 +110,39 @@
             gap: 10px; /* Add spacing between buttons */
         }
         
+        #display-hand-button {
+            margin-right: 20px; /* Add a larger gap to the left of the button */
+            background-color: #fbe59d;
+            color: rgb(0, 0, 0);
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    
+        #display-hand-button:hover {
+            background-color: #fffefa;
+        }
+
+        #hand-display-container {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+    
+        #hand-display-overlay {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+    
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
         #suggestions-button, #accusations-button, #end-turn-button {
             background-color: #fbe59d;
             color: rgb(0, 0, 0);
@@ -542,6 +575,7 @@
 
     <!-- Combined button container -->
     <div id="button-container">
+        <button id="display-hand-button">Display Hand</button>
         <button id="suggestions-button">Suggestions</button>
         <button id="accusations-button">Accusations</button>
         <button id="end-turn-button">End Turn</button>
@@ -580,6 +614,15 @@
         <div class="hallway" id="Hallway12"><div class="hallway-name">Hallway12</div><div class="hallway-characters" id="Hallway12-characters"></div></div> <!-- Hallway connecting Ballroom and Kitchen -->
         <div class="room" id="Kitchen"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
     </div>
+
+    <div id="hand-display-container" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: grey; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); max-width: 400px; text-align: center;">
+        <h3>Your Hand</h3>
+        <ul id="hand-list" style="list-style: none; padding: 0; margin: 10px 0;"></ul>
+        <button id="close-hand-button" style="margin-top: 10px; padding: 10px 20px; background-color: #ff0066; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+    </div>
+    
+    <!-- Add an overlay for the popup -->
+    <div id="hand-display-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
 
     <!-- Accusations Form (Initially Hidden) -->
     <div id="accusations-form-container" style="display: none;">
@@ -671,6 +714,30 @@
     // Retrieve current username from the DOM and lock it for this session
     const currentUsernameElement = document.getElementById('current-username');
     const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';
+
+    const itemImages = {
+        "Knife": "/static/images/weapons/knife.jpg",
+        "Revolver": "/static/images/weapons/revolver.jpg",
+        "Lead Pipe": "/static/images/weapons/lead_pipe.jpg",
+        "Wrench": "/static/images/weapons/wrench.jpg",
+        "Candlestick": "/static/images/weapons/candlestick.jpg",
+        "Rope": "/static/images/weapons/rope.jpg",
+        "Miss Scarlet": "/static/images/characters/miss_scarlet.jpg",
+        "Col. Mustard": "/static/images/characters/col_mustard.jpg",
+        "Prof. Plum": "/static/images/characters/prof_plum.jpg",
+        "Mrs. Peacock": "/static/images/characters/mrs_peacock.jpg",
+        "Mr. Green": "/static/images/characters/rev_green.jpg",
+        "Mrs. White": "/static/images/characters/mrs_white.jpg",
+        "Study": "/static/images/rooms/study.png",
+        "Lounge": "/static/images/rooms/lounge.png",
+        "Hall": "/static/images/rooms/hall.png",
+        "Library": "/static/images/rooms/library.png",
+        "Billiard Room": "/static/images/rooms/billiard_room.png",
+        "Dining Room": "/static/images/rooms/dining_room.png",
+        "Conservatory": "/static/images/rooms/conservatory.png",
+        "Ballroom": "/static/images/rooms/ballroom.png",
+        "Kitchen": "/static/images/rooms/kitchen.png"
+    };
 
     let currentPlayer = null; // Store the current player's data for move validation
     let previousGameState = null; // Store the previous game state to detect movement
@@ -854,6 +921,60 @@
         console.log('Initial players data:', playersData); // Debug log for initial data
         updateGameBoard({ players: playersData }); // Initial update with server-rendered data
         addClickListeners(); // Set up click events for movement
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const displayHandButton = document.getElementById('display-hand-button');
+        const handDisplayContainer = document.getElementById('hand-display-container');
+        const handDisplayOverlay = document.getElementById('hand-display-overlay');
+        const handList = document.getElementById('hand-list');
+        const closeHandButton = document.getElementById('close-hand-button');
+        const handDisplayTitle = handDisplayContainer.querySelector('h3'); // Select the title element
+    
+        // Show the hand popup when the button is clicked
+        displayHandButton.addEventListener('click', () => {
+            if (currentPlayer && currentPlayer.hand) {
+                // Update the title with the character's name
+                handDisplayTitle.textContent = `${currentPlayer.character}'s Hand`;
+    
+                handList.innerHTML = ''; // Clear previous hand items
+                currentPlayer.hand.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.style.display = 'flex';
+                    listItem.style.alignItems = 'center';
+                    listItem.style.marginBottom = '10px';
+
+                    const itemImage = document.createElement('img');
+                    itemImage.alt = item;
+                    itemImage.style.width = '40px';
+                    itemImage.style.height = '40px';
+                    itemImage.style.marginRight = '10px';
+
+                    const itemText = document.createElement('span');
+                    itemText.textContent = item;
+
+                    listItem.appendChild(itemImage);
+                    listItem.appendChild(itemText);
+                    handList.appendChild(listItem);
+                });
+                handDisplayContainer.style.display = 'block'; // Show the modal
+                handDisplayOverlay.style.display = 'block'; // Show the overlay
+            } else {
+                alert('Your hand is empty or not available.');
+            }
+        });
+    
+        // Close the hand popup
+        closeHandButton.addEventListener('click', () => {
+            handDisplayContainer.style.display = 'none'; // Hide the modal
+            handDisplayOverlay.style.display = 'none'; // Hide the overlay
+        });
+    
+        // Close the popup when clicking on the overlay
+        handDisplayOverlay.addEventListener('click', () => {
+            handDisplayContainer.style.display = 'none'; // Hide the modal
+            handDisplayOverlay.style.display = 'none'; // Hide the overlay
+        });
     });
 
     // Show the accusations form when the button is clicked
