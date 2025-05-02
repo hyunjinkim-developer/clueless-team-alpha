@@ -88,6 +88,7 @@ CHANNEL_LAYERS = {
 # # Note: If session issues persist, clear django_session table and browser cookies.
 # python manage.py dbshell
 # sqlite> DELETE FROM django_session;
+SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies for security
 SESSION_COOKIE_SAMESITE = 'Strict'  # Enforce strict same-site policy to prevent cookie sharing across browser windows
 SESSION_COOKIE_AGE = 1800  # Set session duration to 30 minutes to limit stale cookie usage

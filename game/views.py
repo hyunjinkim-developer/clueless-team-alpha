@@ -86,25 +86,19 @@ def login_view(request):
                         request.session['browser_id'] = browser_id
                         # Create a signed token to validate session integrity
                         request.session['session_token'] = signer.sign(f"{user.username}:{request.session.session_key}:{browser_id}:{session_token}")
-                        try:
-                            request.session.save()  # Persist session to database
-                            session_exists = Session.objects.filter(session_key=request.session.session_key).exists()
-                            if not session_exists:
-                                if DEBUG and DEBUG_AUTH:
-                                    print(
-                                        f"[login_view] Failed to save session {request.session.session_key} for {user.username}")
-                                return render(request, 'game/error.html', {
-                                    'error_message': "Failed to save session. Please try logging in again."
-                                }, status=500)
+                        request.session.modified = True
+                        request.session.save()  # Persist session to database
+                        if DEBUG and DEBUG_AUTH:
+                            print(f"[login_view] Session key for {user.username}: {request.session.session_key}")
+                        session_exists = Session.objects.filter(session_key=request.session.session_key).exists()
+                        if not session_exists:
                             if DEBUG and DEBUG_AUTH:
-                                print(
-                                    f"[login_view] Session {request.session.session_key} saved successfully for {user.username}")
-                        except DatabaseError as e:
-                            if DEBUG and DEBUG_AUTH:
-                                print(f"[login_view] Database error saving session for {user.username}: {e}")
+                                print(f"[login_view] Failed to save session {request.session.session_key} for {user.username}")
                             return render(request, 'game/error.html', {
-                                'error_message': "Database error saving session. Please try again."
+                                'error_message': "Failed to save session. Please try logging in again."
                             }, status=500)
+                        if DEBUG and DEBUG_AUTH:
+                            print(f"[login_view] Session {request.session.session_key} saved successfully for {user.username}")
 
                     assign_random_character(game, user)  # Assign or reactivate character
 
@@ -127,6 +121,8 @@ def login_view(request):
                     # Set session-specific cookies with unique names to prevent sharing
                     response.set_cookie(f'sessionid_{request.session.session_key}', request.session.session_key,
                                         max_age=1800, httponly=True, samesite='Strict', path='/')
+                    response.set_cookie('sessionid', request.session.session_key,
+                                        max_age=1800, httponly=True, samesite='Strict', path='/')
                     response.set_cookie(f'clueless_session_{request.session.session_key}',
                                         request.session.session_key, max_age=1800, httponly=True, samesite='Strict',
                                         path='/')
@@ -140,6 +136,7 @@ def login_view(request):
                     if DEBUG and DEBUG_AUTH:
                         print(
                             f"[login_view] Outgoing response, Set-Cookie: sessionid_{request.session.session_key}={request.session.session_key}; "
+                            f"sessionid={request.session.session_key}; "
                             f"clueless_session_{request.session.session_key}={request.session.session_key}; "
                             f"clueless_browser_{request.session.session_key}={browser_id}; "
                             f"clueless_user_{request.session.session_key}={user.username}; "
