@@ -11,6 +11,7 @@ DEBUG = True  # Debug flag to enable/disable all logging
 DEBUG_AUTH = False  # Authentication-specific debug logging
 DEBUG_GAME_UPDATE = True
 DEBUG_HANDLE_ACCUSE = True  # <method> based
+HANDLE_END_TURN = True
 
 
 class GameConsumer(AsyncWebsocketConsumer):
@@ -340,8 +341,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         if DEBUG and DEBUG_HANDLE_ACCUSE: # Testing accusation logic
-            player.accused = False
-            await database_sync_to_async(player.save)()
+            # player.accused = False
+            # await database_sync_to_async(player.save)()
+            print("*"*100, f"{player.username}.accused={player.accused}")
 
         # Ensure game is active
         if not game.is_active:
@@ -448,6 +450,10 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
+
+        if DEBUG and DEBUG_HANDLE_ACCUSE:
+            print(f"{player.username}.accused={player.accused}", "*" * 100)
+
 
     async def game_end(self, event):
         """Notify clients of game end with winner and solution."""
@@ -587,22 +593,51 @@ class GameConsumer(AsyncWebsocketConsumer):
         if not player.moved and not player.accused:
             await self.send(text_data=json.dumps({'error': 'You must move before ending your turn'}))
             return
-
-        total_player = len(players)  # Get total number of players
-        try:
-            player_index = players.index(player) # Get index of the current player
-        except ValueError:
-            player_index = None
-
-        # Update turn for the next player
-        if player_index is not None:
-            player.moved = False
-            player.turn = False  # End current player's turn
-            next_player_index = (player_index + 1) % total_player  # Calculate next player index
-            next_player = players[next_player_index]  # Get next player
-            next_player.turn = True  # Set next player’s turn to True
-            await database_sync_to_async(next_player.save)()  # Save changes asynchronously
-        await database_sync_to_async(player.save)()  # Save changes asynchronously
+        # Handle the edge case where no non-eliminated players remain, sending an error (can be modified to end the game if needed)
+        non_eliminated_players = [p for p in players if not p.accused]
+        if DEBUG and HANDLE_END_TURN:
+            print(f"Non-eliminated players: {[p.username for p in non_eliminated_players]}")
+        if len(non_eliminated_players) == 0:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'No non-eliminated players remain.'
+            }))
+            return
+        # If only one non-eliminated player remains, keep the turn with the current player, resetting moved to allow further actions
+        player.moved = False
+        player.turn = False
+        await database_sync_to_async(player.save)()
+        if len(non_eliminated_players) == 1:
+            next_player = non_eliminated_players[0]
+            if DEBUG:
+                print(f"Single non-eliminated player: {next_player.username}, assigning turn")
+            next_player.turn = True
+            await database_sync_to_async(next_player.save)()
+        else:
+            # Update turn for the next player
+            try:
+                player_index = players.index(player)
+            except ValueError:
+                player_index = None
+            if player_index is not None:
+                # Replaced round-robin logic with a loop that searches for the next non-eliminated player (accused = False)
+                total_players = len(players)
+                for i in range(1, total_players):
+                    next_index = (player_index + i) % total_players
+                    next_player = players[next_index]
+                    if not next_player.accused:
+                        if DEBUG:
+                            print(f"Assigning turn to next non-eliminated player: {next_player.username}")
+                        next_player.turn = True
+                        await database_sync_to_async(next_player.save)()
+                        break
+                else:
+                    await self.send(text_data=json.dumps({
+                        'type': 'error',
+                        'message': 'No non-eliminated players available for turn.'
+                    }))
+                    return
+                await database_sync_to_async(player.save)()
 
         # Broadcast updated game state to all clients
         game_state = await self.get_game_state()
