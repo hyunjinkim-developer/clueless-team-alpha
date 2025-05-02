@@ -747,11 +747,36 @@
         console.log("WebSocket connected successfully");
     };
 
+    // Display player actions to all
+    function showPopup(message) {
+        const popup = document.createElement('div');
+        popup.style.fontWeight = 'bold';
+        popup.textContent = message;
+        popup.style.position = 'fixed';
+        popup.style.top = '20px';
+        popup.style.left = '20px';
+        popup.style.backgroundColor = '#ffcc00';
+        popup.style.color = '#000';
+        popup.style.padding = '20px 30px';
+        popup.style.borderRadius = '10px';
+        popup.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.2)';
+        popup.style.zIndex = '1000';
+        document.body.appendChild(popup);
+
+        // Remove the popup after 5 seconds
+        setTimeout(() => {
+            popup.remove();
+        }, 5000);
+    }
+
     // Handle incoming WebSocket messages from the server
     ws.onmessage = function(event) {
         const data = JSON.parse(event.data); // Parse JSON data from the message
         console.log('Received WebSocket message:', data); // Debug log for received messages
-        if (data.type === 'game_update') {
+
+        if (data.type === 'popup') {
+            showPopup(data.message); // Display the popup for player actions
+        } else if (data.type === 'game_update') {
             updateGameBoard(data.game_state); // Update the board with the new game state
         } else if (data.error) {
             console.error('Error:', data.error); // Log any errors
@@ -945,6 +970,7 @@
                     listItem.style.marginBottom = '10px';
 
                     const itemImage = document.createElement('img');
+                    itemImage.src = itemImages[item] || ''; // Use the itemImages mapping or fallback to an empty string
                     itemImage.alt = item;
                     itemImage.style.width = '40px';
                     itemImage.style.height = '40px';

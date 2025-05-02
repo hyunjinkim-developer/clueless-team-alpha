@@ -198,6 +198,13 @@ class GameConsumer(AsyncWebsocketConsumer):
             'game_state': game_state
         }))
 
+    async def player_action(self, event):
+        # Send the action message to WebSocket
+        await self.send(text_data=json.dumps({
+            'type': 'popup',
+            'message': event['message']
+        }))
+
     # Async wrapper for synchronous database query to get Game instance
     @database_sync_to_async
     def get_game(self):
@@ -269,6 +276,15 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
 
+            # Broadcast the move action to all players
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'player_action',
+                    'message': f"{player.character} has moved from {from_location} into the {to_location}"
+                }
+            )
+
     async def handle_accuse(self, data):
         """ Handle player's accusation without turn enforcement. """
         # Convert data to a dictionary if it's a JSON string from a WebSocket message;
@@ -290,6 +306,15 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({'error': 'Missing accusation details (suspect, weapon or room)'}))
             return
 
+
+        # Broadcast accusation to all players
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'player_action',
+                'message': f"{player.character} has accused {suspect}, {weapon}, and {room}!"
+            }
+        )
 
         # Compare accusation to case file
         accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
@@ -353,7 +378,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({'error': 'Eliminated players cannot make suggestions'}))
             return
         
-        if player.location not in ROOMS:
+        if player.location.replace(" ", "") not in ROOMS:
             await self.send(text_data=json.dumps({'error': f'You must be in a room to make a suggestion'}))
             return
         
@@ -364,7 +389,14 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({'error': 'Incomplete suggestion (suspect, weapon, or room missing)'}))
             return
         
-        print(f"Player {player.username} suggests: {suspect}, {weapon}, {room}")  # Debugging: print suggestion
+        # Broadcast suggestion to all players
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'player_action',
+                'message': f"{player.character} has suggested {suspect}, {weapon}, and {room}"
+            }
+        )
     
         # Move suspect to the room if they are not already
         suspect_player = None
@@ -477,6 +509,16 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
+        
+        # Broadcast suggestion to all players
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'player_action',
+                'message': f"{player.character} has ended their turn!\n\nIt is now {next_player.character}'s turn."
+            }
+        )
+    
 
 
     # Async wrapper for synchronous database query to get game state
