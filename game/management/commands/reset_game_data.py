@@ -4,13 +4,16 @@ from game.models import Player, Game
 
 class Command(BaseCommand):
     help = """
-    Reset all game and player data for a specific game or all games.
+    Reset player data and game state to initial values for a specific game or all games.
 
     Usage:
-        python manage.py reset_game_data --game_id GAME_ID  # Delete Game ID GAME_ID and its players
-        python manage.py reset_game_data --all           # Delete all games and players
+        python manage.py reset_game_data --game_id <id>  # Delete players and reset Game ID <id> to initial state (is_active=True, players_list=[], begun=False, case_file={})
+        python manage.py reset_game_data --all           # Delete all players and reset all games to initial state
 
-    Exactly one of --game_id or --all must be specified.
+    Exactly one of --game_id or --all must be specified. 
+    Game records are preserved (rows in the game_game table, representing Game model instances) 
+        and reset to an initial state, only player records are deleted. 
+    Authentication data (usernames and passwords in auth_user) remains unaffected.
     """
 
     def add_arguments(self, parser):
@@ -19,12 +22,12 @@ class Command(BaseCommand):
         group.add_argument(
             '--game_id',
             type=int,
-            help='ID of the game to reset (deletes the game and its players)',
+            help='ID of the game to reset (deletes players and resets game state to initial values)',
         )
         group.add_argument(
             '--all',
             action='store_true',
-            help='Reset all games and players in the database',
+            help='Reset all players and all games to initial state',
         )
 
     def handle(self, *args, **options):
@@ -34,7 +37,7 @@ class Command(BaseCommand):
         try:
             with transaction.atomic():
                 if game_id is not None:
-                    # Reset specific game and its players
+                    # Reset players and game state for a specific game
                     try:
                         game = Game.objects.get(id=game_id)
                     except Game.DoesNotExist:
@@ -50,15 +53,21 @@ class Command(BaseCommand):
                         players.delete()
                     else:
                         self.stdout.write(f"No players found for Game ID {game_id}.")
-                    self.stdout.write(f"Deleting Game ID {game_id} (Case File: {game.case_file})")
-                    game.delete()
+                    game.is_active = True
+                    game.players_list = []
+                    game.begun = False
+                    game.case_file = {}
+                    game.save()
+                    self.stdout.write(
+                        f"Reset Game ID {game_id} to initial state: is_active=True, players_list=[], begun=False, case_file={{}}."
+                    )
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f"Successfully reset Game ID {game_id} and {player_count} player(s)."
+                            f"Successfully reset Game ID {game_id}: {player_count} player(s) deleted, game state initialized."
                         )
                     )
                 elif reset_all:
-                    # Reset all games and players
+                    # Reset all players and game state for all games
                     players = Player.objects.all()
                     games = Game.objects.all()
                     player_count = players.count()
@@ -74,13 +83,13 @@ class Command(BaseCommand):
                             )
                         players.delete()
                     if game_count > 0:
-                        self.stdout.write(f"Deleting {game_count} game(s):")
+                        games.update(is_active=True, players_list=[], begun=False, case_file={})
+                        self.stdout.write(f"Reset {game_count} game(s) to initial state: is_active=True, players_list=[], begun=False, case_file={{}}:")
                         for game in games:
-                            self.stdout.write(f" - Game ID {game.id} (Case File: {game.case_file})")
-                        games.delete()
+                            self.stdout.write(f" - Game ID {game.id}")
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f"Successfully reset {game_count} game(s) and {player_count} player(s)."
+                            f"Successfully reset {game_count} game(s) to initial state and deleted {player_count} player(s)."
                         )
                     )
         except Exception as e:
