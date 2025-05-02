@@ -227,6 +227,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 player.hand = hands[player.character]
                 await database_sync_to_async(player.save)()
 
+                
     async def game_update(self, event):
         """Handle game_update events broadcast to the group."""
         game_state = event.get('game_state', {})
@@ -261,7 +262,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'source': source
             }
         )
-
+        
     @database_sync_to_async
     def get_game(self):
         """Fetch Game instance from the database."""
@@ -655,6 +656,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
+
     async def game_tie(self, event):
         """Notify clients that the game has ended in a tie."""
         await self.send(text_data=json.dumps({
@@ -687,6 +689,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         except (Game.DoesNotExist, Player.DoesNotExist):
             if DEBUG and DEBUG_AUTH:
                 print(f"Player {username} or game {self.game_id} not found in handle_player_out: {data}")
+
 
     @database_sync_to_async
     def get_game_state(self):
