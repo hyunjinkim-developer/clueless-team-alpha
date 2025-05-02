@@ -237,7 +237,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             players = game_state.get('players', [])
             for player in players:
                 print(
-                    f"  - Username: {player.get('username', 'Unknown')}, Character: {player.get('character', 'None')}, Location: {player.get('location', 'None')}, Is Active: {player.get('is_active', 'Unknown')}")
+                    f"  - Username: {player.get('username', 'Unknown')}, "
+                    f"Character: {player.get('character', 'None')}, Location: {player.get('location', 'None')}, "
+                    f"Is Active: {player.get('is_active', 'Unknown')}, Accused: {player.get('accused', 'Unknown')}")
             game_id = game_state.get('game_id', 'Unknown')
             case_file = game_state.get('case_file', 'Not set')
             print(f"Case file for game {game_id}: {case_file}\n")
@@ -270,6 +272,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         """Fetch Player instance from the database."""
         game = Game.objects.get(id=self.game_id)  # Fetch Game by ID
         return Player.objects.get(game=game, username=username)  # Fetch Player by username and game
+
 
     async def handle_move(self, data):
         """Handle a player's move request with turn restriction."""
@@ -340,11 +343,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             }))
             return
 
-        if DEBUG and DEBUG_HANDLE_ACCUSE: # Testing accusation logic
-            # player.accused = False
-            # await database_sync_to_async(player.save)()
-            print("*"*100, f"{player.username}.accused={player.accused}")
-
         # Ensure game is active
         if not game.is_active:
             await self.send(text_data=json.dumps({
@@ -361,19 +359,18 @@ class GameConsumer(AsyncWebsocketConsumer):
             }))
             return
 
-        # Check if player has already made an accusation
+        # Ensure player's turn
+        if not player.turn:
+            await self.send(text_data=json.dumps({'error: It is not your turn'}))
+            return
+
+        # Ensure if player has already made an accusation
         if player.accused:
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'You have already made an accusation and cannot accuse again.'
             }))
             return
-
-        # # Ensure player's turn
-        # if not player.turn:
-        #     await self.send(text_data=json.dumps({'error: It is not your turn'}))
-        #     return
-
 
         # Validate accusation inputs
         if isinstance(data, str):
@@ -450,10 +447,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
-
-        if DEBUG and DEBUG_HANDLE_ACCUSE:
-            print(f"{player.username}.accused={player.accused}", "*" * 100)
-
 
     async def game_end(self, event):
         """Notify clients of game end with winner and solution."""
