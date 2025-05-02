@@ -388,7 +388,7 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         if DEBUG and DEBUG_HANDLE_ACCUSE:  # Testing accusation logic
             game.case_file = {'suspect': 'Miss Scarlet', 'weapon': 'Knife', 'room': 'Study'}
-            database_sync_to_async(game.save)()
+            await database_sync_to_async(game.save)()
             print(f"Case file for Testing: {game.case_file}")
 
         accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
@@ -436,6 +436,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             )
             if DEBUG and DEBUG_HANDLE_ACCUSE:
                 print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
+            # Advance turn to next player
+            await self.handle_end_turn({})
 
         # Broadcast updated game state
         game_state = await self.get_game_state()
@@ -581,7 +583,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         # Check if player has moved
-        if not player.moved:
+        # Allow turn advancement without a move if the player has made an accusation
+        if not player.moved and not player.accused:
             await self.send(text_data=json.dumps({'error': 'You must move before ending your turn'}))
             return
 

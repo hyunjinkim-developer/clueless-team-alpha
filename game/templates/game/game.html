@@ -685,6 +685,7 @@
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data); // Parse JSON data from the message
             console.log('Received WebSocket message:', data);
+
             if (data.type === 'game_update') {
                 updateGameBoard(data.game_state); // Update the board with the new game state
             } else if (data.type === 'game_end') { // Player made a correct accusation
@@ -696,9 +697,14 @@
                     // window.location.href = '/login/'  // Move to login page when accusing player made correct accusation
                 }, 1000);
             } else if (data.type === 'accusation_failed') { // The accusing player has been eliminated for making a false accusation
-
+                document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                alert(data.message);
+                document.getElementById('accusations-button').disabled = true;
+                document.getElementById('suggestions-button').disabled = true;
+                document.getElementById('end-turn-button').disabled = true;
             } else if (data.type === 'player_eliminated') { // Notify other players that the accusing player has been eliminated due to a false accusation
-
+                document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                alert(data.message);
             } else if (data.error) {
                 console.error('Error:', data.error); // Log any errors
                 alert(data.error); // Notify the user of errors (e.g., invalid move)
@@ -847,14 +853,10 @@
             addClickListeners(); // Set up click events for movement
         });
 
-         // Show/hide accusation form
+         // Show accusation form
         document.getElementById('accusations-button').addEventListener('click', function() {
             document.getElementById('accusations-form-container').style.display = 'block';
         });
-
-        function closeAccusationForm() {
-            document.getElementById('accusations-form-container').style.display = 'none';
-        }
 
         // Handle accusation form submission
         document.getElementById('accusations-form').addEventListener('submit', function(event) {
