@@ -685,12 +685,13 @@
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data); // Parse JSON data from the message
             console.log('Received WebSocket message:', data);
+            const notification = document.getElementById('notification');
 
             if (data.type === 'game_update') {
                 updateGameBoard(data.game_state); // Update the board with the new game state
             } else if (data.type === 'game_end') { // Player made a correct accusation
                 const { winner, solution, message } = data;
-                document.getElementById('notification').innerHTML += `<p>${message}</p>`;
+                notification.innerHTML = `<p>${data.message}</p>`;
                 document.getElementById('accusations-button').disabled = true; // Disable accusations after game end
                 setTimeout(() => {
                     alert(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
@@ -704,6 +705,12 @@
                 document.getElementById('end-turn-button').disabled = true;
             } else if (data.type === 'player_eliminated') { // Notify other players that the accusing player has been eliminated due to a false accusation
                 document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                alert(data.message);
+            } else if (data.type === 'game_tie') {
+                notification.innerHTML = `<p>${data.message}</p>`;
+                document.getElementById('accusations-button').disabled = true;
+                document.getElementById('suggestions-button').disabled = true;
+                document.getElementById('end-turn-button').disabled = true;
                 alert(data.message);
             } else if (data.error) {
                 console.error('Error:', data.error); // Log any errors

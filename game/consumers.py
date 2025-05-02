@@ -591,10 +591,17 @@ class GameConsumer(AsyncWebsocketConsumer):
         if DEBUG and HANDLE_END_TURN:
             print(f"Non-eliminated players: {[p.username for p in non_eliminated_players]}")
         if len(non_eliminated_players) == 0:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'No non-eliminated players remain.'
-            }))
+            game.is_active = False
+            await database_sync_to_async(game.save)()
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'game_tie',
+                    'message': 'Game over! All players have been eliminated, resulting in a tie.'
+                }
+            )
+            if DEBUG:
+                print(f"Game {self.game_id} ended in a tie: no non-eliminated players remain.")
             return
         # If only one non-eliminated player remains, keep the turn with the current player, resetting moved to allow further actions
         player.moved = False
@@ -625,12 +632,18 @@ class GameConsumer(AsyncWebsocketConsumer):
                         await database_sync_to_async(next_player.save)()
                         break
                 else:
-                    await self.send(text_data=json.dumps({
-                        'type': 'error',
-                        'message': 'No non-eliminated players available for turn.'
-                    }))
+                    game.is_active = False
+                    await database_sync_to_async(game.save)()
+                    await self.channel_layer.group_send(
+                        self.game_group_name,
+                        {
+                            'type': 'game_tie',
+                            'message': 'Game over! All players have been eliminated, resulting in a tie.'
+                        }
+                    )
+                    if DEBUG:
+                        print(f"Game {self.game_id} ended in a tie: no non-eliminated players available for turn.")
                     return
-                await database_sync_to_async(player.save)()
 
         # Broadcast updated game state to all clients
         game_state = await self.get_game_state()
@@ -641,6 +654,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
+
+    async def game_tie(self, event):
+        """Notify clients that the game has ended in a tie."""
+        await self.send(text_data=json.dumps({
+            'type': 'game_tie',
+            'message': event.get('message', 'Game over! All players have been eliminated, resulting in a tie.')
+        }))
+
 
     async def handle_player_out(self, data):
         """Handle player_out messages to deactivate players."""
