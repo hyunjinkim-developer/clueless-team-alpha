@@ -154,13 +154,14 @@
         <h1>Clue-Less Game {{ game_id }}</h1>
         {% if is_first_user %}
             <h2>Welcome Game Host!</h2>
+            <h3>There must be at least 3 players to start the game.</h3>
             <p>Current Players ({{ player_count }}/6):</p>
             <div class="player-list">
                 {% for player in players_list %}
                     <div>{{ player }}</div>
                 {% endfor %}
             </div>
-            <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
+            <button id="start-button" {% if player_count < 3 %}disabled{% endif %}>
                 Start Game
             </button>
         {% else %}
