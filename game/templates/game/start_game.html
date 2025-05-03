@@ -161,7 +161,7 @@
                     <div>{{ player }}</div>
                 {% endfor %}
             </div>
-            <button id="start-button" {% if player_count < 3 %}disabled{% endif %}>
+            <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
                 Start Game
             </button>
         {% else %}
