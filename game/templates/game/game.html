@@ -413,22 +413,22 @@
         }
 
         .close-button {
-            position: absolute;
-            top: 10px;
-            right: 20px;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
             background: transparent;
-            border: none;
-            font-size: 24px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
             font-weight: bold;
             color: #ff0066;
             cursor: pointer;
-            z-index: 1001;
-            transition: transform 0.2s ease;
+            transition: background-color 0.2s ease, transform 0.2s ease;
         }
 
         .close-button:hover {
-            transform: scale(1.3);
-            color: #e6006d;
+            background-color: #ffe0eb;
+            transform: scale(1.05);
         }
 
         /* Fallback loading message */
