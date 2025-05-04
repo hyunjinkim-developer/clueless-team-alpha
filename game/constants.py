@@ -6,7 +6,7 @@ SUSPECTS = [
 # List of rooms on the game board
 ROOMS = [
     "Study", "Hall", "Lounge",
-    "Library", "Billiard Room", "Dining Room",
+    "Library", "BilliardRoom", "DiningRoom",
     "Conservatory", "Ballroom", "Kitchen"
 ]
 

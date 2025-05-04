@@ -180,15 +180,15 @@
         {% if is_first_user %}
             <!-- Host view -->
             <h2>Welcome Game Host!</h2>
-            <!-- Player count and list -->
-            <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
-            <div class="player-list" id="player-list">
+            <h3>There must be at least 3 players to start the game.</h3>
+            <p>Current Players ({{ player_count }}/6):</p>
+            <div class="player-list">
                 {% for player in players_list %}
                     <div>{{ player }}</div>
                 {% endfor %}
             </div>
             <!-- Start Game button for host -->
-            <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
+            <button id="start-button" {% if player_count < 3 %}disabled{% endif %}>
                 Start Game
             </button>
         {% else %}
@@ -269,9 +269,9 @@
                     document.getElementById('player-count').textContent = playerCount;
                     const playerList = document.getElementById('player-list');
                     playerList.innerHTML = players.map(player => `<div>${player}</div>`).join('');
-                    // Enable start button for host if player_count >= 2
+                    // Enable start button for host if player_count >= 3
                     const startButton = document.getElementById('start-button');
-                    if (startButton && playerCount >= 2) {
+                    if (startButton && playerCount >= 3) {
                         startButton.removeAttribute('disabled');
                     }
                 }
