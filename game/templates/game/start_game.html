@@ -188,7 +188,7 @@
                 {% endfor %}
             </div>
             <!-- Start Game button for host -->
-            <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
+            <button id="start-button" {% if player_count < 3 %}disabled{% endif %}>
                 Start Game
             </button>
         {% else %}
@@ -269,9 +269,9 @@
                     document.getElementById('player-count').textContent = playerCount;
                     const playerList = document.getElementById('player-list');
                     playerList.innerHTML = players.map(player => `<div>${player}</div>`).join('');
-                    // Enable start button for host if player_count >= 2
+                    // Enable start button for host if player_count >= 3
                     const startButton = document.getElementById('start-button');
-                    if (startButton && playerCount >= 2) {
+                    if (startButton && playerCount >= 3) {
                         startButton.removeAttribute('disabled');
                     }
                 }
