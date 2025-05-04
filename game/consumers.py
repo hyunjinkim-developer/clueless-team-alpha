@@ -60,6 +60,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     SessionValidationMiddleware for session isolation, addressing session overwrite
     issues in private browsing modes (e.g., Safari).
     """
+
     async def connect(self):
         """
         Handle WebSocket connection establishment.
@@ -337,7 +338,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.game_group_name,
             {'type': 'game_started'}
         )
-
+    
     async def game_started(self, event):
         """Notify clients that the game has started, triggering redirect to game page."""
         await self.send(text_data=json.dumps({
@@ -396,7 +397,17 @@ class GameConsumer(AsyncWebsocketConsumer):
             if player.character in hands:
                 player.hand = hands[player.character]
                 await database_sync_to_async(player.save)()
-
+    
+    async def broadcast_suggestion_result(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'suggestion_result',
+            'suggesting_player': event['suggesting_player'],
+            'suspect': event['suspect'],
+            'weapon': event['weapon'],
+            'room': event['room'],
+            'refuting_player': event.get('refuting_player')
+        }))
+                    
     async def game_update(self, event):
         """
         Handle game_update events broadcast to the group.
@@ -579,6 +590,17 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.game_group_name,
                 {
+                    'type': 'accusation_result',
+                    'accusing_player': player.username,
+                    'suspect': suspect,
+                    'weapon': weapon,
+                    'room': room,
+                    'is_correct': False
+                }
+            )
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
                     'type': 'player_eliminated',
                     'player': player.username,
                     'message': f"{player.username} has been eliminated due to an incorrect accusation."
@@ -595,6 +617,15 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
+    async def accusation_result(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'accusation_result',
+            'accusing_player': event['accusing_player'],
+            'suspect': event['suspect'],
+            'weapon': event['weapon'],
+            'room': event['room'],
+            'is_correct': event['is_correct']
+        }))
 
     async def game_end(self, event):
         """Notify clients of game end with winner and solution."""
@@ -701,6 +732,18 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'broadcast_suggestion_result',
+                'suggesting_player': player.username,
+                'suspect': suspect,
+                'weapon': weapon,
+                'room': room,
+                'refuting_player': p.username if 'p' in locals() and suspect in p.hand or weapon in p.hand or room in p.hand else None
+            }
+        )
+
 
     async def handle_end_turn(self, data):
         """
