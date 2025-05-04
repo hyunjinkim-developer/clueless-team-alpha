@@ -7,37 +7,37 @@
 
         /* Define CSS variables for responsive board sizing */
         :root {
-            --board-size: min(90vmin, 90vmax); /* Auto-scale to fit the window */
-            --cell-size: calc(90vmin / 5); /* Makes sure cells fit inside board */
-            --room-hallway-name-font-size: calc(var(--cell-size) * 0.15); 
+            --board-size: min(80vmin, 90vw, 90vh);
+            --cell-size: calc(var(--board-size) / 5);
+            --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
             --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
-            --bg-color: #0b0c1a;
-            --text-color: white;
-            --room-color: #ff0066;
-            --hallway-color: #0a74da;
-            --vacant-color: rgba(255, 255, 255, 0.1);
         }
 
-        .label {
-            font-weight: bold;
-            padding: 3px 8px;
-            margin-right: 8px;
-            border-radius: 5px;
-            font-size: 0.9em;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .suggestion-label {
-            background: #ff8c00; /* dark orange */
-            color: #fff;
-            box-shadow: 0 0 8px #ff8c00, 0 0 16px #ff8c00;
-        }
-
-        .accusation-label {
-            background: #ff4500; /* orange-red */
-            color: #fff;
-            box-shadow: 0 0 8px #ff4500, 0 0 16px #ff4500;
+        /* Style body with centered layout and background effects */
+        body {
+            margin: auto;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+                radial-gradient(1px 1px at 80% 20%, #fff, transparent),
+                radial-gradient(1px 1px at 50% 70%, #fff, transparent),
+                radial-gradient(1px 1px at 90% 80%, #fff, transparent),
+                radial-gradient(1px 1px at 30% 90%, #fff, transparent),
+                radial-gradient(1px 1px at 10% 10%, #fff, transparent),
+                radial-gradient(1px 1px at 60% 40%, #fff, transparent),
+                radial-gradient(1px 1px at 70% 60%, #fff, transparent);
+            background-size: 100% 100%;
         }
 
         /* Style notification bar for game status and user info */
@@ -112,20 +112,26 @@
             max-height: calc(var(--cell-size) - 40px);
         }
 
-        /* Player-specific styling */
-        .player-me { color: #ffe95b; /* Hot neon pink */
+        /* Style hallways with blue theme */
+        .hallway {
+            background-color: #0a74da;
+            box-shadow: 0 0 10px rgba(10, 116, 218, 0.7);
+        }
+        .hallway-name {
+            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
             font-weight: bold;
-        }      
-        .player-other { color: rgb(0, 0, 0); }  /* Other players in blue */
-
-        /* Room-specific styling */
-        .room-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: hotpink; }
-        .room-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
-
-        /* Hallway-specific styling */
-        .hallway { background-color: lightcyan; }
-        .hallway-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: lightskyblue; }
-        .hallway-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
+            padding: 5px 0;
+            background-color: #0a74da;
+            color: white;
+            text-shadow: 0 0 10px #0a74da;
+        }
+        .hallway-characters {
+            font-size: var(--room-hallway-character-font-size);
+            padding: 2px;
+            overflow-y: auto;
+            white-space: pre-line;
+            max-height: calc(var(--cell-size) - 40px);
+        }
 
         /* Style vacant cells */
         .vacant { background-color: rgba(255, 255, 255, 0.1); }
@@ -206,15 +212,11 @@
             to { opacity: 1; }
         }
 
-        #suggestions-button, #accusations-button, #end-turn-button {
-            background-color: #fbe59d;
-			color: rgb(0, 0, 0);
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        /* Style hand list */
+        #hand-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
         }
         #hand-list li {
             display: flex;
@@ -341,160 +343,26 @@
         .mode-label {
             font-size: 1.2em;
         }
-      
+
+        /* Default dark mode colors */
+        :root {
+            --bg-color: #0b0c1a;
+            --text-color: white;
+            --room-color: #ff0066;
+            --hallway-color: #0a74da;
+            --vacant-color: rgba(255, 255, 255, 0.1);
+        }
+
         /* Light mode overrides */
         body.light-mode {
             --bg-color: #f4f4f4;
             --text-color: #222;
+            --room-color: #ffe0eb;
             --hallway-color: #d0e7ff;
             --vacant-color: rgba(0, 0, 0, 0.05);
         }
 
-        body.light-mode .middle-vacant {
-            background-color: #ffffff !important;
-            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Global reset for consistent sizing */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-        /* Body styling */
-        body {
-            margin: 0;
-            padding: 0;
-            padding-bottom: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: start;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            background-image:
-                radial-gradient(1px 1px at 20% 30%, #fff, transparent),
-                radial-gradient(1px 1px at 80% 20%, #fff, transparent),
-                radial-gradient(1px 1px at 50% 70%, #fff, transparent),
-                radial-gradient(1px 1px at 90% 80%, #fff, transparent),
-                radial-gradient(1px 1px at 30% 90%, #fff, transparent),
-                radial-gradient(1px 1px at 10% 10%, #fff, transparent),
-                radial-gradient(1px 1px at 60% 40%, #fff, transparent),
-                radial-gradient(1px 1px at 70% 60%, #fff, transparent);
-            background-size: 100% 100%;
-        }
-        
-        /* Notification bar styling */
-        #notification {
-            padding: 20px;
-            text-align: center;
-            width: 100%;
-            max-width: 90%;
-            background: rgba(0, 0, 0, 0.6); /* Darker background */
-            border-top: 2px solid #ff0066; /* 🔥 Top pink border */
-            border-bottom: 2px solid #ff0066; /* Bottom pink border for balance */
-            box-shadow: 0 0 10px rgba(255, 0, 102, 0.5); /* Glowing effect */
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-        }
-    
-        /* Game board layout */
-        #game-board {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            grid-template-rows: repeat(5, minmax(0, 1fr));
-            gap: 1px;
-            background-color: #0a0a23;
-            padding: 10px;
-            border: 5px solid #2c2c6c;
-            width: var(--board-size);
-            height: var(--board-size);
-            margin: auto;
-            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
-            max-width: none;  /* Optional: hard cap on width */
-            max-height: none; /* Optional: hard cap on height */
-        }
-    
-        /* Common styling for rooms, hallways, and vacant cells */
-        .room, .hallway, .vacant {
-            width: var(--cell-size);
-            height: var(--cell-size);
-            border: 2px solid #000;
-            text-align: center;
-            position: relative;
-            box-sizing: border-box;
-            cursor: pointer;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .room {
-            background-color: var(--room-color);
-        }
-
-        .hallway {
-            background-color: var(--hallway-color);
-        }
-
-        .vacant {
-            background-color: var(--vacant-color);
-        }
-    
-        /* Hover effect for interactivity */
-        .room:hover, .hallway:hover { 
-            background-color: rgb(255, 255, 255); 
-        }
-    
-        .room-name { 
-            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
-            font-weight: bold; 
-            padding: 5px 0; 
-            background-color: #ff0066; /* Darker pink */
-            color: white; 
-            text-shadow: 0 0 10px #ff0066; /* Glow effect */
-        }
-        .room-characters { 
-            font-size: var(--room-hallway-character-font-size); 
-            padding: 2px; 
-            overflow-y: auto; 
-            white-space: pre-line; 
-            max-height: calc(var(--cell-size) - 40px);
-        }
-    
-        /* Hallway-specific styling */
-        .hallway { 
-            background-color: #0a74da; /* Dark blue */
-            box-shadow: 0 0 10px rgba(10, 116, 218, 0.7); /* Glowing effect */
-        }
-        .hallway-name { 
-            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
-            font-weight: bold; 
-            padding: 5px 0; 
-            background-color: #0a74da; /* Darker blue */
-            color: white; 
-            text-shadow: 0 0 10px #0a74da; /* Glow effect */
-        }
-        .hallway-characters { 
-            font-size: var(--room-hallway-character-font-size); 
-            padding: 2px; 
-            overflow-y: auto; 
-            white-space: pre-line; 
-            max-height: calc(var(--cell-size) - 40px);
-        }
-    
-        /* Vacant cell styling */
-        .vacant { 
-            background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent */
-        }
-    
-        /* Animation for character movement */
-        @keyframes pulseMove {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.7); }
-            100% { transform: scale(1); }
-        }
-        .pulse-move {
-            animation: pulseMove 0.5s ease-in-out;
-        }       
-
-        /* Game title styling */
+        /* Style game title */
         #game-title {
             font-size: 2.5em;
             font-weight: bold;
@@ -510,9 +378,9 @@
         }
         .username, .character-name {
             font-weight: bold;
-            color: #ffdd02;
-            text-shadow: 0 0 5px #ffdd02;
-            font-family: 'Courier New', monospace;
+            color: #00bcd4;
+            text-shadow: 0 0 5px rgba(0, 188, 212, 0.7);
+            font-family: 'Courier New', Courier, monospace;
             letter-spacing: 1px;
         }
 
@@ -561,42 +429,6 @@
             font-size: 1.5em;
             margin: 20px;
         }
-
-        .mode-toggle-wrapper {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            width: 100%;
-        }
-
-        .mode-toggle .slider {
-    width: 36px;         /* Smaller width */
-    height: 18px;        /* Smaller height */
-    background-color: #ccc;
-    border-radius: 50px;
-    position: relative;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.mode-toggle .slider::before {
-    content: "";
-    position: absolute;
-    height: 14px;        /* Smaller knob */
-    width: 14px;
-    background-color: white;
-    border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.3s ease;
-}
-
-.mode-toggle input[type="checkbox"]:checked + .slider::before {
-    transform: translateX(18px); /* Adjust for smaller width */
-}
     </style>
 
 <body>
@@ -614,8 +446,8 @@
             <span class="game-id">{{ game_id }}</span>
         </h1>
         <div class="user-info" style="font-size: 0.6em;">
-            <h1 id="user-status">
-                You are logged in as <span class="username">{{ username }}</span> 
+            <h2 id="user-status">
+                You are logged in as <span class="username">{{ username }}</span>
                 as <span class="character-name">{{ character }}</span>.
             </h2>
             <!-- Logout button -->
@@ -641,31 +473,26 @@
 
     <!-- Game board grid -->
     <div id="game-board">
-        <!-- Row 1 -->
         <div class="room" id="Study"><div class="room-name">Study</div><div class="room-characters" id="Study-characters"></div></div>
         <div class="hallway" id="Hallway1"><div class="hallway-name">Hallway1</div><div class="hallway-characters" id="Hallway1-characters"></div></div>
         <div class="room" id="Hall"><div class="room-name">Hall</div><div class="room-characters" id="Hall-characters"></div></div>
         <div class="hallway" id="Hallway2"><div class="hallway-name">Hallway2</div><div class="hallway-characters" id="Hallway2-characters"></div></div>
         <div class="room" id="Lounge"><div class="room-name">Lounge</div><div class="room-characters" id="Lounge-characters"></div></div>
-        <!-- Row 2 -->
-        <div class="hallway" id="Hallway3"><div class="hallway-name">Hallway3</div><div class="hallway-characters" id="Hallway3-characters"></div></div> <!-- Hallway connecting Study and Library -->
-        <div class="vacant middle-vacant" id="Vacant1"></div> <!-- Empty space -->
-        <div class="hallway" id="Hallway4"><div class="hallway-name">Hallway4</div><div class="hallway-characters" id="Hallway4-characters"></div></div> <!-- Hallway connecting Hall and Billiard Room -->
-        <div class="vacant middle-vacant" id="Vacant2"></div>
-        <div class="hallway" id="Hallway5"><div class="hallway-name">Hallway5</div><div class="hallway-characters" id="Hallway5-characters"></div></div> <!-- Hallway connecting Lounge and Dining Room -->
-        <!-- Row 3 -->
+        <div class="hallway" id="Hallway3"><div class="hallway-name">Hallway3</div><div class="hallway-characters" id="Hallway3-characters"></div></div>
+        <div class="vacant" id="Vacant1"></div>
+        <div class="hallway" id="Hallway4"><div class="hallway-name">Hallway4</div><div class="hallway-characters" id="Hallway4-characters"></div></div>
+        <div class="vacant" id="Vacant2"></div>
+        <div class="hallway" id="Hallway5"><div class="hallway-name">Hallway5</div><div class="hallway-characters" id="Hallway5-characters"></div></div>
         <div class="room" id="Library"><div class="room-name">Library</div><div class="room-characters" id="Library-characters"></div></div>
         <div class="hallway" id="Hallway6"><div class="hallway-name">Hallway6</div><div class="hallway-characters" id="Hallway6-characters"></div></div>
         <div class="room" id="BilliardRoom"><div class="room-name">Billiard Room</div><div class="room-characters" id="BilliardRoom-characters"></div></div>
         <div class="hallway" id="Hallway7"><div class="hallway-name">Hallway7</div><div class="hallway-characters" id="Hallway7-characters"></div></div>
         <div class="room" id="DiningRoom"><div class="room-name">Dining Room</div><div class="room-characters" id="DiningRoom-characters"></div></div>
-        <!-- Row 4 -->
-        <div class="hallway" id="Hallway8"><div class="hallway-name">Hallway8</div><div class="hallway-characters" id="Hallway8-characters"></div></div> <!-- Hallway connecting Library and Conservatory -->
-        <div class="vacant middle-vacant" id="Vacant3"></div>
-        <div class="hallway" id="Hallway9"><div class="hallway-name">Hallway9</div><div class="hallway-characters" id="Hallway9-characters"></div></div> <!-- Hallway connecting Billiard Room and Ballroom -->
-        <div class="vacant middle-vacant" id="Vacant4"></div>
-        <div class="hallway" id="Hallway10"><div class="hallway-name">Hallway10</div><div class="hallway-characters" id="Hallway10-characters"></div></div> <!-- Hallway connecting Dining Room and Kitchen -->
-        <!-- Row 5 -->
+        <div class="hallway" id="Hallway8"><div class="hallway-name">Hallway8</div><div class="hallway-characters" id="Hallway8-characters"></div></div>
+        <div class="vacant" id="Vacant3"></div>
+        <div class="hallway" id="Hallway9"><div class="hallway-name">Hallway9</div><div class="hallway-characters" id="Hallway9-characters"></div></div>
+        <div class="vacant" id="Vacant4"></div>
+        <div class="hallway" id="Hallway10"><div class="hallway-name">Hallway10</div><div class="hallway-characters" id="Hallway10-characters"></div></div>
         <div class="room" id="Conservatory"><div class="room-name">Conservatory</div><div class="room-characters" id="Conservatory-characters"></div></div>
         <div class="hallway" id="Hallway11"><div class="hallway-name">Hallway11</div><div class="hallway-characters" id="Hallway11-characters"></div></div>
         <div class="room" id="Ballroom"><div class="room-name">Ballroom</div><div class="room-characters" id="Ballroom-characters"></div></div>
@@ -673,21 +500,12 @@
         <div class="room" id="Kitchen"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
     </div>
 
-    <div class="mode-toggle-wrapper">
-        <label class="mode-toggle">
-            <input id="mode-switch" type="checkbox"/>
-            <span class="slider"></span>
-            <span class="mode-label">🌙</span>
-        </label>
-    </div>
-    <div id="hand-display-container" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: grey; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); max-width: 400px; text-align: center;">
+    <!-- Hand display popup -->
+    <div id="hand-display-container">
         <h3>Your Hand</h3>
         <ul id="hand-list"></ul>
         <button id="close-hand-button">Close</button>
     </div>
-    
-    <!-- Add an overlay for the popup -->
-    <div id="hand-display-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
 
     <!-- Hand display overlay -->
     <div id="hand-display-overlay"></div>
@@ -697,7 +515,7 @@
         <form id="accusations-form">
             <h3>Make an Accusation</h3>
             <label for="suspect">Suspect:</label>
-            <select id="suspect" name="suspect">
+            <select id="suspect" name="suspect" required>
                 <option value="Miss Scarlet">Miss Scarlet</option>
                 <option value="Col. Mustard">Col. Mustard</option>
                 <option value="Prof. Plum">Professor Plum</option>
@@ -707,7 +525,7 @@
             </select>
             <br/>
             <label for="weapon">Weapon:</label>
-            <select id="weapon" name="weapon">
+            <select id="weapon" name="weapon" required>
                 <option value="Knife">Knife</option>
                 <option value="Revolver">Revolver</option>
                 <option value="Lead Pipe">Lead Pipe</option>
@@ -717,7 +535,7 @@
             </select>
             <br/>
             <label for="room">Room:</label>
-            <select id="room" name="room">
+            <select id="room" name="room" required>
                 <option value="Study">Study</option>
                 <option value="Hall">Hall</option>
                 <option value="Lounge">Lounge</option>
@@ -766,7 +584,6 @@
     {% if request.user.is_authenticated %}
         {{ request.user.username|json_script:"current-username" }}
     {% endif %}
-
 
     <script>
         // Define image paths for game items
@@ -882,20 +699,6 @@
             } catch (e) {
                 console.error('Error processing WebSocket message:', e);
             }
-            else if (data.type === 'suggestion_result') {
-            const { suggesting_player, suspect, weapon, room, refuting_player } = data;
-            let message = `<span class="label suggestion-label">SUGGESTION</span> `;
-            message += `${suggesting_player} suggested ${suspect} in the ${room} with the ${weapon}.`;
-            document.getElementById('notification').innerHTML += `<p>${message}</p>`;
-            }
-
-            else if (data.type === 'accusation_result') {
-                const { accusing_player, suspect, weapon, room, is_correct } = data;
-                const resultText = is_correct ? "correct" : "incorrect";
-                let message = `<span class="label accusation-label">ACCUSATION</span> `;
-                message += `${accusing_player} accused ${suspect} in the ${room} with the ${weapon}. It was ${resultText}.`;
-                document.getElementById('notification').innerHTML += `<p>${message}</p>`;
-            }
         };
 
         // Log WebSocket errors
@@ -980,7 +783,7 @@
                     console.error(`Room characters element not found: ${roomId}-characters`);
                 }
             });
-        }	  
+        }
 
         // Update hallway character displays
         function updateHallwayCharacters(players, movedPlayer) {
@@ -1250,4 +1053,3 @@
     </script>
 </body>
 </html>
-
