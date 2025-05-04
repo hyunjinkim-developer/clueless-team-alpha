@@ -447,6 +447,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'is_correct': False
                 }
             )
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'player_eliminated',
+                    'player': player.username,
+                    'message': f"{player.username} has been eliminated due to an incorrect accusation."
+                }
+            )
             if DEBUG and DEBUG_HANDLE_ACCUSE:
                 print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
             # Advance turn to next player

@@ -763,9 +763,9 @@
                 document.getElementById('accusations-button').disabled = true;
                 document.getElementById('suggestions-button').disabled = true;
                 document.getElementById('end-turn-button').disabled = true;
-            } else if (data.type === 'player_eliminated') { // Notify other players that the accusing player has been eliminated due to a false accusation
-                document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
-                alert(data.message);
+            } else if (data.type === 'player_eliminated') {
+                const message = `<span class="label accusation-label">ELIMINATION</span> ${data.message}`;
+                document.getElementById('notification').innerHTML += `<p>${message}</p>`;
             } else if (data.type === 'game_tie') {
                 notification.innerHTML = `<p>${data.message}</p>`;
                 document.getElementById('accusations-button').disabled = true;
