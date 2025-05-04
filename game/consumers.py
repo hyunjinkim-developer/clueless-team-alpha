@@ -1,3 +1,29 @@
+"""
+WebSocket consumer for the Clue-Less game, handling real-time interactions.
+
+This module defines the GameConsumer, an AsyncWebsocketConsumer that manages
+WebSocket connections for the multiplayer game. It handles connection establishment,
+disconnection, message processing, and game state updates, supporting features like
+dynamic player updates, game start, moves, suggestions, and accusations. The consumer
+validates sessions using cookies, ensures authenticated users via Channels middleware,
+and broadcasts game state changes to clients, integrating with fixes for session
+overwrites, AttributeError at /login/, and lobby functionality (dynamic updates, start
+button, reload fixes).
+
+Key features:
+- Validates session cookies (sessionid, clueless_*) to ensure session integrity.
+- Uses Channels middleware (SessionMiddlewareStack, AuthMiddlewareStack) for
+  authentication, ensuring self.scope['user'] is set correctly.
+- Broadcasts player_joined and game_started events for real-time lobby updates.
+- Manages game logic with turn restrictions and card distribution.
+- Supports debugging with detailed logging when DEBUG is enabled.
+
+For more information, see:
+- https://channels.readthedocs.io/en/stable/topics/consumers.html
+- https://channels.readthedocs.io/en/stable/topics/authentication.html
+- https://docs.djangoproject.com/en/5.1/topics/http/sessions/
+"""
+
 # Standard library imports for JSON parsing and async operations
 import asyncio
 import random
@@ -13,31 +39,60 @@ from django.contrib.sessions.backends.db import SessionStore
 from .models import *
 from .constants import *
 
-# Debug flags for logging; disable in production
-DEBUG = True  # Debug flag to enable/disable all logging
+# Debug flags for logging; disable in production to reduce verbosity
+# When enabled, logs session details, game state, and action events for debugging
+# Set to False in production for performance and security
+DEBUG = True  # Enables/disables all logging
 DEBUG_AUTH = True  # Authentication-specific debug logging
-DEBUG_GAME_UPDATE = True
-DEBUG_HANDLE_ACCUSE = True
-HANDLE_END_TURN = True
+DEBUG_GAME_UPDATE = True  # Game state update logging
+DEBUG_HANDLE_ACCUSE = True  # Accusation event logging
+HANDLE_END_TURN = True  # End turn event logging
 
 class GameConsumer(AsyncWebsocketConsumer):
     """
-    WebSocket consumer for handling game-related real-time interactions.
-    Manages connections, game state updates, and player actions like moves and accusations.
+    WebSocket consumer for real-time game interactions in Clue-Less.
+
+    Handles WebSocket connections, validates sessions, manages game state, and processes
+    player actions (e.g., moves, accusations). Ensures authenticated users via
+    self.scope['user'] (set by AuthMiddlewareStack) and validates session cookies to
+    prevent unauthorized access. Broadcasts events like player_joined and game_started
+    to support lobby features (dynamic updates, start button). Integrates with
+    SessionValidationMiddleware for session isolation, addressing session overwrite
+    issues in private browsing modes (e.g., Safari).
     """
     async def connect(self):
         """
         Handle WebSocket connection establishment.
-        Validates session, joins game group, sends initial game state, and broadcasts player join.
+
+        Validates the session using the sessionid cookie, retrieves user data, joins the
+        game group, sends the initial game state, and broadcasts a player_joined event.
+        Closes the connection if session validation fails, ensuring security.
+
+        - **Authentication**: Uses self.scope['user'] set by AuthMiddlewareStack in
+          asgi.py to identify the authenticated user. Ensures only authenticated users
+          connect, aligning with views.py authentication checks.
+        - **Session Handling**: Retrieves the sessionid cookie and validates it against
+          the django_session table. Loads session data to check for expected_username,
+          mirroring SessionValidationMiddleware’s logic to prevent session overwrites.
+          Stores session_data in self.scope['session'] for use in other methods.
+        - **Error Handling**: Closes the connection (code 4001) if the sessionid is
+          missing, invalid, or lacks expected_username, preventing unauthorized access.
+        - **Debugging**: Logs cookie details and session validation status when
+          DEBUG_AUTH is enabled, aiding diagnosis of WebSocket connection issues.
         """
+        # Log connection attempt for debugging
         print("Connecting to WebSocket...")
+        # Extract game_id from URL route (e.g., /ws/game/<game_id>/)
         self.game_id = self.scope['url_route']['kwargs']['game_id']
         print(f"Game ID set to: {self.game_id}")
+        # Define group name for broadcasting messages to game participants
         self.game_group_name = f"game_{self.game_id}"
 
+        # Retrieve cookies from the WebSocket scope
         cookies = self.scope.get('cookies', {})
         session_key = cookies.get('sessionid')
 
+        # Log cookie details for debugging session issues
         if DEBUG and DEBUG_AUTH:
             print("[connect] Cookie details:")
             print(f"  sessionid: {session_key or 'None'}")
@@ -45,12 +100,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                 if key.startswith('clueless_'):
                     print(f"  {key}: {cookies[key]}")
 
+        # Validate presence of sessionid cookie
         if not session_key:
             if DEBUG and DEBUG_AUTH:
                 print("[connect] No sessionid cookie found")
             await self.close(code=4001, reason="Missing session cookie")
             return
 
+        # Check if session exists in the database
         session_exists = await database_sync_to_async(Session.objects.filter(session_key=session_key).exists)()
         if not session_exists:
             if DEBUG and DEBUG_AUTH:
@@ -59,6 +116,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001, reason="Invalid session")
             return
 
+        # Load session data
         try:
             session_data = await database_sync_to_async(self.load_session)(session_key)
         except Exception as e:
@@ -69,6 +127,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001, reason="Failed to load session")
             return
 
+        # Ensure session contains expected_username
         if not session_data.get('expected_username'):
             if DEBUG and DEBUG_AUTH:
                 print("[connect] Session lacks expected_username:")
@@ -76,21 +135,26 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001, reason="Invalid session data")
             return
 
+        # Store session data in scope for use in other methods
         self.scope['session'] = session_data
 
+        # Log successful validation for debugging
         if DEBUG and DEBUG_AUTH:
             print("[connect] Session validated successfully:")
             print(f"  Session key: {session_key}")
             print(f"  User: {self.scope['user'].username if self.scope['user'].is_authenticated else 'Anonymous'}")
 
+        # Add client to game group for broadcasting
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
+        # Accept the WebSocket connection
         await self.accept()
         print(f"WebSocket connected for game {self.game_id}, channel: {self.channel_name}")
 
+        # Send initial game state to the client
         game_state = await self.get_game_state()
         await self._send_game_update(game_state, source="connect")
 
-        # Broadcast player_joined to update player list
+        # Broadcast player_joined event to update lobby
         game = await self.get_game()
         await self.channel_layer.group_send(
             self.game_group_name,
@@ -105,7 +169,14 @@ class GameConsumer(AsyncWebsocketConsumer):
     def load_session(self, session_key):
         """
         Load session data from the database synchronously.
-        Returns decoded session data to avoid lazy loading issues.
+
+        Retrieves and decodes session data for the given session_key, used in connect()
+        to validate the session. Logs loading status for debugging.
+
+        Returns:
+            dict: Decoded session data containing expected_username and other fields.
+        Raises:
+            Session.DoesNotExist: If the session_key is invalid.
         """
         try:
             session = Session.objects.get(session_key=session_key)
@@ -124,13 +195,21 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         """
         Handle WebSocket disconnection.
-        Removes client from game group and updates player status if necessary.
+
+        Removes the client from the game group and deactivates the player if the game
+        is active, broadcasting a player_out event to update clients.
+
+        - **Authentication**: Uses self.scope['user'].username to identify the player
+          for deactivation, relying on AuthMiddlewareStack to set the user.
+        - **Session Handling**: No direct session manipulation, but deactivation updates
+          the player's state, which is reflected in game state broadcasts.
         """
         if hasattr(self, 'game_group_name'):
             try:
                 game = await self.get_game()
+                # Remove client from game group
                 await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
-                # Only send player_out if game is active and not in DEBUG mode after game start
+                # Only send player_out if game is active and not in DEBUG mode after start
                 if game.is_active and not (DEBUG and game.begun):
                     player = await self.get_player(self.scope['user'].username)
                     if player.is_active:
@@ -141,6 +220,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                         print(f"  Player: {player.username}")
                         print(f"  Game ID: {self.game_id}")
                         print(f"  Channel: {self.channel_name}")
+                    # Broadcast player_out event
                     await self.channel_layer.group_send(
                         self.game_group_name,
                         {
@@ -164,7 +244,10 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         """
         Process incoming WebSocket messages.
-        Handles start_game, move, suggest, accuse, end_turn, and player_out messages.
+
+        Parses JSON messages and dispatches to handlers for start_game, move, suggest,
+        accuse, end_turn, and player_out. Logs messages for debugging and handles errors
+        gracefully.
         """
         if not hasattr(self, 'game_group_name') or not hasattr(self, 'channel_name'):
             if DEBUG:
@@ -212,6 +295,9 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def player_joined(self, event):
         """
         Handle player_joined events to notify clients of new players.
+
+        Sends a player_joined message with the player list and count, enabling dynamic
+        lobby updates in start_game.html (fixes lack of automatic player updates).
         """
         await self.send(text_data=json.dumps({
             'type': 'player_joined',
@@ -223,7 +309,13 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_start_game(self):
         """
         Handle start_game message to initialize the game.
-        Only the first player (host) can start if player_count >= 2.
+
+        Ensures only the host (first player) can start with at least 3 players,
+        addressing the unclickable start button issue in start_game.html. Broadcasts
+        game_started event to redirect clients to the game page.
+
+        - **Authentication**: Uses self.scope['user'].username to verify the host,
+          relying on AuthMiddlewareStack for user authentication.
         """
         game = await self.get_game()
         if self.scope['user'].username != game.players_list[0]:
@@ -247,7 +339,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         )
 
     async def game_started(self, event):
-        """Notify clients that the game has started."""
+        """Notify clients that the game has started, triggering redirect to game page."""
         await self.send(text_data=json.dumps({
             'type': 'game_started'
         }))
@@ -255,7 +347,9 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def initialize_game(self, game):
         """
         Initialize game state by setting case file and distributing cards.
-        Sets the first player's turn (Miss Scarlet or first in players_list).
+
+        Sets the first player's turn (Miss Scarlet or first in players_list) and saves
+        the game state.
         """
         case_suspect = random.choice(SUSPECTS)
         case_weapon = random.choice(WEAPONS)
@@ -278,7 +372,8 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def generate_hands(self, game, players):
         """
         Distribute cards to players' hands, starting with the player whose turn is True.
-        Excludes case file cards and shuffles remaining cards.
+
+        Excludes case file cards, shuffles remaining cards, and assigns them to players.
         """
         combined_list = SUSPECTS + WEAPONS + ROOMS
         remaining_cards = [item for item in combined_list if item not in game.case_file.values()]
@@ -305,7 +400,8 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def game_update(self, event):
         """
         Handle game_update events broadcast to the group.
-        Sends updated game state to clients.
+
+        Sends updated game state to clients, logging details for debugging.
         """
         game_state = event.get('game_state', {})
         source = event.get('source', 'unknown')
@@ -328,7 +424,8 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def _send_game_update(self, game_state, source):
         """
         Helper method to send game_update with source tracking.
-        Broadcasts game state to all clients in the game group.
+
+        Broadcasts game state to all clients in the game group, logging for debugging.
         """
         if DEBUG:
             print(f"Sending game_update for game {self.game_id} (source: {source})")
@@ -355,10 +452,16 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_move(self, data):
         """
         Handle a player's move request with turn restriction.
-        Validates move adjacency and hallway occupancy.
+
+        Validates move adjacency and hallway occupancy, updating player location and
+        broadcasting game state.
+
+        - **Authentication**: Uses self.scope['user'].username to identify the player,
+          ensuring only authenticated users can move.
         """
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
+        # When only one player is left, the player takes turn continuously
         players = await database_sync_to_async(list)(Player.objects.filter(game=game))
         non_eliminated_players = [p for p in players if not p.accused]
         if player.moved and len(non_eliminated_players) != 1:
@@ -401,7 +504,12 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_accuse(self, data):
         """
         Handle player's accusation with turn enforcement.
-        Compares accusation to case file and updates game state.
+
+        Compares accusation to case file, updates player status, and broadcasts game
+        end or elimination events.
+
+        - **Authentication**: Uses self.scope['user'].username to identify the player,
+          ensuring only authenticated users can accuse.
         """
         try:
             game = await self.get_game()
@@ -508,7 +616,12 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_suggest(self, data):
         """
         Handle a player's suggestion with turn restriction.
-        Moves suspect to the suggested room and checks players' hands for cards.
+
+        Moves suspect to the suggested room, checks players' hands for cards, and
+        broadcasts game state updates.
+
+        - **Authentication**: Uses self.scope['user'].username to identify the player,
+          ensuring only authenticated users can suggest.
         """
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
@@ -592,7 +705,12 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_end_turn(self, data):
         """
         Handle end of turn for the current player.
-        Advances turn to the next non-eliminated player.
+
+        Advances turn to the next non-eliminated player, updating game state and
+        broadcasting changes.
+
+        - **Authentication**: Uses self.scope['user'].username to identify the player,
+          ensuring only authenticated users can end their turn.
         """
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
@@ -676,7 +794,12 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_player_out(self, data):
         """
         Handle player_out messages to deactivate players.
-        Broadcasts updated game state to all clients.
+
+        Updates player status and broadcasts game state, ensuring clients reflect
+        player disconnections.
+
+        - **Authentication**: Uses username from the message to identify the player,
+          ensuring only valid players are deactivated.
         """
         username = data.get('username')
         if not username:
@@ -705,7 +828,9 @@ class GameConsumer(AsyncWebsocketConsumer):
     def get_game_state(self):
         """
         Fetch game state for WebSocket updates.
-        Includes all players, game status, and constants.
+
+        Retrieves game data, including players, case file, and constants, handling
+        missing games gracefully.
         """
         try:
             game = Game.objects.get(id=self.game_id)
