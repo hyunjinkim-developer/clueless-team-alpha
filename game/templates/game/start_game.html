@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- Import Google Fonts for styling -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
     <style>
+        /* Define CSS variables for light theme */
         :root {
             --bg-color: #f0f2f5;
             --text-color: #333;
@@ -13,6 +15,7 @@
             --link-color: #007BFF;
         }
 
+        /* Define dark theme overrides */
         body.dark {
             --bg-color: #121212;
             --container-bg: #1e1e1e;
@@ -22,6 +25,7 @@
             --link-color: #4dabf7;
         }
 
+        /* Style body with centered layout and theme transitions */
         body {
             font-family: 'Source Sans Pro', sans-serif;
             margin: 0;
@@ -35,6 +39,7 @@
             transition: background 0.3s, color 0.3s;
         }
 
+        /* Style main container for lobby content */
         .container {
             width: 100%;
             max-width: 400px;
@@ -45,6 +50,7 @@
             text-align: center;
         }
 
+        /* Style game title with neon effect */
         h1 {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 32px;
@@ -75,11 +81,13 @@
                 0 0 48px #ff66cc; }
         }
 
+        /* Style player list container */
         .player-list {
             margin: 20px 0;
             text-align: left;
         }
 
+        /* Style buttons (e.g., Start Game) */
         button {
             width: 100%;
             padding: 10px;
@@ -92,10 +100,18 @@
             margin-top: 15px;
         }
 
+        /* Hover effect for buttons */
         button:hover {
             background: var(--button-hover);
         }
 
+        /* Disabled state for buttons */
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Style dark/light mode toggle */
         .mode-toggle {
             position: absolute;
             top: 10px;
@@ -105,10 +121,12 @@
             gap: 10px;
         }
 
+        /* Hide checkbox input for toggle */
         .mode-toggle input[type="checkbox"] {
             display: none;
         }
 
+        /* Style toggle slider */
         .mode-toggle .slider {
             width: 50px;
             height: 25px;
@@ -119,6 +137,7 @@
             transition: background-color 0.3s ease;
         }
 
+        /* Style toggle slider knob */
         .mode-toggle .slider::before {
             content: "";
             position: absolute;
@@ -131,28 +150,35 @@
             transition: transform 0.3s ease;
         }
 
+        /* Style toggle when checked (dark mode) */
         .mode-toggle input[type="checkbox"]:checked + .slider {
             background-color: #333;
         }
 
+        /* Move knob when checked */
         .mode-toggle input[type="checkbox"]:checked + .slider::before {
             transform: translateX(25px);
         }
 
+        /* Style toggle label (moon icon) */
         .mode-label {
             font-size: 1.2em;
         }
     </style>
 </head>
 <body>
+    <!-- Dark/light mode toggle switch -->
     <label class="mode-toggle">
         <input id="mode-switch" type="checkbox" />
         <span class="slider"></span>
         <span class="mode-label">🌙</span>
     </label>
+    <!-- Main lobby container -->
     <div class="container">
+        <!-- Game title with game ID -->
         <h1>Clue-Less Game {{ game_id }}</h1>
         {% if is_first_user %}
+            <!-- Host view -->
             <h2>Welcome Game Host!</h2>
             <h3>There must be at least 3 players to start the game.</h3>
             <p>Current Players ({{ player_count }}/6):</p>
@@ -161,13 +187,16 @@
                     <div>{{ player }}</div>
                 {% endfor %}
             </div>
+            <!-- Start Game button for host -->
             <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
                 Start Game
             </button>
         {% else %}
+            <!-- Non-host view -->
             <h2>Waiting for host to start the game...</h2>
-            <p>Current Players ({{ player_count }}/6):</p>
-            <div class="player-list">
+            <!-- Player count and list -->
+            <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
+            <div class="player-list" id="player-list">
                 {% for player in players_list %}
                     <div>{{ player }}</div>
                 {% endfor %}
@@ -175,16 +204,19 @@
         {% endif %}
     </div>
     <script>
+        // Initialize JavaScript when DOM is fully loaded
         document.addEventListener('DOMContentLoaded', () => {
+            // Handle dark/light mode toggle
             const toggle = document.getElementById('mode-switch');
             const body = document.body;
 
-            // Load theme from local storage
+            // Load theme from localStorage
             if (localStorage.getItem('theme') === 'dark') {
                 body.classList.add('dark');
                 toggle.checked = true;
             }
 
+            // Update theme on toggle change
             toggle.addEventListener('change', () => {
                 if (toggle.checked) {
                     body.classList.add('dark');
@@ -194,26 +226,79 @@
                     localStorage.setItem('theme', 'light');
                 }
             });
-        });
 
-        const gameId = {{ game_id }};
-        const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
+            // Initialize WebSocket for real-time updates
+            // - **Session Handling**: The WebSocket connection relies on the sessionid
+            //   cookie set by views.py (login_view, start_game) and validated by
+            //   SessionValidationMiddleware. The sessionid cookie, along with
+            //   clueless_* cookies (clueless_session_, clueless_user_, etc.), is
+            //   automatically sent with the WebSocket handshake, allowing
+            //   GameConsumer (consumers.py) to validate the session via
+            //   SessionMiddlewareStack and AuthMiddlewareStack in asgi.py.
+            // - **Cookie Dependency**: The ws:// connection to /ws/game/<gameId>/
+            //   requires a valid sessionid cookie to authenticate the user. If missing
+            //   or invalid, GameConsumer closes the connection (code 4001), preventing
+            //   unauthorized access. This ensures session continuity from login to
+            //   lobby, supporting fixes for session overwrites in private browsing
+            //   (e.g., Safari).
+            // - **Dynamic Updates**: The player_joined event updates the player list
+            //   and count without reloading, relying on session-validated WebSocket
+            //   messages. The start_game event triggers a redirect, maintaining session
+            //   state via cookies preserved by start_game view.
+            // - **Error Handling**: Logs WebSocket errors (onerror) and closures
+            //   (onclose) to debug session issues, such as expired or invalid sessionid
+            //   cookies, which could disrupt lobby updates.
+            const gameId = {{ game_id }};
+            const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (data.type === 'game_started') {
-                window.location.href = '/game/' + gameId + '/';
-            } else if (data.type === 'player_joined') {
-                location.reload(); // Refresh to update player list
+            // Log WebSocket connection success
+            ws.onopen = function() {
+                console.log('WebSocket connected for game ' + gameId);
+            };
+
+            // Handle incoming WebSocket messages
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'game_started') {
+                    // Redirect to game page on game start
+                    window.location.href = '/game/' + gameId + '/';
+                } else if (data.type === 'player_joined') {
+                    // Update player count and list dynamically
+                    const playerCount = data.player_count;
+                    const players = data.players;
+                    document.getElementById('player-count').textContent = playerCount;
+                    const playerList = document.getElementById('player-list');
+                    playerList.innerHTML = players.map(player => `<div>${player}</div>`).join('');
+                    // Enable start button for host if player_count >= 2
+                    const startButton = document.getElementById('start-button');
+                    if (startButton && playerCount >= 2) {
+                        startButton.removeAttribute('disabled');
+                    }
+                }
+            };
+
+            // Log WebSocket errors for debugging
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+
+            // Log WebSocket closure for debugging
+            ws.onclose = function() {
+                console.log('WebSocket closed for game ' + gameId);
+            };
+
+            // Handle Start Game button click for host
+            const startButton = document.getElementById('start-button');
+            if (startButton) {
+                startButton.onclick = function() {
+                    // Send start_game message via WebSocket
+                    ws.send(JSON.stringify({
+                        'type': 'start_game',
+                        'game_id': gameId
+                    }));
+                };
             }
-        };
-
-        document.getElementById('start-button').onclick = function() {
-            ws.send(JSON.stringify({
-                'type': 'start_game',
-                'game_id': gameId
-            }));
-        };
+        });
     </script>
 </body>
 </html>
