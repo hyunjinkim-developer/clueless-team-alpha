@@ -16,7 +16,6 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -45,8 +44,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'game.middleware.CustomSessionMiddleware',  # Custom session middleware for unique session cookies
+    'django.contrib.sessions.middleware.SessionMiddleware',  # Handles session creation and management
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -87,21 +85,30 @@ CHANNEL_LAYERS = {
 }
 
 # Session Management
-# # Note: If session issues persist, clear django_session table and browser cookies.
+# Note: If session issues persist, clear django_session table and browser cookies.
 # python manage.py dbshell
 # sqlite> DELETE FROM django_session;
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookies for security
 SESSION_COOKIE_SAMESITE = 'Strict'  # Enforce strict same-site policy to prevent cookie sharing across browser windows
 SESSION_COOKIE_AGE = 1800  # Set session duration to 30 minutes to limit stale cookie usage
-SESSION_COOKIE_PATH = '/'  # Ensure cookies are scoped to the root path for consistent behavior
+
+def get_session_cookie_path(session_key=None):
+    """
+    Generate session-specific cookie path to isolate cookies per session.
+    Returns '/session/<session_key>/' for authenticated sessions, '/' for unauthenticated.
+    """
+    if session_key:
+        return f'/session/{session_key}/'
+    return '/'
+
+SESSION_COOKIE_PATH = '/'  # Default path for unauthenticated requests
 # For Development
 SESSION_COOKIE_SECURE = False  # Disable secure flag for local development
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # How session data is saved on the server: Use database-backend sessions to ensure session isloation and persistence
-# # For production
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Use database-backed sessions for isolation and persistence
+# For production
 # SESSION_COOKIE_SECURE = True  # Set to True in production with HTTPS
-# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' # With Redis for performance
-
+# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # With Redis for performance
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -113,7 +120,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -133,7 +139,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -144,7 +149,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

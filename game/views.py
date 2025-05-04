@@ -40,7 +40,7 @@ def login_view(request):
     """
     Handle user login and signup.
     Creates a new session, sets session-specific cookies, and ensures session isolation.
-    Clears all existing cookies, including 'sessionid', to prevent session overwrites.
+    Clears all existing cookies to prevent session overwrites.
     Validates incoming session cookies against the authenticated user to prevent session hijacking.
     """
     # Initialize login and signup forms
@@ -59,7 +59,6 @@ def login_view(request):
     # Log incoming cookies for debugging
     sessionid = request.COOKIES.get('sessionid', 'None')
     session_key = request.session.session_key if request.session.session_key else 'unknown'
-    sessionid_specific = request.COOKIES.get(f'sessionid_{session_key}', 'None')
     clueless_session = request.COOKIES.get(f'clueless_session_{session_key}', 'None')
     clueless_browser = request.COOKIES.get(f'clueless_browser_{session_key}', 'None')
     clueless_user = request.COOKIES.get(f'clueless_user_{session_key}', 'None')
@@ -68,18 +67,11 @@ def login_view(request):
     if DEBUG and DEBUG_AUTH:
         print("[login_view] Incoming request:")
         print(f"  sessionid: {sessionid}")
-        print(f"  sessionid_{session_key}: {sessionid_specific}")
         print(f"  clueless_session_{session_key}: {clueless_session}")
         print(f"  clueless_browser_{session_key}: {clueless_browser}")
         print(f"  clueless_user_{session_key}: {clueless_user}")
         print(f"  clueless_token_{session_key}: {clueless_token}")
         print(f"  csrf_token: {csrf_token}")
-
-    # Log warning if generic sessionid is present
-    if sessionid != 'None':
-        if DEBUG and DEBUG_AUTH:
-            print("[login_view] Warning: Generic sessionid cookie detected:")
-            print(f"  sessionid: {sessionid}")
 
     # Generate unique browser ID for session isolation
     browser_id = f"{request.POST.get('username', str(uuid.uuid4()))}_{str(uuid.uuid4())}"
@@ -107,14 +99,14 @@ def login_view(request):
                         response = HttpResponse(status=302)
                         response['Location'] = '/login/'
                         for key in list(request.COOKIES.keys()):
-                            response.delete_cookie(key, path=settings.SESSION_COOKIE_PATH)
+                            response.delete_cookie(key, path='/')
                         return response
 
                     # Prepare response and clear all existing cookies
                     response = HttpResponse(status=302)
                     response['Location'] = f'/game/{game.id}/'
                     for key in list(request.COOKIES.keys()):
-                        response.delete_cookie(key, path=settings.SESSION_COOKIE_PATH)
+                        response.delete_cookie(key, path='/')
 
                     # Create and save new session
                     with transaction.atomic():
@@ -158,29 +150,26 @@ def login_view(request):
                         print(f"  All players in Game 1: {[p.username for p in game.players.all()]}")
                         print(f"  Total players ever joined: {len(game.players_list)}")
 
-                    # Set session-specific cookies only
-                    response.set_cookie(f'sessionid_{request.session.session_key}', request.session.session_key,
-                                       max_age=1800, httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
+                    # Set session-specific cookies
+                    response.set_cookie('sessionid', request.session.session_key,
+                                       max_age=1800, httponly=True, samesite='Strict', path='/')
                     response.set_cookie(f'clueless_session_{request.session.session_key}',
                                        request.session.session_key, max_age=1800, httponly=True, samesite='Strict',
-                                       path=settings.SESSION_COOKIE_PATH)
+                                       path='/')
                     response.set_cookie(f'clueless_browser_{request.session.session_key}', browser_id, max_age=1800,
-                                       httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
+                                       httponly=True, samesite='Strict', path='/')
                     response.set_cookie(f'clueless_user_{request.session.session_key}', user.username, max_age=1800,
-                                       httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
+                                       httponly=True, samesite='Strict', path='/')
                     response.set_cookie(f'clueless_token_{request.session.session_key}',
                                        request.session['session_token'], max_age=1800, httponly=True,
-                                       samesite='Strict', path=settings.SESSION_COOKIE_PATH)
-                    # Explicitly clear generic sessionid
-                    response.delete_cookie('sessionid', path=settings.SESSION_COOKIE_PATH)
+                                       samesite='Strict', path='/')
                     if DEBUG and DEBUG_AUTH:
                         print("[login_view] Outgoing response, Set-Cookie:")
-                        print(f"  sessionid_{request.session.session_key}: {request.session.session_key}")
+                        print(f"  sessionid: {request.session.session_key}")
                         print(f"  clueless_session_{request.session.session_key}: {request.session.session_key}")
                         print(f"  clueless_browser_{request.session.session_key}: {browser_id}")
                         print(f"  clueless_user_{request.session.session_key}: {user.username}")
                         print(f"  clueless_token_{request.session.session_key}: {request.session['session_token']}")
-                        print("  sessionid: deleted")
                     return response
             else:
                 error_message = "Invalid login credentials."
@@ -213,16 +202,15 @@ def login_view(request):
     response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max_age=0'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
-    response.set_cookie('clueless_browser', browser_id, max_age=1800, httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
-    response.delete_cookie('sessionid', path=settings.SESSION_COOKIE_PATH)
+    response.set_cookie('clueless_browser', browser_id, max_age=1800, httponly=True, samesite='Strict', path='/')
+    response.delete_cookie('sessionid', path='/')
     # Clear any session-specific cookies on login page render
-    for key in [k for k in request.COOKIES.keys() if k.startswith(('sessionid_', 'clueless_session_', 'clueless_browser_', 'clueless_user_', 'clueless_token_'))]:
-        response.delete_cookie(key, path=settings.SESSION_COOKIE_PATH)
+    for key in [k for k in request.COOKIES.keys() if k.startswith(('clueless_session_', 'clueless_browser_', 'clueless_user_', 'clueless_token_'))]:
+        response.delete_cookie(key, path='/')
     if DEBUG and DEBUG_AUTH:
         print("[login_view] Outgoing response, Set-Cookie:")
         print(f"  clueless_browser: {browser_id}")
         print("  sessionid: deleted")
-        print("  sessionid_*: deleted")
         print("  clueless_*: deleted")
     return response
 
@@ -230,11 +218,9 @@ def game_view(request, game_id):
     """
     Render the game page with strict session validation.
     Ensures session isolation by validating session-specific cookies and session token.
-    Rejects requests with mismatched sessions or users, forcing re-authentication.
-    Clears generic 'sessionid' and stale cookies to prevent reuse.
+    Rejects requests with mismatched sessions or users with error pages to force logout.
     """
     session_key = request.session.session_key if request.session.session_key else 'unknown'
-    sessionid_specific = request.COOKIES.get(f'sessionid_{session_key}', 'None')
     sessionid = request.COOKIES.get('sessionid', 'None')
     clueless_session = request.COOKIES.get(f'clueless_session_{session_key}', 'None')
     clueless_browser = request.COOKIES.get(f'clueless_browser_{session_key}', 'None')
@@ -244,28 +230,23 @@ def game_view(request, game_id):
     if DEBUG and DEBUG_AUTH:
         print("[game_view] Incoming request:")
         print(f"  sessionid: {sessionid}")
-        print(f"  sessionid_{session_key}: {sessionid_specific}")
         print(f"  clueless_session_{session_key}: {clueless_session}")
         print(f"  clueless_browser_{session_key}: {clueless_browser}")
         print(f"  clueless_user_{session_key}: {clueless_user}")
         print(f"  clueless_token_{session_key}: {clueless_token}")
         print(f"  csrf_token: {csrf_token}")
 
-    # Log warning if generic sessionid is present
-    if sessionid != 'None':
-        if DEBUG and DEBUG_AUTH:
-            print("[game_view] Warning: Generic sessionid cookie detected:")
-            print(f"  sessionid: {sessionid}")
-
     # Validate session-specific cookie
-    if sessionid_specific != request.session.session_key:
+    if sessionid != request.session.session_key:
         if DEBUG and DEBUG_AUTH:
             print("[game_view] Session ID mismatch:")
-            print(f"  Expected sessionid_{session_key}: {request.session.session_key}")
-            print(f"  Got sessionid_{session_key}: {sessionid_specific}")
+            print(f"  Expected sessionid: {request.session.session_key}")
+            print(f"  Got sessionid: {sessionid}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Invalid session ID. Please log in again."
+        }, status=403)
 
     # Ensure session exists in database
     if not Session.objects.filter(session_key=request.session.session_key).exists():
@@ -274,7 +255,9 @@ def game_view(request, game_id):
             print(f"  Session key: {request.session.session_key}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Session expired or invalid. Please log in again."
+        }, status=403)
 
     # Validate expected_username from session
     expected_username = request.session.get('expected_username')
@@ -284,41 +267,21 @@ def game_view(request, game_id):
             print(f"  Session key: {request.session.session_key}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Missing session data. Please log in again."
+        }, status=403)
 
-    # Validate clueless_user_* cookies against expected_username
-    user_cookie_found = False
-    for key in request.COOKIES:
-        if key.startswith('clueless_user_'):
-            user_session_key = key[len('clueless_user_'):]
-            clueless_user = request.COOKIES[key]
-            if user_session_key == session_key:
-                user_cookie_found = True
-                if clueless_user != expected_username:
-                    if DEBUG and DEBUG_AUTH:
-                        print("[game_view] User cookie mismatch:")
-                        print(f"  Expected username: {expected_username}")
-                        print(f"  Got clueless_user: {clueless_user}")
-                    logout(request)
-                    request.session.flush()
-                    return redirect('login')
-            elif clueless_user != expected_username:
-                if DEBUG and DEBUG_AUTH:
-                    print("[game_view] Foreign user cookie detected:")
-                    print(f"  Cookie key: {key}")
-                    print(f"  Expected username: {expected_username}")
-                    print(f"  Got clueless_user: {clueless_user}")
-                logout(request)
-                request.session.flush()
-                return redirect('login')
-    if not user_cookie_found:
+    # Validate clueless_user cookie against expected_username
+    if clueless_user != 'None' and clueless_user != expected_username:
         if DEBUG and DEBUG_AUTH:
-            print("[game_view] No matching clueless_user cookie found:")
-            print(f"  Session key: {session_key}")
+            print("[game_view] User cookie mismatch:")
             print(f"  Expected username: {expected_username}")
+            print(f"  Got clueless_user: {clueless_user}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Invalid user cookie. Please log in again."
+        }, status=403)
 
     # Check authentication
     if not request.user.is_authenticated:
@@ -326,7 +289,11 @@ def game_view(request, game_id):
             print("[game_view] Authentication failure:")
             print(f"  Game ID: {game_id}")
             print("  Reason: User not authenticated")
-        return redirect('login')
+        logout(request)
+        request.session.flush()
+        return render(request, 'game/error.html', {
+            'error_message': "You are not authenticated. Please log in."
+        }, status=403)
 
     # Validate request.user.username against expected_username
     if request.user.username != expected_username:
@@ -336,7 +303,9 @@ def game_view(request, game_id):
             print(f"  Got username: {request.user.username}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Session mismatch detected. Please log in again."
+        }, status=403)
 
     # Validate session token
     expected_token = request.session.get('session_token')
@@ -357,14 +326,18 @@ def game_view(request, game_id):
                     print(f"  Got browser_id: {token_browser_id}")
                 logout(request)
                 request.session.flush()
-                return redirect('login')
+                return render(request, 'game/error.html', {
+                    'error_message': "Invalid session token. Please log in again."
+                }, status=403)
         except (BadSignature, ValueError):
             if DEBUG and DEBUG_AUTH:
                 print("[game_view] Invalid token signature:")
                 print(f"  Token: {clueless_token}")
             logout(request)
             request.session.flush()
-            return redirect('login')
+            return render(request, 'game/error.html', {
+                'error_message': "Invalid session token signature. Please log in again."
+            }, status=403)
 
     # Validate browser ID
     expected_browser_id = request.session.get('browser_id')
@@ -374,7 +347,9 @@ def game_view(request, game_id):
             print(f"  Expected browser_id: {expected_browser_id}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Missing browser ID in session. Please log in again."
+        }, status=403)
     if clueless_browser != expected_browser_id:
         if DEBUG and DEBUG_AUTH:
             print("[game_view] Browser cookie mismatch:")
@@ -382,7 +357,9 @@ def game_view(request, game_id):
             print(f"  Got clueless_browser: {clueless_browser}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Invalid browser cookie. Please log in again."
+        }, status=403)
 
     # Validate session cookie
     expected_session_id = request.session.get('expected_session_id')
@@ -393,7 +370,9 @@ def game_view(request, game_id):
             print(f"  Got clueless_session: {clueless_session}")
         logout(request)
         request.session.flush()
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "Invalid session cookie. Please log in again."
+        }, status=403)
 
     # Validate game existence
     try:
@@ -477,31 +456,24 @@ def game_view(request, game_id):
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
 
-    # Set session-specific cookies only
-    response.set_cookie(f'sessionid_{request.session.session_key}', request.session.session_key, max_age=1800,
-                       httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
-    response.set_cookie(f'clueless_session_{request.session.session_key}', request.session.session_key,
-                       max_age=1800, httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
+    # Set session-specific cookies
+    response.set_cookie('sessionid', request.session.session_key, max_age=1800,
+                       httponly=True, samesite='Strict', path='/')
+    response.set_cookie(f'clueless_session_{request.session.session_key}', request.session.session_key, max_age=1800,
+                       httponly=True, samesite='Strict', path='/')
     response.set_cookie(f'clueless_browser_{request.session.session_key}', expected_browser_id, max_age=1800,
-                       httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
+                       httponly=True, samesite='Strict', path='/')
     response.set_cookie(f'clueless_user_{request.session.session_key}', request.user.username, max_age=1800,
-                       httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
+                       httponly=True, samesite='Strict', path='/')
     response.set_cookie(f'clueless_token_{request.session.session_key}', expected_token, max_age=1800,
-                       httponly=True, samesite='Strict', path=settings.SESSION_COOKIE_PATH)
-    # Explicitly clear generic sessionid and stale cookies
-    response.delete_cookie('sessionid', path=settings.SESSION_COOKIE_PATH)
-    for key in [k for k in request.COOKIES.keys() if k.startswith(('sessionid_', 'clueless_session_', 'clueless_browser_', 'clueless_user_', 'clueless_token_')) and not k.endswith(request.session.session_key)]:
-        response.delete_cookie(key, path=settings.SESSION_COOKIE_PATH)
+                       httponly=True, samesite='Strict', path='/')
     if DEBUG and DEBUG_AUTH:
         print("[game_view] Outgoing response, Set-Cookie:")
-        print(f"  sessionid_{request.session.session_key}: {request.session.session_key}")
+        print(f"  sessionid: {request.session.session_key}")
         print(f"  clueless_session_{request.session.session_key}: {request.session.session_key}")
         print(f"  clueless_browser_{request.session.session_key}: {expected_browser_id}")
         print(f"  clueless_user_{request.session.session_key}: {request.user.username}")
         print(f"  clueless_token_{request.session.session_key}: {expected_token}")
-        print("  sessionid: deleted")
-        print("  stale sessionid_*: deleted")
-        print("  stale clueless_*: deleted")
 
     return response
 
@@ -512,7 +484,6 @@ def start_game(request, game_id):
     Validates session-specific cookies to ensure authorized access.
     """
     session_key = request.session.session_key if request.session.session_key else 'unknown'
-    sessionid_specific = request.COOKIES.get(f'sessionid_{session_key}', 'None')
     sessionid = request.COOKIES.get('sessionid', 'None')
     clueless_session = request.COOKIES.get(f'clueless_session_{session_key}', 'None')
     clueless_browser = request.COOKIES.get(f'clueless_browser_{session_key}', 'None')
@@ -522,18 +493,11 @@ def start_game(request, game_id):
     if DEBUG and DEBUG_AUTH:
         print("[start_game] Incoming request:")
         print(f"  sessionid: {sessionid}")
-        print(f"  sessionid_{session_key}: {sessionid_specific}")
         print(f"  clueless_session_{session_key}: {clueless_session}")
         print(f"  clueless_browser_{session_key}: {clueless_browser}")
         print(f"  clueless_user_{session_key}: {clueless_user}")
         print(f"  clueless_token_{session_key}: {clueless_token}")
         print(f"  csrf_token: {csrf_token}")
-
-    # Log warning if generic sessionid is present
-    if sessionid != 'None':
-        if DEBUG and DEBUG_AUTH:
-            print("[start_game] Warning: Generic sessionid cookie detected:")
-            print(f"  sessionid: {sessionid}")
 
     # Check authentication
     if not request.user.is_authenticated:
@@ -541,7 +505,9 @@ def start_game(request, game_id):
             print("[start_game] Authentication failure:")
             print(f"  Game ID: {game_id}")
             print("  Reason: User not authenticated")
-        return redirect('login')
+        return render(request, 'game/error.html', {
+            'error_message': "You are not authenticated. Please log in."
+        }, status=403)
 
     # Validate game existence
     try:
@@ -571,15 +537,14 @@ def start_game(request, game_id):
     response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max_age=0'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
-    response.delete_cookie('sessionid', path=settings.SESSION_COOKIE_PATH)
+    response.delete_cookie('sessionid', path='/')
     # Clear any session-specific cookies that don't match the current session
-    for key in [k for k in request.COOKIES.keys() if k.startswith(('sessionid_', 'clueless_session_', 'clueless_browser_', 'clueless_user_', 'clueless_token_')) and not k.endswith(session_key)]:
-        response.delete_cookie(key, path=settings.SESSION_COOKIE_PATH)
+    for key in [k for k in request.COOKIES.keys() if k.startswith(('clueless_session_', 'clueless_browser_', 'clueless_user_', 'clueless_token_')) and not k.endswith(session_key)]:
+        response.delete_cookie(key, path='/')
     if DEBUG and DEBUG_AUTH:
         print("[start_game] Outgoing response:")
         print("  Set-Cookie: None")
         print("  sessionid: deleted")
-        print("  stale sessionid_*: deleted")
         print("  stale clueless_*: deleted")
 
     return response
@@ -590,7 +555,6 @@ def logout_view(request):
     Clears session data, deactivates the player, and removes all cookies.
     """
     session_key = request.session.session_key if request.session.session_key else 'unknown'
-    sessionid_specific = request.COOKIES.get(f'sessionid_{session_key}', 'None')
     sessionid = request.COOKIES.get('sessionid', 'None')
     clueless_session = request.COOKIES.get(f'clueless_session_{session_key}', 'None')
     clueless_browser = request.COOKIES.get(f'clueless_browser_{session_key}', 'None')
@@ -600,18 +564,11 @@ def logout_view(request):
     if DEBUG and DEBUG_AUTH:
         print("[logout_view] Incoming request:")
         print(f"  sessionid: {sessionid}")
-        print(f"  sessionid_{session_key}: {sessionid_specific}")
         print(f"  clueless_session_{session_key}: {clueless_session}")
         print(f"  clueless_browser_{session_key}: {clueless_browser}")
         print(f"  clueless_user_{session_key}: {clueless_user}")
         print(f"  clueless_token_{session_key}: {clueless_token}")
         print(f"  csrf_token: {csrf_token}")
-
-    # Log warning if generic sessionid is present
-    if sessionid != 'None':
-        if DEBUG and DEBUG_AUTH:
-            print("[logout_view] Warning: Generic sessionid cookie detected:")
-            print(f"  sessionid: {sessionid}")
 
     # Deactivate player if authenticated
     if request.user.is_authenticated:
@@ -649,16 +606,13 @@ def logout_view(request):
 
     response = redirect('login')
     for key in list(request.COOKIES.keys()):
-        response.delete_cookie(key, path=settings.SESSION_COOKIE_PATH)
-    response.delete_cookie('sessionid', path=settings.SESSION_COOKIE_PATH)
-    response.delete_cookie('clueless_session', path=settings.SESSION_COOKIE_PATH)
-    response.delete_cookie('clueless_browser', path=settings.SESSION_COOKIE_PATH)
-    response.delete_cookie('clueless_user', path=settings.SESSION_COOKIE_PATH)
-    response.delete_cookie('clueless_token', path=settings.SESSION_COOKIE_PATH)
-    response.delete_cookie('csrftoken', path=settings.SESSION_COOKIE_PATH)
-    for key in [k for k in request.COOKIES.keys() if k.startswith(
-            ('sessionid_', 'clueless_session_', 'clueless_browser_', 'clueless_user_', 'clueless_token_'))]:
-        response.delete_cookie(key, path=settings.SESSION_COOKIE_PATH)
+        response.delete_cookie(key, path='/')
+    response.delete_cookie('sessionid', path='/')
+    response.delete_cookie('clueless_session', path='/')
+    response.delete_cookie('clueless_browser', path='/')
+    response.delete_cookie('clueless_user', path='/')
+    response.delete_cookie('clueless_token', path='/')
+    response.delete_cookie('csrftoken', path='/')
     if DEBUG and DEBUG_AUTH:
         print("[logout_view] Outgoing response, Set-Cookie:")
         print("  sessionid: deleted")
@@ -667,15 +621,13 @@ def logout_view(request):
         print("  clueless_user: deleted")
         print("  clueless_token: deleted")
         print("  csrftoken: deleted")
-        print("  sessionid_*: deleted")
 
     return response
-
 
 def assign_random_character(game, user):
     """
     Assign a random character to the user or reactivate an existing one.
-    Ensures no duplicate characters are assigned and broadcasts updated game state.
+    Ensures no duplicate characters and broadcasts updated game state.
     """
     try:
         player = Player.objects.get(game=game, username=user.username)
@@ -683,7 +635,9 @@ def assign_random_character(game, user):
             player.is_active = True
             player.save()
             if DEBUG and DEBUG_ASSIGN_RANDOM_CHARACTER:
-                print(f"[assign_random_character] Reactivated player: {user.username} as {player.character}")
+                print("[assign_random_character] Reactivated player:")
+                print(f"  Username: {user.username}")
+                print(f"  Character: {player.character}")
     except Player.DoesNotExist:
         with transaction.atomic():
             taken_characters = game.players.values_list('character', flat=True)
@@ -712,8 +666,11 @@ def assign_random_character(game, user):
                 game.save()
 
             if DEBUG and DEBUG_ASSIGN_RANDOM_CHARACTER:
-                print(f"[assign_random_character] Assigned new player: {user.username} as {character}")
+                print("[assign_random_character] Assigned new player:")
+                print(f"  Username: {user.username}")
+                print(f"  Character: {character}")
 
+    # Broadcast updated game state
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
         f"game_{game.id}",
@@ -725,8 +682,8 @@ def assign_random_character(game, user):
 
 def get_game_state(game):
     """
-    Retrieve game state for WebSocket updates and initial rendering.
-    Includes all players (active or inactive) and game status.
+    Retrieve game state for WebSocket updates and rendering.
+    Includes all players, game status, and game constants.
     """
     fields = [f.name for f in Player._meta.fields]
     players = list(game.players.values(*fields))
