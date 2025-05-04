@@ -1,58 +1,77 @@
 <!DOCTYPE html>
-
 <html>
+    <!-- Internal CSS for game board and UI styling -->
     <style>
         /* Global reset for consistent sizing */
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* Define CSS variables for board sizing */
+        /* Define CSS variables for responsive board sizing */
         :root {
-        --board-size: min(90vmin, 90vmax); /* Auto-scale to fit the window */
-        --cell-size: calc(90vmin / 5); /* Makes sure cells fit inside board */
-        --room-hallway-name-font-size: calc(var(--cell-size) * 0.15); 
-        --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
+            --board-size: min(80vmin, 90vw, 90vh);
+            --cell-size: calc(var(--board-size) / 5);
+            --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
+            --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
         }
 
-        /* Body styling */
+        /* Style body with centered layout and background effects */
         body {
             margin: auto;
             padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
+            justify-content: flex-start;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
-            overflow: hidden; /* Prevents scrolling */
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+                radial-gradient(1px 1px at 80% 20%, #fff, transparent),
+                radial-gradient(1px 1px at 50% 70%, #fff, transparent),
+                radial-gradient(1px 1px at 90% 80%, #fff, transparent),
+                radial-gradient(1px 1px at 30% 90%, #fff, transparent),
+                radial-gradient(1px 1px at 10% 10%, #fff, transparent),
+                radial-gradient(1px 1px at 60% 40%, #fff, transparent),
+                radial-gradient(1px 1px at 70% 60%, #fff, transparent);
+            background-size: 100% 100%;
         }
 
-        /* Notification bar styling */
+        /* Style notification bar for game status and user info */
         #notification {
-            padding: 10px;
+            padding: 20px;
             text-align: center;
             width: 100%;
             max-width: 90%;
-            background: white;
-            border-bottom: 2px solid black;
+            background: rgba(0, 0, 0, 0.6);
+            border-top: 2px solid #ff0066;
+            border-bottom: 2px solid #ff0066;
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.5);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
         }
 
-        /* Game board layout */
+        /* Style game board as a 5x5 grid */
         #game-board {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
             grid-template-rows: repeat(5, minmax(0, 1fr));
             gap: 1px;
-            background-color: black;
+            background-color: #0a0a23;
             padding: 10px;
-            border: 5px solid black;
+            border: 5px solid #2c2c6c;
             width: var(--board-size);
             height: var(--board-size);
-            margin: auto; /* Ensures it remains centered */
+            margin: auto;
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
+            max-width: 90vw;
+            max-height: 90vh;
         }
 
-        /* Common styling for rooms, hallways, and vacant cells */
+        /* Common styles for rooms, hallways, and vacant cells */
         .room, .hallway, .vacant {
             width: var(--cell-size);
             height: var(--cell-size);
@@ -61,34 +80,61 @@
             position: relative;
             box-sizing: border-box;
             cursor: pointer;
+            transition: transform 0.3s ease-in-out;
         }
 
-        /* Hover effect for interactivity */
-        .room:hover, .hallway:hover { background-color: #e0e0e0; }
+        /* Assign background colors for cell types */
+        .room { background-color: var(--room-color); }
+        .hallway { background-color: var(--hallway-color); }
+        .vacant { background-color: var(--vacant-color); }
 
-        /* Character name styling */
-        .room-characters span, .hallway-characters span {
-            white-space: nowrap;
-            display: block;
+        /* Hover effect for interactive cells */
+        .room:hover, .hallway:hover { background-color: rgb(255, 255, 255); }
+
+        /* Style rooms with neon effect */
+        .room {
+            background-color: #ff0066;
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7);
+        }
+        .room-name {
+            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
             font-weight: bold;
+            padding: 5px 0;
+            background-color: #ff0066;
+            color: white;
+            text-shadow: 0 0 10px #ff0066;
+        }
+        .room-characters {
+            font-size: var(--room-hallway-character-font-size);
+            padding: 2px;
+            overflow-y: auto;
+            white-space: pre-line;
+            max-height: calc(var(--cell-size) - 40px);
         }
 
-        /* Player-specific styling */
-        .player-me { color: red; }      /* My player in red */
-        .player-other { color: blue; }  /* Other players in blue */
+        /* Style hallways with blue theme */
+        .hallway {
+            background-color: #0a74da;
+            box-shadow: 0 0 10px rgba(10, 116, 218, 0.7);
+        }
+        .hallway-name {
+            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
+            font-weight: bold;
+            padding: 5px 0;
+            background-color: #0a74da;
+            color: white;
+            text-shadow: 0 0 10px #0a74da;
+        }
+        .hallway-characters {
+            font-size: var(--room-hallway-character-font-size);
+            padding: 2px;
+            overflow-y: auto;
+            white-space: pre-line;
+            max-height: calc(var(--cell-size) - 40px);
+        }
 
-        /* Room-specific styling */
-        .room { background-color: lightpink; }
-        .room-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: hotpink; }
-        .room-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
-
-        /* Hallway-specific styling */
-        .hallway { background-color: lightcyan; }
-        .hallway-name { font-size: var(--room-hallway-name-font-size); font-weight: bold; padding: 5px 0; background-color: lightskyblue; }
-        .hallway-characters { font-size: var(--room-hallway-character-font-size); padding: 2px; overflow-y: auto; white-space: pre-line; max-height: calc(var(--cell-size) - 40px); }
-
-        /* Vacant cell styling */
-        .vacant { background-color: white; }
+        /* Style vacant cells */
+        .vacant { background-color: rgba(255, 255, 255, 0.1); }
 
         /* Animation for character movement */
         @keyframes pulseMove {
@@ -100,19 +146,23 @@
             animation: pulseMove 0.5s ease-in-out;
         }
 
-        /* Button container styling */
+        /* Style player indicators */
+        .player-me { color: #40001a; }
+        .player-other { color: #00252a; }
+
+        /* Style button container */
         #button-container {
-            margin-top: 15px; /* Add spacing above the buttons */
-            margin-bottom: 20px; /* Add spacing between buttons and the game board */
+            margin-top: 15px;
+            margin-bottom: 20px;
             width: 100%;
             display: flex;
             justify-content: center;
-            gap: 10px; /* Add spacing between buttons */
+            gap: 10px;
         }
-        
-        #suggestions-button, #accusations-button, #end-turn-button {
+
+        /* Style action buttons */
+        #display-hand-button, #suggestions-button, #accusations-button, #end-turn-button {
             background-color: #fbe59d;
-            color: rgb(0, 0, 0);
             padding: 10px 20px;
             font-size: 16px;
             border: none;
@@ -120,31 +170,84 @@
             cursor: pointer;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
-        
-        #suggestions-button:hover, #accusations-button:hover, #end-turn-button:hover {
+
+        /* Hover effect for buttons */
+        #display-hand-button:hover, #suggestions-button:hover, #accusations-button:hover, #end-turn-button:hover {
             background-color: #fffefa;
         }
 
-        /* Suggestion form styling */
+        /* Style hand display popup */
+        #hand-display-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: grey;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            text-align: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* Style hand display overlay */
+        #hand-display-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* Fade-in animation for popups */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Style hand list */
+        #hand-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        #hand-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #hand-list img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        /* Style suggestion form */
         #suggestions-form-container {
             position: fixed;
-            bottom: 160px;  /* Place above accusation form */
+            bottom: 160px;
             width: 100%;
             background-color: white;
+            color: darkgreen;
             padding: 20px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
             max-width: 500px;
             margin: auto;
             text-align: left;
-            display: none;  /* Start hidden */
+            display: none;
         }
-
         #suggestions-form label {
             display: block;
             margin: 10px 0 5px;
         }
-
         #suggestions-form select,
         #suggestions-form button {
             width: 100%;
@@ -153,36 +256,34 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-
         #suggestions-form button {
             background-color: darkgreen;
             color: white;
             cursor: pointer;
         }
-
         #suggestions-form button:hover {
             background-color: green;
         }
 
-        /* Accusations form styling */
+        /* Style accusation form */
         #accusations-form-container {
             position: fixed;
-            bottom: 80px;  /* Slightly above the button */
+            bottom: 80px;
             width: 100%;
             background-color: white;
+            color: #ff6347;
             padding: 20px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
             max-width: 500px;
             margin: auto;
             text-align: left;
+            display: none;
         }
-
         #accusations-form label {
             display: block;
             margin: 10px 0 5px;
         }
-
         #accusations-form select,
         #accusations-form button {
             width: 100%;
@@ -191,18 +292,16 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-
         #accusations-form button {
             background-color: #ff6347;
             color: white;
             cursor: pointer;
         }
-
         #accusations-form button:hover {
             background-color: #ff6347;
         }
 
-
+        /* Style dark/light mode toggle */
         .mode-toggle {
             position: absolute;
             top: 10px;
@@ -212,11 +311,9 @@
             gap: 10px;
             z-index: 1000;
         }
-
         .mode-toggle input[type="checkbox"] {
             display: none;
         }
-
         .mode-toggle .slider {
             width: 50px;
             height: 25px;
@@ -226,7 +323,6 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
         .mode-toggle .slider::before {
             content: "";
             position: absolute;
@@ -238,20 +334,17 @@
             left: 2.5px;
             transition: transform 0.3s ease;
         }
-
         .mode-toggle input[type="checkbox"]:checked + .slider {
             background-color: #333;
         }
-
         .mode-toggle input[type="checkbox"]:checked + .slider::before {
             transform: translateX(25px);
         }
-
         .mode-label {
             font-size: 1.2em;
         }
 
-        /* Default dark mode colors (fallback) */
+        /* Default dark mode colors */
         :root {
             --bg-color: #0b0c1a;
             --text-color: white;
@@ -268,199 +361,32 @@
             --hallway-color: #d0e7ff;
             --vacant-color: rgba(0, 0, 0, 0.05);
         }
-        /* Global reset for consistent sizing */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-        /* Define CSS variables for board sizing */
-        :root {
-            --board-size: min(80vmin, 90vw, 90vh); /* Scales with the smaller of screen width or height */
-            --cell-size: calc(var(--board-size) / 5); /* Keep 5x5 grid proportionate */
 
-            --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
-            --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
-        }
-    
-        /* Body styling */
-        body {
-            margin: auto;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            overflow-x: hidden;
-            overflow-y: auto;
-
-            /* 🌌 Speckled stars background */
-            background-color: var(--bg-color); /* Deep space background */
-            color: var(--text-color);
-            background-image:
-                radial-gradient(1px 1px at 20% 30%, #fff, transparent),
-                radial-gradient(1px 1px at 80% 20%, #fff, transparent),
-                radial-gradient(1px 1px at 50% 70%, #fff, transparent),
-                radial-gradient(1px 1px at 90% 80%, #fff, transparent),
-                radial-gradient(1px 1px at 30% 90%, #fff, transparent),
-                radial-gradient(1px 1px at 10% 10%, #fff, transparent),
-                radial-gradient(1px 1px at 60% 40%, #fff, transparent),
-                radial-gradient(1px 1px at 70% 60%, #fff, transparent);
-            background-size: 100% 100%;
-        }
-        
-        /* Notification bar styling */
-        #notification {
-            padding: 20px;
-            text-align: center;
-            width: 100%;
-            max-width: 90%;
-            background: rgba(0, 0, 0, 0.6); /* Darker background */
-            border-top: 2px solid #ff0066; /* 🔥 Top pink border */
-            border-bottom: 2px solid #ff0066; /* Bottom pink border for balance */
-            box-shadow: 0 0 10px rgba(255, 0, 102, 0.5); /* Glowing effect */
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-        }
-    
-        /* Game board layout */
-        #game-board {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            grid-template-rows: repeat(5, minmax(0, 1fr));
-            gap: 1px;
-            background-color: #0a0a23;
-            padding: 10px;
-            border: 5px solid #2c2c6c;
-            width: var(--board-size);
-            height: var(--board-size);
-            margin: auto;
-            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
-            max-width: 90vw;  /* Optional: hard cap on width */
-            max-height: 90vh; /* Optional: hard cap on height */
-        }
-    
-        /* Common styling for rooms, hallways, and vacant cells */
-        .room, .hallway, .vacant {
-            width: var(--cell-size);
-            height: var(--cell-size);
-            border: 2px solid #000;
-            text-align: center;
-            position: relative;
-            box-sizing: border-box;
-            cursor: pointer;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .room {
-            background-color: var(--room-color);
-        }
-
-        .hallway {
-            background-color: var(--hallway-color);
-        }
-
-        .vacant {
-            background-color: var(--vacant-color);
-        }
-    
-        /* Hover effect for interactivity */
-        .room:hover, .hallway:hover { 
-            background-color: rgb(255, 255, 255); 
-        }
-    
-        /* Room-specific styling */
-        .room { 
-            background-color: #ff0066; /* Hot pink */
-            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7); /* Glowing effect */
-        }
-        .room-name { 
-            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
-            font-weight: bold; 
-            padding: 5px 0; 
-            background-color: #ff0066; /* Darker pink */
-            color: white; 
-            text-shadow: 0 0 10px #ff0066; /* Glow effect */
-        }
-        .room-characters { 
-            font-size: var(--room-hallway-character-font-size); 
-            padding: 2px; 
-            overflow-y: auto; 
-            white-space: pre-line; 
-            max-height: calc(var(--cell-size) - 40px);
-        }
-    
-        /* Hallway-specific styling */
-        .hallway { 
-            background-color: #0a74da; /* Dark blue */
-            box-shadow: 0 0 10px rgba(10, 116, 218, 0.7); /* Glowing effect */
-        }
-        .hallway-name { 
-            font-size: calc(var(--room-hallway-name-font-size) * 0.85);
-            font-weight: bold; 
-            padding: 5px 0; 
-            background-color: #0a74da; /* Darker blue */
-            color: white; 
-            text-shadow: 0 0 10px #0a74da; /* Glow effect */
-        }
-        .hallway-characters { 
-            font-size: var(--room-hallway-character-font-size); 
-            padding: 2px; 
-            overflow-y: auto; 
-            white-space: pre-line; 
-            max-height: calc(var(--cell-size) - 40px);
-        }
-    
-        /* Vacant cell styling */
-        .vacant { 
-            background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent */
-        }
-    
-        /* Animation for character movement */
-        @keyframes pulseMove {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.7); }
-            100% { transform: scale(1); }
-        }
-        .pulse-move {
-            animation: pulseMove 0.5s ease-in-out;
-        }
-    
-        /* Player-specific styling */
-        .player-me { color: #40001a; } /* Me - Hot pink */
-        .player-other { color: #00252a; } /* Other - Light cyan */
-       
-
-        /* Game title styling */
+        /* Style game title */
         #game-title {
             font-size: 2.5em;
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(255, 0, 102, 0.8); /* Mysterious glowing effect */
+            text-shadow: 0 0 10px rgba(255, 0, 102, 0.8);
         }
+        .game-title { color: #ff0066; }
+        .game-id { color: rgba(255, 255, 255, 0.6); }
 
-        .game-title {
-            color: #ff0066; /* Hot pink color for the game title */
-        }
-
-        .game-id {
-            color: rgba(255, 255, 255, 0.6); /* Light grey for the game ID */
-        }
-
-        /* User info styling with character */
+        /* Style user info section */
         .user-info h2 {
             font-size: 1.5em;
             margin: 10px 0;
         }
-
         .username, .character-name {
             font-weight: bold;
-            color: #00bcd4; /* Cyan for username and character */
+            color: #00bcd4;
             text-shadow: 0 0 5px rgba(0, 188, 212, 0.7);
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1px;
         }
 
-        /* Mysterious logout button with glowing effect */
+        /* Style logout button */
         .logout-btn {
-            background-color: #ff0066; /* Pink background */
+            background-color: #ff0066;
             color: white;
             font-size: 1em;
             font-weight: bold;
@@ -469,124 +395,204 @@
             cursor: pointer;
             border-radius: 8px;
             transition: transform 0.3s ease-in-out, background-color 0.3s ease;
-            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7); /* Glowing effect */
+            box-shadow: 0 0 10px rgba(255, 0, 102, 0.7);
         }
-
-        /* Hover effect for logout button */
         .logout-btn:hover {
-            background-color: #e6006d; /* Darker pink on hover */
+            background-color: #e6006d;
             transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(255, 0, 102, 0.9); /* Intensified glow */
+            box-shadow: 0 0 15px rgba(255, 0, 102, 0.9);
         }
 
-        /* Slight adjustment to text for a more mysterious font look */
-        .username, .character-name {
-            font-family: 'Courier New', monospace;
-            letter-spacing: 1px;
-        }
-        
-        #accusations-button-container {
-            margin: 20px 0;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            position: relative; /* instead of fixed */
-        }
-
+        /* Style close buttons for forms */
         .close-button {
-            position: absolute;
-            top: 10px;
-            right: 20px;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
             background: transparent;
-            border: none;
-            font-size: 24px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
             font-weight: bold;
             color: #ff0066;
             cursor: pointer;
-            z-index: 1001;
-            transition: transform 0.2s ease;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .close-button:hover {
+            background-color: #ffe0eb;
+            transform: scale(1.05);
         }
 
-        .close-button:hover {
-            transform: scale(1.3);
-            color: #e6006d;
+        /* Style loading message */
+        #loading-message {
+            display: none;
+            color: white;
+            font-size: 1.5em;
+            margin: 20px;
+        }
+
+        /* Sliding History Window */
+        .history-window {
+            position: fixed;
+            top: 0;
+            right: -300px; /* Hidden by default */
+            width: 300px;
+            height: 100%;
+            background-color: black;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            transition: right 0.3s ease-in-out;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-window.open {
+            right: 0; /* Slide into view */
+        }
+
+        /* Push the main content when the history window is open */
+        body.history-open {
+            margin-right: 300px; /* Push content to the left by the width of the history window */
+            transition: margin-right 0.3s ease-in-out;
+        }
+
+        /* History Header */
+        .history-header {
+            background-color: #ff0066;
+            color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* History List */
+        .history-list {
+            list-style: none;
+            padding: 10px;
+            margin: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .history-list li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        /* History Button (aligned with other buttons) */
+        .toggle-history-button {
+            background-color: #fbe59d;
+            color: rgb(0, 0, 0);
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-history-button:hover {
+            background-color: #fffefa;
         }
     </style>
 
 <body>
+    <!-- Dark/light mode toggle switch -->
     <label class="mode-toggle">
         <input id="mode-switch" type="checkbox"/>
         <span class="slider"></span>
         <span class="mode-label">🌙</span>
     </label>
 
+    <!-- Sliding History Window -->
+    <div id="history-window" class="history-window">
+        <div class="history-header">
+            <h3>Game History</h3>
+            <button id="close-history-button" class="close-button">×</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+    </div>
+
     <!-- Notification section: Displays welcome message and logout button -->
     <div id="notification">
         <h1 id="game-title">
-            Welcome to <span class="game-title">Clue-Less Game</span> - 
+            Welcome to <span class="game-title">Clue-Less Game</span> -
             <span class="game-id">{{ game_id }}</span>
         </h1>
-
         <div class="user-info" style="font-size: 0.6em;">
             <h2 id="user-status">
-                You are logged in as <span class="username">{{ username }}</span> 
+                You are logged in as <span class="username">{{ username }}</span>
                 as <span class="character-name">{{ character }}</span>.
             </h2>
+            <!-- Logout button -->
             <button onclick="window.location.href='{% url 'logout' %}'" class="logout-btn">Logout</button>
             <br>
+            <!-- Current turn indicator -->
             <h2 id="current-turn">
                 Waiting for the first turn...
             </h2>
         </div>
     </div>
 
-    <!-- Combined button container -->
+    <!-- Loading message for initial state -->
+    <div id="loading-message">Loading game data...</div>
+
+    <!-- Action buttons -->
     <div id="button-container">
+        <button id="toggle-history-button" class="toggle-history-button">Game History</button>
+        <button id="display-hand-button">Display Hand</button>
         <button id="suggestions-button">Suggestions</button>
         <button id="accusations-button">Accusations</button>
         <button id="end-turn-button">End Turn</button>
     </div>
 
-    <!-- Game board: 5x5 grid layout for rooms, hallways, and vacant spaces -->
+    <!-- Game board grid -->
     <div id="game-board">
-        <!-- Row 1 -->
-        <div class="room" id="Study"><div class="room-name">Study</div><div class="room-characters" id="Study-characters"></div></div> <!-- Room with name and character area -->
-        <div class="hallway" id="Hallway1"><div class="hallway-name">Hallway1</div><div class="hallway-characters" id="Hallway1-characters"></div></div> <!-- Hallway connecting Study and Hall -->
+        <div class="room" id="Study"><div class="room-name">Study</div><div class="room-characters" id="Study-characters"></div></div>
+        <div class="hallway" id="Hallway1"><div class="hallway-name">Hallway1</div><div class="hallway-characters" id="Hallway1-characters"></div></div>
         <div class="room" id="Hall"><div class="room-name">Hall</div><div class="room-characters" id="Hall-characters"></div></div>
-        <div class="hallway" id="Hallway2"><div class="hallway-name">Hallway2</div><div class="hallway-characters" id="Hallway2-characters"></div></div> <!-- Hallway connecting Hall and Lounge -->
+        <div class="hallway" id="Hallway2"><div class="hallway-name">Hallway2</div><div class="hallway-characters" id="Hallway2-characters"></div></div>
         <div class="room" id="Lounge"><div class="room-name">Lounge</div><div class="room-characters" id="Lounge-characters"></div></div>
-        <!-- Row 2 -->
-        <div class="hallway" id="Hallway3"><div class="hallway-name">Hallway3</div><div class="hallway-characters" id="Hallway3-characters"></div></div> <!-- Hallway connecting Study and Library -->
-        <div class="vacant" id="Vacant1"></div> <!-- Empty space -->
-        <div class="hallway" id="Hallway4"><div class="hallway-name">Hallway4</div><div class="hallway-characters" id="Hallway4-characters"></div></div> <!-- Hallway connecting Hall and Billiard Room -->
+        <div class="hallway" id="Hallway3"><div class="hallway-name">Hallway3</div><div class="hallway-characters" id="Hallway3-characters"></div></div>
+        <div class="vacant" id="Vacant1"></div>
+        <div class="hallway" id="Hallway4"><div class="hallway-name">Hallway4</div><div class="hallway-characters" id="Hallway4-characters"></div></div>
         <div class="vacant" id="Vacant2"></div>
-        <div class="hallway" id="Hallway5"><div class="hallway-name">Hallway5</div><div class="hallway-characters" id="Hallway5-characters"></div></div> <!-- Hallway connecting Lounge and Dining Room -->
-        <!-- Row 3 -->
+        <div class="hallway" id="Hallway5"><div class="hallway-name">Hallway5</div><div class="hallway-characters" id="Hallway5-characters"></div></div>
         <div class="room" id="Library"><div class="room-name">Library</div><div class="room-characters" id="Library-characters"></div></div>
-        <div class="hallway" id="Hallway6"><div class="hallway-name">Hallway6</div><div class="hallway-characters" id="Hallway6-characters"></div></div> <!-- Hallway connecting Library and Billiard Room -->
+        <div class="hallway" id="Hallway6"><div class="hallway-name">Hallway6</div><div class="hallway-characters" id="Hallway6-characters"></div></div>
         <div class="room" id="BilliardRoom"><div class="room-name">Billiard Room</div><div class="room-characters" id="BilliardRoom-characters"></div></div>
-        <div class="hallway" id="Hallway7"><div class="hallway-name">Hallway7</div><div class="hallway-characters" id="Hallway7-characters"></div></div> <!-- Hallway connecting Billiard Room and Dining Room -->
+        <div class="hallway" id="Hallway7"><div class="hallway-name">Hallway7</div><div class="hallway-characters" id="Hallway7-characters"></div></div>
         <div class="room" id="DiningRoom"><div class="room-name">Dining Room</div><div class="room-characters" id="DiningRoom-characters"></div></div>
-        <!-- Row 4 -->
-        <div class="hallway" id="Hallway8"><div class="hallway-name">Hallway8</div><div class="hallway-characters" id="Hallway8-characters"></div></div> <!-- Hallway connecting Library and Conservatory -->
+        <div class="hallway" id="Hallway8"><div class="hallway-name">Hallway8</div><div class="hallway-characters" id="Hallway8-characters"></div></div>
         <div class="vacant" id="Vacant3"></div>
-        <div class="hallway" id="Hallway9"><div class="hallway-name">Hallway9</div><div class="hallway-characters" id="Hallway9-characters"></div></div> <!-- Hallway connecting Billiard Room and Ballroom -->
+        <div class="hallway" id="Hallway9"><div class="hallway-name">Hallway9</div><div class="hallway-characters" id="Hallway9-characters"></div></div>
         <div class="vacant" id="Vacant4"></div>
-        <div class="hallway" id="Hallway10"><div class="hallway-name">Hallway10</div><div class="hallway-characters" id="Hallway10-characters"></div></div> <!-- Hallway connecting Dining Room and Kitchen -->
-        <!-- Row 5 -->
+        <div class="hallway" id="Hallway10"><div class="hallway-name">Hallway10</div><div class="hallway-characters" id="Hallway10-characters"></div></div>
         <div class="room" id="Conservatory"><div class="room-name">Conservatory</div><div class="room-characters" id="Conservatory-characters"></div></div>
-        <div class="hallway" id="Hallway11"><div class="hallway-name">Hallway11</div><div class="hallway-characters" id="Hallway11-characters"></div></div> <!-- Hallway connecting Conservatory and Ballroom -->
+        <div class="hallway" id="Hallway11"><div class="hallway-name">Hallway11</div><div class="hallway-characters" id="Hallway11-characters"></div></div>
         <div class="room" id="Ballroom"><div class="room-name">Ballroom</div><div class="room-characters" id="Ballroom-characters"></div></div>
-        <div class="hallway" id="Hallway12"><div class="hallway-name">Hallway12</div><div class="hallway-characters" id="Hallway12-characters"></div></div> <!-- Hallway connecting Ballroom and Kitchen -->
+        <div class="hallway" id="Hallway12"><div class="hallway-name">Hallway12</div><div class="hallway-characters" id="Hallway12-characters"></div></div>
         <div class="room" id="Kitchen"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
     </div>
 
-    <!-- Accusations Form (Initially Hidden) -->
-    <div id="accusations-form-container" style="display: none;">
+    <!-- Hand display popup -->
+    <div id="hand-display-container">
+        <h3>Your Hand</h3>
+        <ul id="hand-list"></ul>
+        <button id="close-hand-button">Close</button>
+    </div>
+
+    <!-- Hand display overlay -->
+    <div id="hand-display-overlay"></div>
+
+    <!-- Accusation form popup -->
+    <div id="accusations-form-container">
         <form id="accusations-form">
             <h3>Make an Accusation</h3>
             <label for="suspect">Suspect:</label>
-            <select id="suspect" name="suspect">
+            <select id="suspect" name="suspect" required>
                 <option value="Miss Scarlet">Miss Scarlet</option>
                 <option value="Col. Mustard">Col. Mustard</option>
                 <option value="Prof. Plum">Professor Plum</option>
@@ -596,7 +602,7 @@
             </select>
             <br/>
             <label for="weapon">Weapon:</label>
-            <select id="weapon" name="weapon">
+            <select id="weapon" name="weapon" required>
                 <option value="Knife">Knife</option>
                 <option value="Revolver">Revolver</option>
                 <option value="Lead Pipe">Lead Pipe</option>
@@ -606,7 +612,7 @@
             </select>
             <br/>
             <label for="room">Room:</label>
-            <select id="room" name="room">
+            <select id="room" name="room" required>
                 <option value="Study">Study</option>
                 <option value="Hall">Hall</option>
                 <option value="Lounge">Lounge</option>
@@ -619,12 +625,12 @@
             </select>
             <br/>
             <button type="submit">Submit Accusation</button>
-            <button type="button" id="cancel-accusation">Cancel</button>
+            <button type="button" class="close-button" id="cancel-accusation">×</button>
         </form>
     </div>
 
-    <!-- Suggestion Form (Initially Hidden) -->
-    <div id="suggestions-form-container" style="display: none;">
+    <!-- Suggestion form popup -->
+    <div id="suggestions-form-container">
         <form id="suggestions-form">
             <h3>Make a Suggestion</h3>
             <label for="suggest-suspect">Suspect:</label>
@@ -636,7 +642,6 @@
                 <option value="Mr. Green">Reverend Green</option>
                 <option value="Mrs. White">Mrs. White</option>
             </select>
-
             <label for="suggest-weapon">Weapon:</label>
             <select id="suggest-weapon" name="suggest-weapon">
                 <option value="Knife">Knife</option>
@@ -646,323 +651,538 @@
                 <option value="Candlestick">Candlestick</option>
                 <option value="Rope">Rope</option>
             </select>
-
             <button type="submit">Submit Suggestion</button>
-            <button type="button" id="cancel-suggestions">Cancel</button>
+            <button type="button" class="close-button" id="cancel-suggestions">×</button>
         </form>
     </div>
 
-    <!-- Serialize initial players data from views.py for JavaScript use -->
+    <!-- JSON data for initial players and username -->
     {{ players|json_script:"players-data" }}
     {% if request.user.is_authenticated %}
-        <!-- Serialize current username if authenticated, used to identify the current player -->
         {{ request.user.username|json_script:"current-username" }}
     {% endif %}
 
     <script>
-    // Set up WebSocket connection using the game_id passed from the template
-    const gameId = {{ game_id }};
-    const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
-
-    // Retrieve initial players data from the DOM, fallback to empty array if not found
-    const playersDataElement = document.getElementById('players-data');
-    const playersData = playersDataElement ? JSON.parse(playersDataElement.textContent) : [];
-
-    // Retrieve current username from the DOM and lock it for this session
-    const currentUsernameElement = document.getElementById('current-username');
-    const currentUsername = currentUsernameElement ? JSON.parse(currentUsernameElement.textContent) : '';
-
-    let currentPlayer = null; // Store the current player's data for move validation
-    let previousGameState = null; // Store the previous game state to detect movement
-
-    // Log when the WebSocket connection is established
-    ws.onopen = function() {
-        console.log("WebSocket connected successfully");
-    };
-
-    // Handle incoming WebSocket messages from the server
-    ws.onmessage = function(event) {
-        const data = JSON.parse(event.data); // Parse JSON data from the message
-        console.log('Received WebSocket message:', data); // Debug log for received messages
-        if (data.type === 'game_update') {
-            updateGameBoard(data.game_state); // Update the board with the new game state
-        } else if (data.error) {
-            console.error('Error:', data.error); // Log any errors
-            alert(data.error); // Notify the user of errors (e.g., invalid move)
-        }
-    };
-
-    // Log any WebSocket connection errors
-    ws.onerror = function(error) {
-        console.error("WebSocket connection error:", error);
-    };
-
-    // Log when the WebSocket connection closes
-    ws.onclose = function() {
-        console.log("WebSocket closed");
-    };
-
-    // Update the game board with the provided game state
-    function updateGameBoard(gameState) {
-        console.log('Updating game board with state:', gameState); // Debug log for game state
-        const players = gameState.players || []; // Extract players array, default to empty if missing
-        console.log('Players array:', players); // Debug log for players array
-
-        // Determine which player moved by comparing with previous state
-        let movedPlayer = null;
-        if (previousGameState) {
-            const prevPlayers = previousGameState.players || [];
-            movedPlayer = players.find(player => {
-                const prevPlayer = prevPlayers.find(p => p.username === player.username);
-                return prevPlayer && prevPlayer.location !== player.location;
-            })?.username;
-        }
-
-        updateRoomCharacters(players, movedPlayer); // Update room displays with all players
-        updateHallwayCharacters(players, movedPlayer); // Update hallway displays with all players
-        // Set currentPlayer for movement logic only, no character display update
-        currentPlayer = players.find(player => player.username === currentUsername) || null;
-
-        // Update previous state for the next comparison
-        previousGameState = JSON.parse(JSON.stringify(gameState)); // Deep copy
-    }
-
-    function updateGameBoard(gameState) {
-        console.log('Updating game board with state:', gameState);
-        const players = gameState.players || [];
-        console.log('Players array:', players);
-    
-        // Determine the current player whose turn is True
-        const currentTurnPlayer = players.find(player => player.turn);
-        const currentTurnElement = document.getElementById('current-turn');
-        if (currentTurnPlayer) {
-            currentTurnElement.textContent = `It's ${currentTurnPlayer.username}'s turn (${currentTurnPlayer.character})!`;
-        } else {
-            currentTurnElement.textContent = 'Waiting for the next turn...';
-        }
-    
-        // Determine which player moved by comparing with previous state
-        let movedPlayer = null;
-        if (previousGameState) {
-            const prevPlayers = previousGameState.players || [];
-            movedPlayer = players.find(player => {
-                const prevPlayer = prevPlayers.find(p => p.username === player.username);
-                return prevPlayer && prevPlayer.location !== player.location;
-            })?.username;
-        }
-    
-        updateRoomCharacters(players, movedPlayer);
-        updateHallwayCharacters(players, movedPlayer);
-        currentPlayer = players.find(player => player.username === currentUsername) || null;
-    
-        previousGameState = JSON.parse(JSON.stringify(gameState));
-    }
-
-    // Update room characters with animation only for the moved player,
-    // showing all players regardless of is_active
-    function updateRoomCharacters(players, movedPlayer) {
-        const rooms = ['Study', 'Hall', 'Lounge', 'Library', 'BilliardRoom', 'DiningRoom', 'Conservatory', 'Ballroom', 'Kitchen'];
-        rooms.forEach(roomId => {
-            const charElement = document.getElementById(`${roomId}-characters`);
-            if (charElement) {
-                const previousContent = charElement.innerHTML;
-                const charactersInRoom = players
-                    .filter(player => player.location === roomId)
-                    .map(player => {
-                        const isCurrentPlayer = player.username === currentUsername;
-                        const isMoved = player.username === movedPlayer;
-                        const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';  // Red for me, Blue for others
-                        const className = isMoved ? `${baseClass} pulse-move` : baseClass;
-                        return `<span class="${className}">${player.character}</span>`;
-                    })
-                    .join('');
-
-                // Update content and remove animation class after it runs
-                if (previousContent !== charactersInRoom) {
-                    charElement.innerHTML = charactersInRoom || '';
-                    setTimeout(() => {
-                        const spans = charElement.querySelectorAll('.pulse-move');
-                        spans.forEach(span => span.classList.remove('pulse-move'));
-                    }, 500); // Match animation duration
-                } else {
-                    charElement.innerHTML = charactersInRoom || '';
-                }
-                console.log(`Updated ${roomId} characters: ${charactersInRoom}`); // Debug log
-            }
-        });
-    }
-
-    // Update hallway characters with animation only for the moved player,
-    // showing all players regardless of is_active
-    function updateHallwayCharacters(players, movedPlayer) {
-        const hallways = ['Hallway1', 'Hallway2',
-                            'Hallway3', 'Hallway4', 'Hallway5',
-                            'Hallway6', 'Hallway7',
-                            'Hallway8', 'Hallway9', 'Hallway10',
-                            'Hallway11', 'Hallway12'];
-        hallways.forEach(hallwayId => {
-            const charElement = document.getElementById(`${hallwayId}-characters`);
-            if (charElement) {
-                const previousContent = charElement.innerHTML;
-                const charactersInHallway = players
-                    .filter(player => player.location === hallwayId)
-                    .map(player => {
-                        const isCurrentPlayer = player.username === currentUsername;
-                        const isMoved = player.username === movedPlayer;
-                        const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';
-                        const className = isMoved ? `${baseClass} pulse-move` : baseClass;
-                        return `<span class="${className}">${player.character}</span>`;
-                    })
-                    .join('');
-
-                // Update content and remove animation class after it runs
-                if (previousContent !== charactersInHallway) {
-                    charElement.innerHTML = charactersInHallway || '';
-                    setTimeout(() => {
-                        const spans = charElement.querySelectorAll('.pulse-move');
-                        spans.forEach(span => span.classList.remove('pulse-move'));
-                    }, 500); // Match animation duration
-                } else {
-                    charElement.innerHTML = charactersInHallway || '';
-                }
-                console.log(`Updated ${hallwayId} characters: ${charactersInHallway}`);
-            }
-        });
-    }
-
-    // Add click event listeners to rooms and hallways for player movement
-    function addClickListeners() {
-        const rooms = document.querySelectorAll('.room'); // Select all room elements
-        const hallways = document.querySelectorAll('.hallway'); // Select all hallway elements
-        const clickableElements = [...rooms, ...hallways]; // Combine into a single array
-
-        clickableElements.forEach(element => {
-            element.addEventListener('click', () => {
-                const location = element.id;
-                const message = JSON.stringify({
-                    'type': 'move',
-                    'location': location
-                });
-                console.log('Sending move:', message);
-                ws.send(message);
-            });
-        });
-    }
-
-    // Initialize the game board when the DOM is fully loaded
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('Initial players data:', playersData); // Debug log for initial data
-        updateGameBoard({ players: playersData }); // Initial update with server-rendered data
-        addClickListeners(); // Set up click events for movement
-    });
-
-    // Show the accusations form when the button is clicked
-    document.getElementById('accusations-button').addEventListener('click', function() {
-        const formContainer = document.getElementById('accusations-form-container');
-        formContainer.style.display = 'block';  // Show the form
-    });
-
-    // Handle form submission
-    document.getElementById('accusations-form').addEventListener('submit', function(event) {
-        event.preventDefault();  // Prevent the form from submitting the traditional way
-
-        const suspect = document.getElementById('suspect').value;
-        const weapon = document.getElementById('weapon').value;
-        const room = document.getElementById('room').value;
-
-        // Send accusation via WebSocket
-        const message = {
-            type: "accuse",
-            suspect: suspect,
-            weapon: weapon,
-            room: room
+        // Define image paths for game items
+        const itemImages = {
+            "Knife": "/static/images/weapons/knife.jpg",
+            "Revolver": "/static/images/weapons/revolver.jpg",
+            "Lead Pipe": "/static/images/weapons/lead_pipe.jpg",
+            "Wrench": "/static/images/weapons/wrench.jpg",
+            "Candlestick": "/static/images/weapons/candlestick.jpg",
+            "Rope": "/static/images/weapons/rope.jpg",
+            "Miss Scarlet": "/static/images/characters/miss_scarlet.jpg",
+            "Col. Mustard": "/static/images/characters/col_mustard.jpg",
+            "Prof. Plum": "/static/images/characters/prof_plum.jpg",
+            "Mrs. Peacock": "/static/images/characters/mrs_peacock.jpg",
+            "Mr. Green": "/static/images/characters/rev_green.jpg",
+            "Mrs. White": "/static/images/characters/mrs_white.jpg",
+            "Study": "/static/images/rooms/study.png",
+            "Lounge": "/static/images/rooms/lounge.png",
+            "Hall": "/static/images/rooms/hall.png",
+            "Library": "/static/images/rooms/library.png",
+            "Billiard Room": "/static/images/rooms/billiard_room.png",
+            "Dining Room": "/static/images/rooms/dining_room.png",
+            "Conservatory": "/static/images/rooms/conservatory.png",
+            "Ballroom": "/static/images/rooms/ballroom.png",
+            "Kitchen": "/static/images/rooms/kitchen.png"
         };
 
-        console.log("Sending accusation:", message);
-        ws.send(JSON.stringify(message));
+        // Initialize WebSocket connection
+        const gameId = {{ game_id }};
+        const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
+        const historyList = document.getElementById('history-list');
+        const actionHistory = []; // Array to store popup actions
 
-        // Optionally, hide the form after submission or show a confirmation message
-        alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
-
-        // Hide the form again
-        document.getElementById('accusations-form-container').style.display = 'none';
-    });
-
-    // Handle cancel button click
-    document.getElementById('cancel-accusation').addEventListener('click', function() {
-        document.getElementById('accusations-form-container').style.display = 'none'; // Hide the form
-    });
-
-    // Show the suggestion form when the button is clicked
-	document.getElementById('suggestions-button').addEventListener('click', function() {
-		document.getElementById('suggestions-form-container').style.display = 'block';
-	});
-
-	// Handle Suggestion form submission
-	document.getElementById('suggestions-form').addEventListener('submit', function(event) {
-		event.preventDefault();
-
-		const suspect = document.getElementById('suggest-suspect').value;
-		const weapon = document.getElementById('suggest-weapon').value;
-		const room = currentPlayer ? currentPlayer.location : null; // Use current room as the suggested room
-
-		if (!room) {
-			alert("You must be in a room to make a suggestion.");
-			return;
-		}
-
-		const message = {
-			type: "suggest",
-			suspect: suspect,
-			weapon: weapon,
-			room: room
-		};
-
-		console.log("Sending suggestion:", message);
-		ws.send(JSON.stringify(message));
-
-		alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
-		document.getElementById('suggestions-form-container').style.display = 'none';
-	});
-
-	// Cancel Suggestion Form
-	document.getElementById('cancel-suggestions').addEventListener('click', function() {
-		document.getElementById('suggestions-form-container').style.display = 'none';
-	});
-
-    // Handle "End Turn" button click
-    document.getElementById('end-turn-button').addEventListener('click', function() {
-        const message = {
-            type: "end_turn"
-        };
-
-        console.log("Ending turn:", message);
-        ws.send(JSON.stringify(message));
-
-        alert("Your turn has ended. Waiting for the next player...");
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggle = document.getElementById('mode-switch');
-        const body = document.body;
-    
-        // Load theme from local storage
-        if (localStorage.getItem('theme') === 'light') {
-            body.classList.add('light-mode');
-            toggle.checked = true;
-        }
-    
-        toggle.addEventListener('change', () => {
-            if (toggle.checked) {
-                body.classList.add('light-mode');
-                localStorage.setItem('theme', 'light');
+        // Initialize global variables
+        let playersData = [];
+        let currentUsername = '';
+        try {
+            // Parse initial players data from JSON script tag
+            const playersDataElement = document.getElementById('players-data');
+            if (playersDataElement) {
+                playersData = JSON.parse(playersDataElement.textContent);
             } else {
-                body.classList.remove('light-mode');
-                localStorage.setItem('theme', 'dark');
+                console.error('players-data element not found');
+            }
+            // Parse current username from JSON script tag
+            const currentUsernameElement = document.getElementById('current-username');
+            if (currentUsernameElement) {
+                currentUsername = JSON.parse(currentUsernameElement.textContent);
+            } else {
+                console.error('current-username element not found');
+            }
+        } catch (e) {
+            console.error('Error parsing playersData or currentUsername:', e);
+        }
+
+        let currentPlayer = null;
+        let previousGameState = null;
+
+        // Log WebSocket connection success
+        ws.onopen = function() {
+            console.log("WebSocket connected successfully");
+        };
+
+        // Handle WebSocket messages
+        ws.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Received WebSocket message:', data);
+                const notification = document.getElementById('notification');
+                if (!notification) {
+                    console.error('Notification element not found');
+                    return;
+                }
+                if (data.type === 'game_update') {
+                    console.log('Game state players:', data.game_state.players);
+                    updateGameBoard(data.game_state);
+                }  else if (data.type === 'popup') {
+                    showPopup(data.message); // Display the popup for player actions
+                }  else if (data.type === 'game_end') {
+                    const { winner, solution, message } = data;
+                    // Update notification with game end message
+                    notification.innerHTML = `<p>${message}</p>`;
+                    // Disable accusations button
+                    const accusationsButton = document.getElementById('accusations-button');
+                    if (accusationsButton) accusationsButton.disabled = true;
+                    setTimeout(() => {
+                        alert(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
+                    }, 1000);
+                } else if (data.type === 'game_tie') {
+                    // Update notification with tie message
+                    notification.innerHTML = `<p>${data.message}</p>`;
+                    // Disable all action buttons
+                    const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button', 'toggle-history-button'];
+                    buttons.forEach(id => {
+                        const btn = document.getElementById(id);
+                        if (btn) btn.disabled = true;
+                    });
+                    alert(data.message);
+                } else if (data.type === 'accusation_failed') {
+                    // Append accusation failure message to notification
+                    document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                    alert(data.message);
+                    // Disable action buttons
+                    const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button', 'toggle-history-button'];
+                    buttons.forEach(id => {
+                        const btn = document.getElementById(id);
+                        if (btn) btn.disabled = true;
+                    });
+                } else if (data.type === 'player_eliminated') {
+                    // Append elimination message to notification
+                    document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                    alert(data.message);
+                } else if (data.error) {
+                    console.error('Error:', data.error);
+                    alert(data.error);
+                }
+            } catch (e) {
+                console.error('Error processing WebSocket message:', e);
+            }
+        };
+
+        // Log WebSocket errors
+        ws.onerror = function(error) {
+            console.error("WebSocket connection error:", error);
+        };
+
+        // Log WebSocket closure
+        ws.onclose = function() {
+            console.log("WebSocket closed");
+        };
+
+        // Update game board with new state
+        function updateGameBoard(gameState) {
+            try {
+                console.log('Updating game board with state:', gameState);
+                const players = gameState.players || [];
+                console.log('Players array:', players);
+                const loadingMessage = document.getElementById('loading-message');
+                if (loadingMessage) {
+                    // Toggle loading message visibility
+                    loadingMessage.style.display = players.length ? 'none' : 'block';
+                }
+                const currentTurnPlayer = players.find(player => player.turn);
+                const currentTurnElement = document.getElementById('current-turn');
+                if (!currentTurnElement) {
+                    console.error('current-turn element not found');
+                    return;
+                }
+                // Update turn indicator
+                if (currentTurnPlayer) {
+                    currentTurnElement.textContent = `It's ${currentTurnPlayer.username}'s turn (${currentTurnPlayer.character})!`;
+                } else {
+                    currentTurnElement.textContent = 'Waiting for the first turn...';
+                }
+                let movedPlayer = null;
+                if (previousGameState) {
+                    const prevPlayers = previousGameState.players || [];
+                    movedPlayer = players.find(player => {
+                        const prevPlayer = prevPlayers.find(p => p.username === player.username);
+                        return prevPlayer && prevPlayer.location !== player.location;
+                    })?.username;
+                }
+                // Update room and hallway characters
+                updateRoomCharacters(players, movedPlayer);
+                updateHallwayCharacters(players, movedPlayer);
+                currentPlayer = players.find(player => player.username === currentUsername) || null;
+                previousGameState = JSON.parse(JSON.stringify(gameState));
+            } catch (e) {
+                console.error('Error updating game board:', e);
+            }
+        }
+
+        // Update room character displays
+        function updateRoomCharacters(players, movedPlayer) {
+            const rooms = ['Study', 'Hall', 'Lounge', 'Library', 'BilliardRoom', 'DiningRoom', 'Conservatory', 'Ballroom', 'Kitchen'];
+            rooms.forEach(roomId => {
+                const charElement = document.getElementById(`${roomId}-characters`);
+                if (charElement) {
+                    const previousContent = charElement.innerHTML;
+                    const charactersInRoom = players
+                        .filter(player => player.location === roomId)
+                        .map(player => {
+                            const isCurrentPlayer = player.username === currentUsername;
+                            const isMoved = player.username === movedPlayer;
+                            const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';
+                            const className = isMoved ? `${baseClass} pulse-move` : baseClass;
+                            return `<span class="${className}">${player.character}</span>`;
+                        })
+                        .join('');
+                    if (previousContent !== charactersInRoom) {
+                        // Update room characters with animation
+                        charElement.innerHTML = charactersInRoom || '';
+                        setTimeout(() => {
+                            const spans = charElement.querySelectorAll('.pulse-move');
+                            spans.forEach(span => span.classList.remove('pulse-move'));
+                        }, 500);
+                    } else {
+                        charElement.innerHTML = charactersInRoom || '';
+                    }
+                } else {
+                    console.error(`Room characters element not found: ${roomId}-characters`);
+                }
+            });
+        }
+
+        // Update hallway character displays
+        function updateHallwayCharacters(players, movedPlayer) {
+            const hallways = ['Hallway1', 'Hallway2', 'Hallway3', 'Hallway4', 'Hallway5', 'Hallway6', 'Hallway7', 'Hallway8', 'Hallway9', 'Hallway10', 'Hallway11', 'Hallway12'];
+            hallways.forEach(hallwayId => {
+                const charElement = document.getElementById(`${hallwayId}-characters`);
+                if (charElement) {
+                    const previousContent = charElement.innerHTML;
+                    const charactersInHallway = players
+                        .filter(player => player.location === hallwayId)
+                        .map(player => {
+                            const isCurrentPlayer = player.username === currentUsername;
+                            const isMoved = player.username === movedPlayer;
+                            const baseClass = isCurrentPlayer ? 'player-me' : 'player-other';
+                            const className = isMoved ? `${baseClass} pulse-move` : baseClass;
+                            return `<span class="${className}">${player.character}</span>`;
+                        })
+                        .join('');
+                    if (previousContent !== charactersInHallway) {
+                        // Update hallway characters with animation
+                        charElement.innerHTML = charactersInHallway || '';
+                        setTimeout(() => {
+                            const spans = charElement.querySelectorAll('.pulse-move');
+                            spans.forEach(span => span.classList.remove('pulse-move'));
+                        }, 500);
+                    } else {
+                        charElement.innerHTML = charactersInHallway || '';
+                    }
+                } else {
+                    console.error(`Hallway characters element not found: ${hallwayId}-characters`);
+                }
+            });
+        }
+
+        // Add click listeners to rooms and hallways
+        function addClickListeners() {
+            try {
+                const rooms = document.querySelectorAll('.room');
+                const hallways = document.querySelectorAll('.hallway');
+                const clickableElements = [...rooms, ...hallways];
+                if (!clickableElements.length) {
+                    console.error('No clickable elements (rooms or hallways) found');
+                    return;
+                }
+                clickableElements.forEach(element => {
+                    element.addEventListener('click', () => {
+                        const location = element.id;
+                        const message = JSON.stringify({
+                            'type': 'move',
+                            'location': location
+                        });
+                        console.log('Sending move:', message);
+                        ws.send(message);
+                    });
+                });
+            } catch (e) {
+                console.error('Error adding click listeners:', e);
+            }
+        }
+
+        // Modify the showPopup function to send logs to the server
+        function showPopup(message) {
+            const popup = document.createElement('div');
+            popup.style.fontWeight = 'bold';
+            popup.textContent = message;
+            popup.style.position = 'fixed';
+            popup.style.top = '20px';
+            popup.style.left = '20px';
+            popup.style.backgroundColor = '#ffcc00';
+            popup.style.color = '#000';
+            popup.style.padding = '20px 30px';
+            popup.style.borderRadius = '10px';
+            popup.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.2)';
+            popup.style.zIndex = '1000';
+            document.body.appendChild(popup);
+
+            // Add the action to the history
+            addActionToHistory(message);
+
+            // Remove the popup after 5 seconds
+            setTimeout(() => {
+                popup.remove();
+            }, 5000);
+        }
+
+        // Function to add an action to the history
+        function addActionToHistory(action) {
+            const listItem = document.createElement('li');
+            listItem.textContent = action;
+            historyList.appendChild(listItem);
+        }
+
+        // Initialize JavaScript on DOM load
+        // - **DOM Manipulation**: Sets up event listeners for buttons
+        //   (#display-hand-button, #suggestions-button, #accusations-button,
+        //   #end-turn-button), forms (#suggestions-form, #accusations-form), and
+        //   toggle (#mode-switch). Dynamically updates #hand-list, toggles visibility
+        //   of #hand-display-container, #suggestions-form-container, and
+        //   #accusations-form-container, and modifies #notification for messages.
+        //   Uses querySelector, addEventListener, and innerHTML to manipulate elements.
+        // - **Session Integration**: Button/form actions (e.g., submit suggestion,
+        //   end turn) send WebSocket messages validated by GameConsumer using
+        //   sessionid cookies, ensuring DOM updates reflect authenticated actions.
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                console.log('Initial players data:', playersData);
+                console.log('DOM loaded, checking elements...');
+                // Verify required elements
+                const requiredElements = ['game-board', 'notification', 'button-container', 'current-turn'];
+                requiredElements.forEach(id => {
+                    if (!document.getElementById(id)) {
+                        console.error(`Required element not found: ${id}`);
+                    }
+                });
+
+                // Initialize game board with players data
+                updateGameBoard({ players: playersData });
+                addClickListeners();
+
+                // Handle hand display button
+                const displayHandButton = document.getElementById('display-hand-button');
+                const handDisplayContainer = document.getElementById('hand-display-container');
+                const handDisplayOverlay = document.getElementById('hand-display-overlay');
+                const handList = document.getElementById('hand-list');
+                const closeHandButton = document.getElementById('close-hand-button');
+                const handDisplayTitle = handDisplayContainer && handDisplayContainer.querySelector('h3');
+
+                if (!displayHandButton || !handDisplayContainer || !handDisplayOverlay || !handList || !closeHandButton) {
+                    console.error('Hand display elements missing');
+                } else {
+                    displayHandButton.addEventListener('click', () => {
+                        if (currentPlayer && currentPlayer.hand) {
+                            if (handDisplayTitle) {
+                                // Update hand display title
+                                handDisplayTitle.textContent = `${currentPlayer.character}'s Hand`;
+                            }
+                            // Populate hand list with cards
+                            handList.innerHTML = '';
+                            currentPlayer.hand.forEach(item => {
+                                const listItem = document.createElement('li');
+                                listItem.style.display = 'flex';
+                                listItem.style.alignItems = 'center';
+                                listItem.style.marginBottom = '10px';
+                                const itemImage = document.createElement('img');
+                                itemImage.src = itemImages[item] || '';
+                                itemImage.alt = item;
+                                itemImage.style.width = '40px';
+                                itemImage.style.height = '40px';
+                                itemImage.style.marginRight = '10px';
+                                const itemText = document.createElement('span');
+                                itemText.textContent = item;
+                                listItem.appendChild(itemImage);
+                                listItem.appendChild(itemText);
+                                handList.appendChild(listItem);
+                            });
+                            // Show hand display popup and overlay
+                            handDisplayContainer.style.display = 'block';
+                            handDisplayOverlay.style.display = 'block';
+                        } else {
+                            alert('Your hand is empty or not available.');
+                        }
+                    });
+
+                    closeHandButton.addEventListener('click', () => {
+                        // Hide hand display popup and overlay
+                        handDisplayContainer.style.display = 'none';
+                        handDisplayOverlay.style.display = 'none';
+                    });
+
+                    handDisplayOverlay.addEventListener('click', () => {
+                        // Hide hand display on overlay click
+                        handDisplayContainer.style.display = 'none';
+                        handDisplayOverlay.style.display = 'none';
+                    });
+                }
+
+                // Handle accusations button and form
+                const accusationsButton = document.getElementById('accusations-button');
+                const accusationsFormContainer = document.getElementById('accusations-form-container');
+                const accusationsForm = document.getElementById('accusations-form');
+                const cancelAccusation = document.getElementById('cancel-accusation');
+
+                if (accusationsButton && accusationsFormContainer && accusationsForm && cancelAccusation) {
+                    accusationsButton.addEventListener('click', function() {
+                        // Show accusations form
+                        accusationsFormContainer.style.display = 'block';
+                    });
+
+                    accusationsForm.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        const suspect = document.getElementById('suspect').value;
+                        const weapon = document.getElementById('weapon').value;
+                        const room = document.getElementById('room').value;
+                        const message = {
+                            type: "accuse",
+                            suspect: suspect,
+                            weapon: weapon,
+                            room: room
+                        };
+                        console.log("Sending accusation:", message);
+                        ws.send(JSON.stringify(message));
+                        alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+                        // Hide accusations form
+                        accusationsFormContainer.style.display = 'none';
+                    });
+
+                    cancelAccusation.addEventListener('click', function() {
+                        // Hide accusations form
+                        accusationsFormContainer.style.display = 'none';
+                    });
+                } else {
+                    console.error('Accusations form elements missing');
+                }
+
+                // Handle suggestions button and form
+                const suggestionsButton = document.getElementById('suggestions-button');
+                const suggestionsFormContainer = document.getElementById('suggestions-form-container');
+                const suggestionsForm = document.getElementById('suggestions-form');
+                const cancelSuggestions = document.getElementById('cancel-suggestions');
+
+                if (suggestionsButton && suggestionsFormContainer && suggestionsForm && cancelSuggestions) {
+                    suggestionsButton.addEventListener('click', function() {
+                        // Show suggestions form
+                        suggestionsFormContainer.style.display = 'block';
+                    });
+
+                    suggestionsForm.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        const suspect = document.getElementById('suggest-suspect').value;
+                        const weapon = document.getElementById('suggest-weapon').value;
+                        const room = currentPlayer ? currentPlayer.location : null;
+                        if (!room) {
+                            alert("You must be in a room to make a suggestion.");
+                            return;
+                        }
+                        const message = {
+                            type: "suggest",
+                            suspect: suspect,
+                            weapon: weapon,
+                            room: room
+                        };
+                        console.log("Sending suggestion:", message);
+                        ws.send(JSON.stringify(message));
+                        alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+                        // Hide suggestions form
+                        suggestionsFormContainer.style.display = 'none';
+                    });
+
+                    cancelSuggestions.addEventListener('click', function() {
+                        // Hide suggestions form
+                        suggestionsFormContainer.style.display = 'none';
+                    });
+                } else {
+                    console.error('Suggestions form elements missing');
+                }
+
+                // Handle end turn button
+                const endTurnButton = document.getElementById('end-turn-button');
+                if (endTurnButton) {
+                    endTurnButton.addEventListener('click', function() {
+                        const message = {
+                            type: "end_turn"
+                        };
+                        console.log("Ending turn:", message);
+                        ws.send(JSON.stringify(message));
+                        alert("Your turn has ended. Waiting for the next player...");
+                    });
+                } else {
+                    console.error('end-turn-button element missing');
+                }
+
+                // Handle toggle history button
+                const historyWindow = document.getElementById('history-window');
+                const toggleHistoryButton = document.getElementById('toggle-history-button');
+                const closeHistoryButton = document.getElementById('close-history-button');
+                if (toggleHistoryButton) {
+                    // Toggle the history window
+                    toggleHistoryButton.addEventListener('click', () => {
+                        const isOpen = historyWindow.classList.toggle('open');
+                        document.body.classList.toggle('history-open', isOpen); // Add or remove the class to push content
+                    });
+                
+                    // Close the history window
+                    closeHistoryButton.addEventListener('click', () => {
+                        historyWindow.classList.remove('open');
+                        document.body.classList.remove('history-open'); // Remove the class to reset content position
+                    });
+                } else {
+                    console.error('toggle-history-button element missing');
+                }
+
+                // Handle dark/light mode toggle
+                const toggle = document.getElementById('mode-switch');
+                if (toggle) {
+                    const body = document.body;
+                    if (localStorage.getItem('theme') === 'light') {
+                        // Apply light mode class
+                        body.classList.add('light-mode');
+                        toggle.checked = true;
+                    }
+                    toggle.addEventListener('change', () => {
+                        if (toggle.checked) {
+                            // Switch to light mode
+                            body.classList.add('light-mode');
+                            localStorage.setItem('theme', 'light');
+                        } else {
+                            // Switch to dark mode
+                            body.classList.remove('light-mode');
+                            localStorage.setItem('theme', 'dark');
+                        }
+                    });
+                } else {
+                    console.error('mode-switch element missing');
+                }
+            } catch (e) {
+                console.error('Error in DOMContentLoaded:', e);
             }
         });
-    });
-
     </script>
 </body>
 </html>
