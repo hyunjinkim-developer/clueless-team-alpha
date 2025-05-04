@@ -340,7 +340,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         """
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
-        if player.moved:
+        players = await database_sync_to_async(list)(Player.objects.filter(game=game))
+        non_eliminated_players = [p for p in players if not p.accused]
+        if player.moved and len(non_eliminated_players) != 1:  # When only one player left, the player will take turn continuously
             await self.send(text_data=json.dumps({'error': 'You have already moved once this turn'}))
             return
         to_location = data.get('location')
