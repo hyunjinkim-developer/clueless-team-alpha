@@ -15,7 +15,7 @@ from .constants import *
 
 # Debug flags for logging; disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
-DEBUG_AUTH = False  # Authentication-specific debug logging
+DEBUG_AUTH = True  # Authentication-specific debug logging
 DEBUG_GAME_UPDATE = True
 DEBUG_HANDLE_ACCUSE = True
 HANDLE_END_TURN = True
@@ -28,22 +28,16 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         """
         Handle WebSocket connection establishment.
-        Validates session using the 'sessionid' cookie, aligning with Django's SessionMiddleware.
-        Joins the client to the game group and sends initial game state.
+        Validates session, joins game group, sends initial game state, and broadcasts player join.
         """
-        # Log connection attempt
         print("Connecting to WebSocket...")
-
-        # Extract game ID from URL route
         self.game_id = self.scope['url_route']['kwargs']['game_id']
         print(f"Game ID set to: {self.game_id}")
         self.game_group_name = f"game_{self.game_id}"
 
-        # Get session key from cookies
         cookies = self.scope.get('cookies', {})
         session_key = cookies.get('sessionid')
 
-        # Debug: Log cookie details
         if DEBUG and DEBUG_AUTH:
             print("[connect] Cookie details:")
             print(f"  sessionid: {session_key or 'None'}")
@@ -51,14 +45,12 @@ class GameConsumer(AsyncWebsocketConsumer):
                 if key.startswith('clueless_'):
                     print(f"  {key}: {cookies[key]}")
 
-        # Validate session key presence
         if not session_key:
             if DEBUG and DEBUG_AUTH:
                 print("[connect] No sessionid cookie found")
             await self.close(code=4001, reason="Missing session cookie")
             return
 
-        # Validate session existence in database
         session_exists = await database_sync_to_async(Session.objects.filter(session_key=session_key).exists)()
         if not session_exists:
             if DEBUG and DEBUG_AUTH:
@@ -67,7 +59,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001, reason="Invalid session")
             return
 
-        # Load session data
         try:
             session_data = await database_sync_to_async(self.load_session)(session_key)
         except Exception as e:
@@ -78,7 +69,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001, reason="Failed to load session")
             return
 
-        # Validate session data
         if not session_data.get('expected_username'):
             if DEBUG and DEBUG_AUTH:
                 print("[connect] Session lacks expected_username:")
@@ -86,23 +76,31 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001, reason="Invalid session data")
             return
 
-        # Store session in scope
         self.scope['session'] = session_data
 
-        # Log successful session validation
         if DEBUG and DEBUG_AUTH:
             print("[connect] Session validated successfully:")
             print(f"  Session key: {session_key}")
             print(f"  User: {self.scope['user'].username if self.scope['user'].is_authenticated else 'Anonymous'}")
 
-        # Join the game group and accept the connection
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
         await self.accept()
         print(f"WebSocket connected for game {self.game_id}, channel: {self.channel_name}")
 
-        # Send initial game state
         game_state = await self.get_game_state()
         await self._send_game_update(game_state, source="connect")
+
+        # Broadcast player_joined to update player list
+        game = await self.get_game()
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                'type': 'player_joined',
+                'player': self.scope['user'].username,
+                'players': game.players_list,
+                'player_count': len(game.players_list)
+            }
+        )
 
     def load_session(self, session_key):
         """
@@ -211,13 +209,34 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'raw_message': data
             }))
 
+    async def player_joined(self, event):
+        """
+        Handle player_joined events to notify clients of new players.
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'player_joined',
+            'player': event['player'],
+            'players': event['players'],
+            'player_count': event['player_count']
+        }))
+
     async def handle_start_game(self):
         """
         Handle start_game message to initialize the game.
-        Only the first player can start the game.
+        Only the first player (host) can start if player_count >= 2.
         """
         game = await self.get_game()
         if self.scope['user'].username != game.players_list[0]:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Only the host can start the game.'
+            }))
+            return
+        if len(game.players_list) < 2:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'At least 2 players are required to start the game.'
+            }))
             return
         await self.initialize_game(game)
         game.begun = True
@@ -342,7 +361,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         player = await self.get_player(self.scope['user'].username)
         players = await database_sync_to_async(list)(Player.objects.filter(game=game))
         non_eliminated_players = [p for p in players if not p.accused]
-        if player.moved and len(non_eliminated_players) != 1:  # When only one player left, the player will take turn continuously
+        if player.moved and len(non_eliminated_players) != 1:
             await self.send(text_data=json.dumps({'error': 'You have already moved once this turn'}))
             return
         to_location = data.get('location')

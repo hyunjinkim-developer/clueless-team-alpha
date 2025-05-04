@@ -96,6 +96,11 @@
             background: var(--button-hover);
         }
 
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
         .mode-toggle {
             position: absolute;
             top: 10px;
@@ -154,8 +159,8 @@
         <h1>Clue-Less Game {{ game_id }}</h1>
         {% if is_first_user %}
             <h2>Welcome Game Host!</h2>
-            <p>Current Players ({{ player_count }}/6):</p>
-            <div class="player-list">
+            <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
+            <div class="player-list" id="player-list">
                 {% for player in players_list %}
                     <div>{{ player }}</div>
                 {% endfor %}
@@ -165,8 +170,8 @@
             </button>
         {% else %}
             <h2>Waiting for host to start the game...</h2>
-            <p>Current Players ({{ player_count }}/6):</p>
-            <div class="player-list">
+            <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
+            <div class="player-list" id="player-list">
                 {% for player in players_list %}
                     <div>{{ player }}</div>
                 {% endfor %}
@@ -193,26 +198,51 @@
                     localStorage.setItem('theme', 'light');
                 }
             });
-        });
 
-        const gameId = {{ game_id }};
-        const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
+            const gameId = {{ game_id }};
+            const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (data.type === 'game_started') {
-                window.location.href = '/game/' + gameId + '/';
-            } else if (data.type === 'player_joined') {
-                location.reload(); // Refresh to update player list
+            ws.onopen = function() {
+                console.log('WebSocket connected for game ' + gameId);
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'game_started') {
+                    window.location.href = '/game/' + gameId + '/';
+                } else if (data.type === 'player_joined') {
+                    // Update player count and list dynamically
+                    const playerCount = data.player_count;
+                    const players = data.players;
+                    document.getElementById('player-count').textContent = playerCount;
+                    const playerList = document.getElementById('player-list');
+                    playerList.innerHTML = players.map(player => `<div>${player}</div>`).join('');
+                    // Enable start button if host and player_count >= 2
+                    const startButton = document.getElementById('start-button');
+                    if (startButton && playerCount >= 2) {
+                        startButton.removeAttribute('disabled');
+                    }
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket closed for game ' + gameId);
+            };
+
+            const startButton = document.getElementById('start-button');
+            if (startButton) {
+                startButton.onclick = function() {
+                    ws.send(JSON.stringify({
+                        'type': 'start_game',
+                        'game_id': gameId
+                    }));
+                };
             }
-        };
-
-        document.getElementById('start-button').onclick = function() {
-            ws.send(JSON.stringify({
-                'type': 'start_game',
-                'game_id': gameId
-            }));
-        };
+        });
     </script>
 </body>
 </html>

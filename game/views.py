@@ -25,7 +25,7 @@ from .constants import *
 
 # Debug flags for logging; disable in production
 DEBUG = True  # Enables/disables all debug logging
-DEBUG_AUTH = False  # Authentication-specific debug logging
+DEBUG_AUTH = True  # Authentication-specific debug logging
 DEBUG_ASSIGN_RANDOM_CHARACTER = True  # Character assignment debug logging
 
 # Custom form for user signup
@@ -319,7 +319,7 @@ def start_game(request, game_id):
     """
     Render the start game page.
     Allows the first player to initiate the game.
-    Validates authentication and game state.
+    Validates authentication and game state, preserving session cookies.
     """
     session_key = request.session.session_key if request.session.session_key else 'unknown'
     sessionid = request.COOKIES.get('sessionid', 'None')
@@ -370,14 +370,27 @@ def start_game(request, game_id):
     response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max_age=0'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
-    response.delete_cookie('sessionid', path='/')
-    for key in [k for k in request.COOKIES.keys() if k.startswith(('clueless_session_', 'clueless_browser_', 'clueless_user_', 'clueless_token_')) and not k.endswith(session_key)]:
-        response.delete_cookie(key, path='/')
+    # Preserve session cookies instead of deleting
+    expected_username = request.session.get('expected_username', '')
+    expected_browser_id = request.session.get('browser_id', '')
+    expected_token = request.session.get('session_token', '')
+    response.set_cookie('sessionid', request.session.session_key, max_age=1800,
+                       httponly=True, samesite='Strict', path='/')
+    response.set_cookie(f'clueless_session_{request.session.session_key}', request.session.session_key, max_age=1800,
+                       httponly=True, samesite='Strict', path='/')
+    response.set_cookie(f'clueless_browser_{request.session.session_key}', expected_browser_id, max_age=1800,
+                       httponly=True, samesite='Strict', path='/')
+    response.set_cookie(f'clueless_user_{request.session.session_key}', expected_username, max_age=1800,
+                       httponly=True, samesite='Strict', path='/')
+    response.set_cookie(f'clueless_token_{request.session.session_key}', expected_token, max_age=1800,
+                       httponly=True, samesite='Strict', path='/')
     if DEBUG and DEBUG_AUTH:
-        print("[start_game] Outgoing response:")
-        print("  Set-Cookie: None")
-        print("  sessionid: deleted")
-        print("  stale clueless_*: deleted")
+        print("[start_game] Outgoing response, Set-Cookie:")
+        print(f"  sessionid: {request.session.session_key}")
+        print(f"  clueless_session_{request.session.session_key}: {request.session.session_key}")
+        print(f"  clueless_browser_{request.session.session_key}: {expected_browser_id}")
+        print(f"  clueless_user_{request.session.session_key}: {expected_username}")
+        print(f"  clueless_token_{request.session.session_key}: {expected_token}")
 
     return response
 

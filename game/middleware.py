@@ -7,37 +7,45 @@ DEBUG = True
 
 class SessionValidationMiddleware:
     """
-    Middleware to validate session cookies before AuthenticationMiddleware.
+    Middleware to validate session cookies after AuthenticationMiddleware.
     Checks clueless_user_<session_key> against expected_username to reject foreign sessions.
-    Prevents session overwrites in private browsing modes by forcing logout on mismatch.
+    Skips validation for /login/ to avoid accessing request.user prematurely.
     """
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Get session key from sessionid cookie
         session_key = request.COOKIES.get('sessionid')
         clueless_user = request.COOKIES.get(f'clueless_user_{session_key}', 'None')
 
-        # Log cookies for debugging
         if DEBUG:
             print("[SessionValidationMiddleware] Cookie details:")
             print(f"  Path: {request.path}")
             print(f"  sessionid: {session_key or 'None'}")
             print(f"  clueless_user_{session_key or 'unknown'}: {clueless_user}")
 
-        # Skip validation for non-game paths
-        if not request.path.startswith(('/game/', '/logout/', '/start_game/', '/ws/game/')):
+        # Skip validation for /login/ to avoid AttributeError on request.user
+        if request.path.startswith('/login/'):
             return self.get_response(request)
 
-        # Load session
+        # Handle /start_game/ with authentication check
+        if request.path.startswith('/start_game/'):
+            if not request.user.is_authenticated:
+                if DEBUG:
+                    print("[SessionValidationMiddleware] Authentication failure for /start_game/:")
+                    print(f"  Session key: {session_key}")
+                return render(request, 'game/error.html', {
+                    'error_message': "You are not authenticated. Please log in."
+                }, status=403)
+            return self.get_response(request)
+
+        # Validate session for other paths
         if session_key:
             try:
                 request.session = SessionStore(session_key=session_key)
                 request.session.accessed = True
                 expected_username = request.session.get('expected_username')
 
-                # Validate clueless_user against expected_username
                 if expected_username and clueless_user != 'None' and clueless_user != expected_username:
                     if DEBUG:
                         print("[SessionValidationMiddleware] Session user mismatch:")

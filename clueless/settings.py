@@ -42,10 +42,10 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',  # Handles session creation
-    'game.middleware.SessionValidationMiddleware',  # Validates session cookies early
+    'django.contrib.auth.middleware.AuthenticationMiddleware',  # Sets request.user
+    'game.middleware.SessionValidationMiddleware',  # Validates session cookies
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',  # Sets request.user
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
