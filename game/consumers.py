@@ -60,7 +60,9 @@ class GameConsumer(AsyncWebsocketConsumer):
     SessionValidationMiddleware for session isolation, addressing session overwrite
     issues in private browsing modes (e.g., Safari).
     """
-
+    # Mapping of player usernames to their WebSocket channel names
+    player_channel_map = {}
+    
     async def connect(self):
         """
         Handle WebSocket connection establishment.
@@ -150,6 +152,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         # Accept the WebSocket connection
         await self.accept()
         print(f"WebSocket connected for game {self.game_id}, channel: {self.channel_name}")
+        
+        # Add the player's username and channel_name to the mapping
+        username = self.scope['user'].username
+        GameConsumer.player_channel_map[username] = self.channel_name
 
         # Send initial game state to the client
         game_state = await self.get_game_state()
@@ -205,6 +211,11 @@ class GameConsumer(AsyncWebsocketConsumer):
         - **Session Handling**: No direct session manipulation, but deactivation updates
           the player's state, which is reflected in game state broadcasts.
         """
+        # Remove the player's username from the mapping on disconnect
+        username = self.scope['user'].username
+        if username in GameConsumer.player_channel_map:
+            del GameConsumer.player_channel_map[username]
+            
         if hasattr(self, 'game_group_name'):
             try:
                 game = await self.get_game()
@@ -272,6 +283,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             if DEBUG:
                 print(f"No message type in data: {data}")
             return
+        
+        # Skip turn validation for card_selected messages
+        if message_type == 'card_selected':
+            await self.handle_card_selected(data)
+            return
+        
         if message_type == 'start_game':
             await self.handle_start_game()
         elif message_type == 'move':
@@ -453,6 +470,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'popup',
             'message': event['message']
+        }))
+        
+    async def select_card(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'select_card',
+            'message': event['message'],
+            'matchList': event['matchList'],
+            'suggesting_player_channel': event['suggesting_player_channel']
         }))
 
     # Async wrapper for synchronous database query to get Game instance
@@ -717,6 +742,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
         players = await database_sync_to_async(list)(Player.objects.filter(game=game))
+        
+        # Get the channel_name of the suggesting player
+        suggesting_player_channel = GameConsumer.player_channel_map.get(player.username)
+        
         if not player.turn:
             await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
             return
@@ -746,32 +775,41 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
     
-        # identify which player has the character suggested
-        # if character suggested is not assigned to a player, 
-        # then the suspect player becomes the next player in the list
-        suspect_player = None
-        for p in players:
-            if p.character == suspect:
-                suspect_player = p
-        # if suspect_player == None:
-        #     currIndex = players.index(player)
-        #     nextIndex = currIndex + 1
-        #     suspect_player = players[nextIndex]
-        
-        # fix lines 375 to 425 suggestion logic
-        
-        # move suspected player to suggested room
-        suspect_player.location = room
-        suspect_player.suggested = True
-
         # make list of players in order of checking suggestion with players' card hands
         # start with suggested player
         # then follow turn order
         playerCopyList = players.copy()
-        playerSuggestList = [suspect_player]
-        playerCopyList.remove(suspect_player)
-        playerCopyList.remove(player)
-        playerSuggestList.extend(playerCopyList)
+        playerSuggestList = []
+    
+        suspect_player = None
+        for p in players:
+            if p.character == suspect:
+                suspect_player = p
+        
+        if suspect_player is not None:
+            # move suspected player to suggested room
+            suspect_player.location = player.location
+            suspect_player.suggested = True
+            await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
+            
+            # Broadcast updated game state
+            game_state = await self.get_game_state()
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'game_update',
+                    'game_state': game_state
+                }
+            )
+            
+            playerSuggestList = [suspect_player]
+            playerCopyList.remove(suspect_player)
+            playerCopyList.remove(player)
+            playerSuggestList.extend(playerCopyList)
+        else:
+            playerCopyList.remove(player)
+            playerSuggestList.extend(playerCopyList)
+            
 
         # check suspected player's hand for suspect, then weapon, then room
         # put all matches into separate list
@@ -788,84 +826,45 @@ class GameConsumer(AsyncWebsocketConsumer):
             matchList.extend(suspectMatch)
             matchList.extend(roomMatch)
             matchList.extend(weaponMatch)
-            print(f"suspected player: {plyr.username} as {plyr.character}")
-            print(f"suspected player's card hand: {plyr.hand}")
+            print(f"Disproving player: {plyr.username} as {plyr.character}")
+            print(f"Disproving player's card hand: {plyr.hand}")
             print(f"List of matching cards: {matchList}") #test which cards match
             numMatches = len(matchList)
+            
             if numMatches == 1:
-                await self.send(text_data=json.dumps({'message': 'Card {matchList} disproves suggestion. End of turn'}))
+                await self.channel_layer.send(
+                    suggesting_player_channel,
+                    {
+                        'type': 'player_action',
+                        'message': f'Card {matchList} disproves suggestion. End of turn'
+                    }
+                )
                 await self.handle_end_turn(data)
                 break
             elif numMatches > 1:
-                await self.send(text_data=json.dumps({'message': 'Test message - multiple cards disprove suggestion'}))
-                await self.handle_end_turn(data)
-                break
-            else:
-                await self.send(text_data=json.dumps({'message': 'No cards to disprove suggestion. Moving to next player'}))
-                # return
-        
-        # if suspect_player is None:
-        #     # If the suspect does not have any of the cards, check other players
-        #     for p in players:
-        #         if p.username != player.username:
-        #             if suspect in p.hand or weapon in p.hand or room in p.hand:
-        #                 print(f"Player {p.username} shows a card to {player.username}")
-        #                 await self.send(text_data=json.dumps({
-        #                     'message': f"{p.username} shows you a card from their hand."
-        #                 }))
-        #                 await self.handle_end_turn(data)  # End the turn after suggestion
-        #                 break
-        #     else:
-        #         # If no one has the cards, send a message to the player
-        #         print(f"No one has the cards {suspect}, {weapon}, or {room}")
-        #         await self.send(text_data=json.dumps({
-        #             'message': "No one has the cards you suggested."
-        #         }))
-        # else:
-        #     if suspect_player and suspect_player.location != room:
-        #         suspect_player.location = room  # Move suspect to the suggested room
-        #         suspect_player.suggested = True  # Mark suspect as suggested
-        #         await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
-        #     else:
-        #         suspect_player.suggested = True  # Mark suspect as suggested
-        #         await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
-            
-        #     # Check other players’ hands starting with the suspect
-        #     if suspect in suspect_player.hand or weapon in suspect_player.hand or room in suspect_player.hand:
-        #         # If the suspect has any of the cards, they show it to the player
-        #         print(f"Player {suspect} shows a card to {player.username}")
-        #         await self.send(text_data=json.dumps({
-        #             'message': f"{suspect} shows you a card from their hand."
-        #         }))
-        #         await self.handle_end_turn(data)  # End the turn after suggestion
-        #     else:
-        #         # If the suspect does not have any of the cards, check other players
-        #         for p in players:
-        #             if p.username != player.username and p.username != suspect:
-        #                 if suspect in p.hand or weapon in p.hand or room in p.hand:
-        #                     print(f"Player {p.username} shows a card to {player.username}")
-        #                     await self.send(text_data=json.dumps({
-        #                         'message': f"{p.username} shows you a card from their hand."
-        #                     }))
-        #                     await self.handle_end_turn(data)  # End the turn after suggestion
-        #                     break
-        #         else:
-        #             # If no one has the cards, send a message to the player
-        #             print(f"No one has the cards {suspect}, {weapon}, or {room}")
-        #             await self.send(text_data=json.dumps({
-        #                 'message': "No one has the cards you suggested."
-        #             }))
-
-        # Ria's suggestion logic should end here
-                    
-                    # Broadcast the results of your suggestion to all players
-                    await self.channel_layer.group_send(
-                        self.game_group_name,
+                disproving_player_channel = GameConsumer.player_channel_map.get(plyr.username)
+                if disproving_player_channel:
+                    # Prompt player to select which card to disprove suggestion with
+                    await self.channel_layer.send(
+                        disproving_player_channel,
                         {
-                            'type': 'player_action',
-                            'message': f"None of the other players could disprove your suggestion."
+                            'type': 'select_card',
+                            'message': f'You have multiple cards to disprove the suggestion:',
+                            'matchList': matchList,
+                            'suggesting_player_channel': suggesting_player_channel
                         }
                     )
+                break
+            else:
+                # Broadcast the results of your suggestion to all players
+                await self.channel_layer.group_send(
+                    self.game_group_name,
+                    {
+                        'type': 'player_action',
+                        'message': f"None of the other players could disprove your suggestion."
+                    }
+                )
+                
                     
         # Broadcast updated game state
         game_state = await self.get_game_state()
@@ -888,6 +887,24 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
+    async def handle_card_selected(self, data):
+        """
+        Handle the card selected by the disproving player and send it to the suggesting player.
+        """
+        selected_card = data.get('card')
+        suggesting_player_channel = data.get('suggesting_player_channel')  # Get the suggesting player's channel
+
+        if not selected_card or not suggesting_player_channel:
+            return
+
+        # Send the selected card only to the suggesting player
+        await self.channel_layer.send(
+            suggesting_player_channel,
+            {
+                'type': 'player_action',
+                'message': f"The card [{selected_card}] has been shown to disprove your suggestion."
+            }
+        )
 
     async def handle_end_turn(self, data):
         """

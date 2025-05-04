@@ -104,12 +104,13 @@
             color: white;
             text-shadow: 0 0 10px #ff0066;
         }
-        .room-characters {
+        .room-characters span{
             font-size: var(--room-hallway-character-font-size);
             padding: 2px;
             overflow-y: auto;
             white-space: pre-line;
             max-height: calc(var(--cell-size) - 40px);
+            display: block; /* Ensures each player is displayed on a new line */
         }
 
         /* Style hallways with blue theme */
@@ -681,8 +682,8 @@
             "Lounge": "/static/images/rooms/lounge.png",
             "Hall": "/static/images/rooms/hall.png",
             "Library": "/static/images/rooms/library.png",
-            "Billiard Room": "/static/images/rooms/billiard_room.png",
-            "Dining Room": "/static/images/rooms/dining_room.png",
+            "BilliardRoom": "/static/images/rooms/billiard_room.png",
+            "DiningRoom": "/static/images/rooms/dining_room.png",
             "Conservatory": "/static/images/rooms/conservatory.png",
             "Ballroom": "/static/images/rooms/ballroom.png",
             "Kitchen": "/static/images/rooms/kitchen.png"
@@ -738,8 +739,54 @@
                     console.log('Game state players:', data.game_state.players);
                     updateGameBoard(data.game_state);
                 }  else if (data.type === 'popup') {
-                    showPopup(data.message); // Display the popup for player actions
-                }  else if (data.type === 'game_end') {
+                    showPopup(data.message);
+                }  else if (data.type === 'select_card') {
+                    // Handle the card selection popup
+                    const matchList = data.matchList;
+                    const message = data.message;
+                    const suggestingPlayerChannel = data.suggesting_player_channel;
+    
+                    // Create a popup for card selection
+                    const popup = document.createElement('div');
+                    popup.style.position = 'fixed';
+                    popup.style.top = '50%';
+                    popup.style.left = '50%';
+                    popup.style.transform = 'translate(-50%, -50%)';
+                    popup.style.backgroundColor = '#fff';
+                    popup.style.padding = '20px';
+                    popup.style.borderRadius = '10px';
+                    popup.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.2)';
+                    popup.style.zIndex = '1000';
+                    popup.style.textAlign = 'center';
+    
+                    const messageElement = document.createElement('p');
+                    messageElement.textContent = message;
+                    messageElement.style.color = 'black'; // Set text color to black
+                    popup.appendChild(messageElement);
+    
+                    // Create buttons for each card in matchList
+                    matchList.forEach(card => {
+                        const button = document.createElement('button');
+                        button.textContent = card;
+                        button.style.margin = '5px';
+                        button.style.padding = '10px';
+                        button.style.border = '1px solid #ccc';
+                        button.style.borderRadius = '5px';
+                        button.style.cursor = 'pointer';
+                        button.addEventListener('click', () => {
+                            // Send the selected card back to the server
+                            ws.send(JSON.stringify({
+                                type: 'card_selected',
+                                card: card,
+                                suggesting_player_channel: suggestingPlayerChannel
+                            }));
+                            document.body.removeChild(popup); // Remove the popup
+                        });
+                        popup.appendChild(button);
+                    });
+    
+                    document.body.appendChild(popup);
+                } else if (data.type === 'game_end') {
                     const { winner, solution, message } = data;
                     // Update notification with game end message
                     notification.innerHTML = `<p>${message}</p>`;
