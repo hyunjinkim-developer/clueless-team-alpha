@@ -15,7 +15,7 @@ from .constants import *
 
 # Debug flags for logging; disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
-DEBUG_AUTH = True  # Authentication-specific debug logging
+DEBUG_AUTH = False  # Authentication-specific debug logging
 DEBUG_GAME_UPDATE = True
 DEBUG_HANDLE_ACCUSE = True
 HANDLE_END_TURN = True
