@@ -316,34 +316,25 @@
     
         /* Body styling */
         body {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        min-height: 100vh;
-        overflow-x: hidden;
-        overflow-y: auto;
-        text-align: center;
-
-        /* Unified font stack */
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
-        /* Color theming via CSS variables */
-        background-color: var(--bg-color);
-        color: var(--text-color);
-
-        /* 🌌 Speckled stars background */
-        background-image:
-            radial-gradient(1px 1px at 20% 30%, #fff, transparent),
-            radial-gradient(1px 1px at 80% 20%, #fff, transparent),
-            radial-gradient(1px 1px at 50% 70%, #fff, transparent),
-            radial-gradient(1px 1px at 90% 80%, #fff, transparent),
-            radial-gradient(1px 1px at 30% 90%, #fff, transparent),
-            radial-gradient(1px 1px at 10% 10%, #fff, transparent),
-            radial-gradient(1px 1px at 60% 40%, #fff, transparent),
-            radial-gradient(1px 1px at 70% 60%, #fff, transparent);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: start;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+                radial-gradient(1px 1px at 80% 20%, #fff, transparent),
+                radial-gradient(1px 1px at 50% 70%, #fff, transparent),
+                radial-gradient(1px 1px at 90% 80%, #fff, transparent),
+                radial-gradient(1px 1px at 30% 90%, #fff, transparent),
+                radial-gradient(1px 1px at 10% 10%, #fff, transparent),
+                radial-gradient(1px 1px at 60% 40%, #fff, transparent),
+                radial-gradient(1px 1px at 70% 60%, #fff, transparent);
             background-size: 100% 100%;
         }
         
@@ -374,8 +365,8 @@
             height: var(--board-size);
             margin: auto;
             box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
-            max-width: 90vw;  /* Optional: hard cap on width */
-            max-height: 90vh; /* Optional: hard cap on height */
+            max-width: none;  /* Optional: hard cap on width */
+            max-height: none; /* Optional: hard cap on height */
         }
     
         /* Common styling for rooms, hallways, and vacant cells */
@@ -541,15 +532,45 @@
             transform: scale(1.3);
             color: #e6006d;
         }
+
+        .mode-toggle-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .mode-toggle .slider {
+    width: 36px;         /* Smaller width */
+    height: 18px;        /* Smaller height */
+    background-color: #ccc;
+    border-radius: 50px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.mode-toggle .slider::before {
+    content: "";
+    position: absolute;
+    height: 14px;        /* Smaller knob */
+    width: 14px;
+    background-color: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+}
+
+.mode-toggle input[type="checkbox"]:checked + .slider::before {
+    transform: translateX(18px); /* Adjust for smaller width */
+}
     </style>
 
 <body>
-    <label class="mode-toggle">
-        <input id="mode-switch" type="checkbox"/>
-        <span class="slider"></span>
-        <span class="mode-label">🌙</span>
-    </label>
-
     <!-- Notification section: Displays welcome message and logout button -->
     <div id="notification">
         <h1 id="game-title">
@@ -612,12 +633,19 @@
         <div class="hallway" id="Hallway12"><div class="hallway-name">Hallway12</div><div class="hallway-characters" id="Hallway12-characters"></div></div> <!-- Hallway connecting Ballroom and Kitchen -->
         <div class="room" id="Kitchen"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
     </div>
-
+    <div class="mode-toggle-wrapper">
+        <label class="mode-toggle">
+            <input id="mode-switch" type="checkbox"/>
+            <span class="slider"></span>
+            <span class="mode-label">🌙</span>
+        </label>
+    </div>
     <div id="hand-display-container" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: grey; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); max-width: 400px; text-align: center;">
         <h3>Your Hand</h3>
         <ul id="hand-list" style="list-style: none; padding: 0; margin: 10px 0;"></ul>
         <button id="close-hand-button" style="margin-top: 10px; padding: 10px 20px; background-color: #ff0066; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
     </div>
+   
     
     <!-- Add an overlay for the popup -->
     <div id="hand-display-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
@@ -699,6 +727,7 @@
         <!-- Serialize current username if authenticated, used to identify the current player -->
         {{ request.user.username|json_script:"current-username" }}
     {% endif %}
+
 
     <script>
 		// Set up WebSocket connection using the game_id passed from the template
