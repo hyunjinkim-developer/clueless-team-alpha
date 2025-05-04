@@ -854,18 +854,19 @@ class GameConsumer(AsyncWebsocketConsumer):
                             'suggesting_player_channel': suggesting_player_channel
                         }
                     )
+                await self.handle_end_turn(data)
                 break
             else:
                 # Broadcast the results of your suggestion to all players
-                await self.channel_layer.group_send(
-                    self.game_group_name,
+                await self.channel_layer.send(
+                    suggesting_player_channel,
                     {
                         'type': 'player_action',
-                        'message': f"None of the other players could disprove your suggestion."
+                        'message': f'{plyr.character} has no cards to disprove your suggestion. Moving to next player.'
                     }
                 )
                 
-                    
+           
         # Broadcast updated game state
         game_state = await self.get_game_state()
         await self.channel_layer.group_send(
@@ -875,15 +876,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
-        await self.channel_layer.group_send(
-            self.game_group_name,
+        
+        # Broadcast the results of your suggestion to all players
+        await self.channel_layer.send(
+            suggesting_player_channel,
             {
-                'type': 'broadcast_suggestion_result',
-                'suggesting_player': player.username,
-                'suspect': suspect,
-                'weapon': weapon,
-                'room': room,
-                'refuting_player': p.username if 'p' in locals() and suspect in p.hand or weapon in p.hand or room in p.hand else None
+                'type': 'player_action',
+                'message': f'No player could disprove your suggestion.'
             }
         )
 
