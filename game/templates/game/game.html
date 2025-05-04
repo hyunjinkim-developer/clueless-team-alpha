@@ -1020,35 +1020,35 @@
         });		
 
         // Show the suggestion form when the button is clicked
-			document.getElementById('suggestions-button').addEventListener('click', function() {
-				document.getElementById('suggestions-form-container').style.display = 'block';
-			});
+	document.getElementById('suggestions-button').addEventListener('click', function() {
+		document.getElementById('suggestions-form-container').style.display = 'block';
+	});
 
 			// Handle Suggestion form submission
-			document.getElementById('suggestions-form').addEventListener('submit', function(event) {
-				event.preventDefault();
+	document.getElementById('suggestions-form').addEventListener('submit', function(event) {
+		event.preventDefault();
 
-				const suspect = document.getElementById('suggest-suspect').value;
-				const weapon = document.getElementById('suggest-weapon').value;
-				const room = currentPlayer ? currentPlayer.location : null; // Use current room as the suggested room
+		const suspect = document.getElementById('suggest-suspect').value;
+		const weapon = document.getElementById('suggest-weapon').value;
+		const room = currentPlayer ? currentPlayer.location : null; // Use current room as the suggested room
 
-				if (!room) {
-					alert("You must be in a room to make a suggestion.");
-					return;
-				}
+		if (!room) {
+			alert("You must be in a room to make a suggestion.");
+			return;
+		}
 
-				const message = {
-					type: "suggest",
-					suspect: suspect,
-					weapon: weapon,
-					room: room
-				};
+		const message = {
+			type: "suggest",
+			suspect: suspect,
+			weapon: weapon,
+			room: room
+		};
 
-				console.log("Sending suggestion:", message);
-				ws.send(JSON.stringify(message));
+		console.log("Sending suggestion:", message);
+		ws.send(JSON.stringify(message));
 
-				alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
-				document.getElementById('suggestions-form-container').style.display = 'none';
+		alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+		document.getElementById('suggestions-form-container').style.display = 'none';
         });
 
         // Cancel Suggestion Form
