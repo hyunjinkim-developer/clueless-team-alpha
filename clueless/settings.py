@@ -45,7 +45,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',  # Handles session creation and management
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'game.middleware.CustomSessionMiddleware',  # Custom session middleware for unique session cookies
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

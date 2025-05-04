@@ -1,64 +1,152 @@
+# Standard library imports for JSON parsing and async operations
+import asyncio
+import random
+
+# Django imports for database access and session management
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-import random
-import asyncio
+from django.contrib.sessions.models import Session
+from django.contrib.sessions.backends.db import SessionStore
+
+# Local imports for game models and constants
 from .models import *
 from .constants import *
 
 # For debugging purpose, disable in production
 DEBUG = True  # Debug flag to enable/disable all logging
 # Debugging Flag Conventions: DEBUG_<feature> or DEBUG_<method_name>
-DEBUG_AUTH = False  # Authentication-specific debug logging
+DEBUG_AUTH = True  # Authentication-specific debug logging
 DEBUG_GAME_UPDATE = True
 DEBUG_HANDLE_ACCUSE = True  # <method> based
 HANDLE_END_TURN = True
 
 
 class GameConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for handling game-related real-time interactions.
+    Manages connections, game state updates, and player actions like moves and accusations.
+    """
     async def connect(self):
-        """Establish WebSocket connection and join game group."""
+        """
+        Handle WebSocket connection establishment.
+        Validates session using session-specific cookies (sessionid_<session_key>).
+        Joins the client to the game group and sends initial game state.
+        """
+        # Log connection attempt
         print("Connecting to WebSocket...")
-        # Extract game_id from the WebSocket URL (e.g., /ws/game/1/)
+
+        # Extract game ID from URL route
         self.game_id = self.scope['url_route']['kwargs']['game_id']
         print(f"Game ID set to: {self.game_id}")
         self.game_group_name = f"game_{self.game_id}"
-        # Delay to avoid rapid reconnects
-        await asyncio.sleep(0.2)
+
+        # Get session key from cookies
+        cookies = self.scope.get('cookies', {})
+        session_key = None
+        for key in cookies:
+            if key.startswith('sessionid_'):
+                session_key = cookies[key]
+                break
+
+        # Debug: Log cookie details
+        if DEBUG and DEBUG_AUTH:
+            print("[connect] Cookie details:")
+            print(f"  sessionid: {cookies.get('sessionid', 'None')}")
+            print(f"  sessionid_{session_key or 'None'}: {cookies.get(f'sessionid_{session_key}', 'None')}")
+            print(f"  clueless_session_{session_key or 'None'}: {cookies.get(f'clueless_session_{session_key}', 'None')}")
+
+        # Validate session key presence
+        if not session_key:
+            if DEBUG and DEBUG_AUTH:
+                print("[connect] No session-specific cookie found")
+            await self.close(code=4001, reason="Missing session cookie")
+            return
+
+        # Validate session existence in database
+        session_exists = await database_sync_to_async(Session.objects.filter(session_key=session_key).exists)()
+        if not session_exists:
+            if DEBUG and DEBUG_AUTH:
+                print("[connect] Session not found in database:")
+                print(f"  Session key: {session_key}")
+            await self.close(code=4001, reason="Invalid session")
+            return
+
+        # Load session data
+        try:
+            session_data = await database_sync_to_async(self.load_session)(session_key)
+        except Exception as e:
+            if DEBUG and DEBUG_AUTH:
+                print("[connect] Failed to load session:")
+                print(f"  Session key: {session_key}")
+                print(f"  Error: {str(e)}")
+            await self.close(code=4001, reason="Failed to load session")
+            return
+
+        # Validate session data
+        if not session_data.get('expected_username'):
+            if DEBUG and DEBUG_AUTH:
+                print("[connect] Session lacks expected_username:")
+                print(f"  Session key: {session_key}")
+            await self.close(code=4001, reason="Invalid session data")
+            return
+
+        # Store session in scope
+        self.scope['session'] = session_data
+
+        # Log successful session validation
+        if DEBUG and DEBUG_AUTH:
+            print("[connect] Session validated successfully:")
+            print(f"  Session key: {session_key}")
+            print(f"  User: {self.scope['user'].username if self.scope['user'].is_authenticated else 'Anonymous'}")
+
+        # Join the game group and accept the connection
         await self.channel_layer.group_add(self.game_group_name, self.channel_name)
         await self.accept()
         print(f"WebSocket connected for game {self.game_id}, channel: {self.channel_name}")
 
-        # Retry session loading if empty
-        session_key = None
-        for _ in range(3):  # Retry up to 3 times
-            session_key = self.scope.get('session', {}).get('session_key')
-            if session_key:
-                break
-            if DEBUG and DEBUG_AUTH:
-                print(f"Session retry: self.scope['session'] = {self.scope.get('session', 'None')}")
-            await asyncio.sleep(0.1)  # Wait 0.1s before retry
-        if DEBUG and DEBUG_AUTH:
-            print(f"Session key: {session_key or 'None'}")
-            print(f"User: {self.scope['user'].username if self.scope['user'].is_authenticated else 'Anonymous'}")
-            cookies = self.scope.get('cookies', {})
-            print(f"Cookies: sessionid={cookies.get('sessionid', 'None')}, "
-                  f"sessionid_{session_key or 'None'}={cookies.get(f'sessionid_{session_key}', 'None')}, "
-                  f"clueless_session_{session_key or 'None'}={cookies.get(f'clueless_session_{session_key}', 'None')}")
+        # Send initial game state
         game_state = await self.get_game_state()
         await self._send_game_update(game_state, source="connect")
 
+    def load_session(self, session_key):
+        """
+        Load session data from the database synchronously.
+        Returns decoded session data to avoid lazy loading issues.
+        """
+        try:
+            session = Session.objects.get(session_key=session_key)
+            decoded_session = session.get_decoded()
+            if DEBUG:
+                print("[load_session] Session loaded:")
+                print(f"  Session key: {session_key}")
+                print(f"  Expected username: {decoded_session.get('expected_username', 'None')}")
+            return decoded_session
+        except Session.DoesNotExist:
+            if DEBUG:
+                print("[load_session] Session not found:")
+                print(f"  Session key: {session_key}")
+            raise
+
     async def disconnect(self, close_code):
-        """Handle WebSocket disconnection and remove client from group."""
+        """
+        Handle WebSocket disconnection.
+        Removes client from game group and updates player status if necessary.
+        """
         if hasattr(self, 'game_group_name'):
             try:
                 game = await self.get_game()
                 await self.channel_layer.group_discard(self.game_group_name, self.channel_name)
-                # Only send player_out if game is active and not in DEBUG mode after game end
+                # Only send player_out if game is active and not in DEBUG mode after game start
                 if game.is_active and not (DEBUG and game.begun):
                     player = await self.get_player(self.scope['user'].username)
                     if player.is_active:
                         player.is_active = False
                         await database_sync_to_async(player.save)()
+                    if DEBUG:
+                        print("[disconnect] Sending player_out:")
+                        print(f"  Player: {player.username}")
+                        print(f"  Game ID: {self.game_id}")
+                        print(f"  Channel: {self.channel_name}")
                     await self.channel_layer.group_send(
                         self.game_group_name,
                         {
@@ -70,12 +158,14 @@ class GameConsumer(AsyncWebsocketConsumer):
                     )
                 else:
                     if DEBUG:
-                        print(
-                            f"Skipping player_out for game {self.game_id} (active: {game.is_active}, begun: {game.begun}), channel: {self.channel_name}")
+                        print("[disconnect] Skipping player_out:")
+                        print(f"  Game ID: {self.game_id}")
+                        print(f"  Active: {game.is_active}")
+                        print(f"  Begun: {game.begun}")
+                        print(f"  Channel: {self.channel_name}")
                 print(f"WebSocket disconnected for game {self.game_id}, channel: {self.channel_name}")
             except (Game.DoesNotExist, Player.DoesNotExist):
-                print(
-                    f"Game or player not found during disconnect for game {self.game_id}, channel: {self.channel_name}")
+                print(f"[disconnect] Game or player not found for game {self.game_id}, channel: {self.channel_name}")
 
     async def receive(self, text_data):
         """Process incoming WebSocket messages."""
@@ -227,7 +317,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 player.hand = hands[player.character]
                 await database_sync_to_async(player.save)()
 
-                
+
     async def game_update(self, event):
         """Handle game_update events broadcast to the group."""
         game_state = event.get('game_state', {})
@@ -262,7 +352,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'source': source
             }
         )
-        
+
     @database_sync_to_async
     def get_game(self):
         """Fetch Game instance from the database."""
@@ -298,7 +388,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
                 return
 
-            # Check if the target location is the same as the current location  
+            # Check if the target location is the same as the current location
             if to_location == from_location:
                 await self.send(text_data=json.dumps({'error': f'You are already at {to_location}'}))
                 return
@@ -386,10 +476,11 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({'error': 'Invalid accusation: one or more selections are not valid'}))
             return
 
-        if DEBUG and DEBUG_HANDLE_ACCUSE:  # Testing accusation logic
-            game.case_file = {'suspect': 'Miss Scarlet', 'weapon': 'Knife', 'room': 'Study'}
-            await database_sync_to_async(game.save)()
-            print(f"Case file for Testing: {game.case_file}")
+        # # Testing accusation logic
+        # if DEBUG and DEBUG_HANDLE_ACCUSE:
+        #     game.case_file = {'suspect': 'Miss Scarlet', 'weapon': 'Knife', 'room': 'Study'}
+        #     await database_sync_to_async(game.save)()
+        #     print(f"Case file for Testing: {game.case_file}")
 
         accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
         if DEBUG and DEBUG_HANDLE_ACCUSE:
