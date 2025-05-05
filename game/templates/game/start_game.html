@@ -249,7 +249,10 @@
             //   (onclose) to debug session issues, such as expired or invalid sessionid
             //   cookies, which could disrupt lobby updates.
             const gameId = {{ game_id }};
-            const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
+            // // For Localhost testing:
+            // const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
+            // For Production:
+            const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/game/' + gameId + '/');
 
             // Log WebSocket connection success
             ws.onopen = function() {
