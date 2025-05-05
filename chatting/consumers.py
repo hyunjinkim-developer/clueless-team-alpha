@@ -36,6 +36,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         username = user.username
         if not any(player['username'] == username for player in game_players[self.game_id]):
             join_index = len(game_players[self.game_id]) + 1
+            # Cap join_index to ensure it doesn't exceed 6
+            join_index = min(join_index, 6)
             game_players[self.game_id].append({
                 'username': username,
                 'join_index': join_index
