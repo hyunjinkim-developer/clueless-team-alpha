@@ -22,6 +22,29 @@
         padding: 15px;
         box-sizing: border-box;
     }
+    .current-players {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .current-players p {
+        font-family: 'Source Sans Pro', sans-serif;
+        font-size: 16px;
+        color: #fff;
+        text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+        margin: 0 0 5px 0; /* Small margin below */
+    }
+    .player-list {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .player-name {
+        font-family: 'Source Sans Pro', sans-serif;
+        font-size: 14px;
+        color: #fff;
+        text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+        margin: 2px 0;
+    }
     .chat-messages {
         flex: 1;
         background: var(--chat-bg);
@@ -48,8 +71,8 @@
         margin-right: 10px;
     }
     .my-message .profile-photo {
-        width: 36px;
-        height: 36px;
+        width: 55px;
+        height: 55px;
         border-radius: 50%;
         border: 1px solid #ccc;
     }
@@ -79,9 +102,9 @@
         margin-left: 10px;
     }
     .other-message .profile-photo {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
+        width: 55px;
+        height: 55px;
+        border_dm-radius: 50%;
         border: 1px solid #ccc;
     }
     .other-message .message-box {
@@ -114,7 +137,7 @@
     }
     .message-box {
         word-wrap: break-word;
-        font-weight: bold; /* Make message text bold */
+        font-weight: bold;
     }
     .chat-input {
         display: flex;
