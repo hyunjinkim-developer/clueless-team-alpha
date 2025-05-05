@@ -167,6 +167,9 @@
     </style>
 </head>
 <body>
+    <div class="lobby">
+        {% include "chatting/chat.html" %}
+    </div>
     <!-- Dark/light mode toggle switch -->
     <label class="mode-toggle">
         <input id="mode-switch" type="checkbox" />
@@ -203,6 +206,7 @@
             </div>
         {% endif %}
     </div>
+
     <script>
         // Initialize JavaScript when DOM is fully loaded
         document.addEventListener('DOMContentLoaded', () => {

@@ -1,0 +1,107 @@
+<div class="chat-container">
+       <div class="chat-messages" id="chat-messages"></div>
+       <div class="chat-input">
+           <input type="text" id="chat-message" placeholder="Type a message..." />
+           <button id="send-message">Send</button>
+       </div>
+   </div>
+
+   <style>
+       .chat-container {
+           flex: 1;
+           margin-left: 20px;
+           background: var(--chat-bg);
+           border-radius: 8px;
+           padding: 15px;
+           display: flex;
+           flex-direction: column;
+           height: 400px;
+       }
+       .chat-messages {
+           flex: 1;
+           overflow-y: auto;
+           padding: 10px;
+       }
+       .message {
+           margin: 5px 0;
+           padding: 8px 12px;
+           border-radius: 8px;
+           max-width: 70%;
+           word-wrap: break-word;
+       }
+       .my-message {
+           background: var(--my-message-bg);
+           color: #fff;
+           margin-left: auto;
+           text-align: right;
+       }
+       .other-message {
+           background: var(--other-message-bg);
+           color: #333;
+           margin-right: auto;
+       }
+       .chat-input {
+           display: flex;
+           margin-top: 10px;
+       }
+       #chat-message {
+           flex: 1;
+           padding: 8px;
+           border: 1px solid #ccc;
+           border-radius: 5px;
+           font-size: 14px;
+       }
+       #send-message {
+           padding: 8px 15px;
+           background: var(--button-bg);
+           color: white;
+           border: none;
+           border-radius: 5px;
+           margin-left: 10px;
+           cursor: pointer;
+       }
+       #send-message:hover {
+           background: var(--button-hover);
+       }
+   </style>
+
+   <script>
+       document.addEventListener('DOMContentLoaded', () => {
+           const gameId = {{ game_id }};
+           const username = '{{ request.user.username }}';
+           const chatWsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/' + gameId + '/';
+           console.log('Chat WebSocket URL:', chatWsUrl);
+
+           const chatWs = new WebSocket(chatWsUrl);
+           chatWs.onopen = () => console.log('Chat WebSocket connected for game ' + gameId);
+           chatWs.onmessage = (event) => {
+               const data = JSON.parse(event.data);
+               if (data.type === 'chat_message') {
+                   const chatMessages = document.getElementById('chat-messages');
+                   const messageDiv = document.createElement('div');
+                   messageDiv.className = data.username === username ? 'message my-message' : 'message other-message';
+                   messageDiv.textContent = `${data.username}: ${data.message}`;
+                   chatMessages.appendChild(messageDiv);
+                   chatMessages.scrollTop = chatMessages.scrollHeight;
+               } else if (data.type === 'error') {
+                   console.error('Chat error:', data.message);
+               }
+           };
+           chatWs.onerror = (error) => console.error('Chat WebSocket error:', error);
+           chatWs.onclose = () => console.log('Chat WebSocket closed for game ' + gameId);
+
+           document.getElementById('send-message').onclick = () => {
+               const messageInput = document.getElementById('chat-message');
+               const message = messageInput.value.trim();
+               if (message) {
+                   chatWs.send(JSON.stringify({ 'message': message }));
+                   messageInput.value = '';
+               }
+           };
+           document.getElementById('chat-message').addEventListener('keypress', (e) => {
+               if (e.key === 'Enter') {
+                   document.getElementById('send-message').click();
+               }
+           });
+       });
+   </script>

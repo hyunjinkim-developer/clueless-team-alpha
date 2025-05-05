@@ -19,5 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('game.urls')),
+    path('', include('game.urls')),  # Urls for Game Features under game/urls.py
+    path('', include('chatting.urls')),  # Urls for Chatting Features under chatting/urls.py
 ]

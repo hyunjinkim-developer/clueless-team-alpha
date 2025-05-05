@@ -57,10 +57,11 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',    # Framework for content type relationships
     'django.contrib.sessions',        # Session management for user state
     'django.contrib.messages',        # Messaging framework for user notifications
-    'daphne',                        # ASGI server for handling WebSocket requests
+    'daphne',                         # ASGI server for handling WebSocket requests
     'django.contrib.staticfiles',     # Static file handling for CSS, JS, images
-    'channels',                      # Channels framework for WebSocket support
-    'game',                          # Custom app containing game logic and views
+    'channels',                       # Channels framework for WebSocket support
+    'game',                           # Custom app containing game logic and views
+    'chatting',                       # Custom app containing chatting logic in lobby
 ]
 
 # Middleware stack defining request/response processing order
