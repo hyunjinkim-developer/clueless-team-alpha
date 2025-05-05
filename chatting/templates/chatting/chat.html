@@ -7,6 +7,12 @@
 </div>
 
 <style>
+    :root {
+        --neon-pink: #ff00cc; /* Neon pink to match game title */
+        --darker-pink-border: #cc0099; /* Darker pink border for contrast */
+        --dark-mode: #ff33cc; /* Slightly lighter pink for dark mode */
+    }
+
     .chat-container {
         width: 100%;
         height: 100%;
@@ -42,21 +48,21 @@
         margin-right: 10px;
     }
     .my-message .profile-photo {
-        width: 50px;
-        height: 50px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         border: 1px solid #ccc;
     }
     .my-message .message-box {
-        background: var(--my-message-bg, #007BFF); /* Fallback to #007BFF if variable fails */
+        background: var(--neon-pink);
         color: #fff;
         border-radius: 8px 8px 0 8px;
         padding: 8px 12px;
-        border: 2px solid #0056b3; /* Increased border thickness for visibility */
+        border: 2px solid var(--darker-pink-border);
         display: inline-block;
         width: fit-content;
         max-width: 70%;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Added shadow for better visibility */
+        box-shadow: 0 0 5px var(--neon-pink);
     }
     .other-message {
         margin-right: auto;
@@ -79,20 +85,21 @@
         border: 1px solid #ccc;
     }
     .other-message .message-box {
-        background: var(--other-message-bg);
-        color: var(--text-color);
+        background: var(--neon-pink);
+        color: #fff;
         border-radius: 8px 8px 8px 0;
         padding: 8px 12px;
-        border: 1px solid #ccc;
+        border: 2px solid var(--darker-pink-border);
         display: inline-block;
         width: fit-content;
         max-width: 70%;
+        box-shadow: 0 0 5px var(--neon-pink);
     }
     .dark .other-message .message-box {
-        border-color: #555;
+        border-color: var(--dark-mode);
     }
     .dark .my-message .message-box {
-        border-color: #135abe; /* Dark mode border for my-message */
+        border-color: var(--dark-mode);
     }
     .dark .profile-photo {
         border-color: #555;
@@ -184,8 +191,11 @@
 
                         const photoImg = document.createElement('img');
                         photoImg.className = 'profile-photo';
-                        photoImg.src = data.profile_photo || 'https://via.placeholder.com/24';
-                        photoImg.onerror = () => console.error(`Failed to load profile photo: ${data.profile_photo}`);
+                        photoImg.src = data.profile_photo || '/static/images/profile/profile-1.jpeg';
+                        photoImg.onerror = () => {
+                            console.error(`Failed to load profile photo: ${data.profile_photo}`);
+                            photoImg.src = '/static/images/profile/profile-1.jpeg';
+                        };
 
                         if (data.username === username) {
                             // Your message: username on left, photo on right
