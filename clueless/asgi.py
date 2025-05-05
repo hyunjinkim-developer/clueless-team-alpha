@@ -26,7 +26,10 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from channels.sessions import SessionMiddlewareStack
+from channels.security.websocket import AllowedHostsOriginValidator
+
 import game.routing
+from chatting.routing import websocket_urlpatterns as chat_routes
 
 # Set the default Django settings module for the ASGI application
 # Ensures the application uses clueless.settings for configuration (e.g., middleware,
@@ -47,10 +50,12 @@ print("ASGI application loaded")
 # See: https://channels.readthedocs.io/en/stable/topics/routing.html#protocoltyperouter
 application = ProtocolTypeRouter({
     'http': get_asgi_application(),  # Handles HTTP requests (e.g., /login/, /game/)
-    "websocket": SessionMiddlewareStack(  # Handles WebSocket requests with session support
-        AuthMiddlewareStack(  # Adds user authentication to WebSocket connections
-            URLRouter(  # Routes WebSocket URLs defined in game.routing
-                game.routing.websocket_urlpatterns  # Patterns like /ws/game/<game_id>/
+    "websocket": AllowedHostsOriginValidator(  # Ensures WebSocket connections come from allowed hosts
+        SessionMiddlewareStack(  # Handles session management for WebSocket requests
+            AuthMiddlewareStack(  # Adds user authentication to WebSocket connections
+                URLRouter(  # Routes WebSocket URLs
+                    game.routing.websocket_urlpatterns + chat_routes  # Combines game and chat WebSocket routes
+                )
             )
         )
     ),

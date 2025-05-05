@@ -10,6 +10,12 @@ files, and ASGI/WebSocket integration. For detailed documentation, see:
 - https://docs.djangoproject.com/en/5.1/topics/i18n/
 """
 
+# Production Settings
+PRODUCTION = True
+PRODUCTION_NGROK_APP = 'bc96-175-113-233-50.ngrok-free.app'
+PRODUCTION_NGROK_URL = 'https://' + PRODUCTION_NGROK_APP
+
+
 from pathlib import Path
 import os
 
@@ -34,7 +40,12 @@ DEBUG = True
 # Empty list is safe for local development (127.0.0.1, localhost)
 # In production, add your domain (e.g., ['example.com', 'www.example.com'])
 # See: https://docs.djangoproject.com/en/5.1/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
+if PRODUCTION:
+    # ALLOWED_HOSTS = ['127.0.0.1', '*.ngrok-free.app']  # Add proper ngrok app in '*.ngrok-free.app'
+    ALLOWED_HOSTS = ['127.0.0.1', PRODUCTION_NGROK_APP]
+else:
+    # Localhost testing:
+    ALLOWED_HOSTS = []
 
 # List of Django applications installed in the project
 # Includes core Django apps for admin, authentication, sessions, and messages,
@@ -46,10 +57,11 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',    # Framework for content type relationships
     'django.contrib.sessions',        # Session management for user state
     'django.contrib.messages',        # Messaging framework for user notifications
-    'daphne',                        # ASGI server for handling WebSocket requests
+    'daphne',                         # ASGI server for handling WebSocket requests
     'django.contrib.staticfiles',     # Static file handling for CSS, JS, images
-    'channels',                      # Channels framework for WebSocket support
-    'game',                          # Custom app containing game logic and views
+    'channels',                       # Channels framework for WebSocket support
+    'game',                           # Custom app containing game logic and views
+    'chatting',                       # Custom app containing chatting logic in lobby
 ]
 
 # Middleware stack defining request/response processing order
@@ -124,14 +136,18 @@ CHANNEL_LAYERS = {
 # See: https://docs.djangoproject.com/en/5.1/topics/http/sessions/
 SESSION_COOKIE_NAME = 'sessionid'  # Name of the session cookie
 SESSION_COOKIE_HTTPONLY = True     # Prevent JavaScript access to session cookies
-SESSION_COOKIE_SAMESITE = 'Strict' # Prevent cross-site cookie sharing
 SESSION_COOKIE_AGE = 1800         # 30-minute session duration
 SESSION_COOKIE_PATH = '/'         # Cookie applies to all paths
-SESSION_COOKIE_SECURE = False      # Disable secure flag for local HTTP development
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
-# Production recommendations:
-# SESSION_COOKIE_SECURE = True  # Require HTTPS for cookies
-# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Use Redis caching
+if PRODUCTION:
+    SESSION_COOKIE_SAMESITE = 'Strict'  # Prevent cross-site cookie sharing
+    SESSION_COOKIE_SECURE = True  # Require HTTPS for cookies
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Use Redis caching
+    CSRF_TRUSTED_ORIGINS = [PRODUCTION_NGROK_URL]  # Ensure CSRF_TRUSTED_ORIGINS includes the exact URL
+else:
+    # Localhost testing:
+    SESSION_COOKIE_SAMESITE = 'Strict'  # Prevent cross-site cookie sharing
+    SESSION_COOKIE_SECURE = False      # Disable secure flag for local HTTP development
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
 
 # Database configuration using SQLite for local development
 # SQLite is suitable for development but consider PostgreSQL/MySQL for production
@@ -181,10 +197,11 @@ USE_TZ = True            # Enable timezone-aware datetimes
 # STATICFILES_DIRS specifies additional directories for static files
 # In production, run `python manage.py collectstatic` to gather static files
 # See: https://docs.djangoproject.com/en/5.1/howto/static-files/
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # Directory for custom static files (e.g., images)
+    BASE_DIR / "static",  # Directory for custom static files (e.g., images)
 ]
+
 
 # Default primary key field type for models
 # AutoField is suitable for most use cases; BigAutoField supports larger ID ranges

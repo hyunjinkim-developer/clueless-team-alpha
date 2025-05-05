@@ -77,7 +77,7 @@
             height: var(--cell-size);
             border: 2px solid #000;
             text-align: center;
-            position: relsative;
+            position: relative;
             box-sizing: border-box;
             cursor: pointer;
             transition: transform 0.3s ease-in-out;
@@ -104,13 +104,12 @@
             color: white;
             text-shadow: 0 0 10px #ff0066;
         }
-        .room-characters span{
+        .room-characters {
             font-size: var(--room-hallway-character-font-size);
             padding: 2px;
             overflow-y: auto;
             white-space: pre-line;
             max-height: calc(var(--cell-size) - 40px);
-            display: block; /* Ensures each player is displayed on a new line */
         }
 
         /* Style hallways with blue theme */
@@ -430,73 +429,6 @@
             font-size: 1.5em;
             margin: 20px;
         }
-
-        /* Sliding History Window */
-        .history-window {
-            position: fixed;
-            top: 0;
-            right: -300px; /* Hidden by default */
-            width: 300px;
-            height: 100%;
-            background-color: black;
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-            overflow-y: auto;
-            transition: right 0.3s ease-in-out;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .history-window.open {
-            right: 0; /* Slide into view */
-        }
-
-        /* Push the main content when the history window is open */
-        body.history-open {
-            margin-right: 300px; /* Push content to the left by the width of the history window */
-            transition: margin-right 0.3s ease-in-out;
-        }
-
-        /* History Header */
-        .history-header {
-            background-color: #ff0066;
-            color: white;
-            padding: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        /* History List */
-        .history-list {
-            list-style: none;
-            padding: 10px;
-            margin: 0;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        .history-list li {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            font-size: 14px;
-        }
-
-        /* History Button (aligned with other buttons) */
-        .toggle-history-button {
-            background-color: #fbe59d;
-            color: rgb(0, 0, 0);
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .toggle-history-button:hover {
-            background-color: #fffefa;
-        }
     </style>
 
 <body>
@@ -507,16 +439,7 @@
         <span class="mode-label">🌙</span>
     </label>
 
-    <!-- Sliding History Window -->
-    <div id="history-window" class="history-window">
-        <div class="history-header">
-            <h3>Game History</h3>
-            <button id="close-history-button" class="close-button">×</button>
-        </div>
-        <ul id="history-list" class="history-list"></ul>
-    </div>
-
-    <!-- Notification section: Displays welcome message and logout button -->
+    <!-- Notification bar with game title and user info -->
     <div id="notification">
         <h1 id="game-title">
             Welcome to <span class="game-title">Clue-Less Game</span> -
@@ -542,7 +465,6 @@
 
     <!-- Action buttons -->
     <div id="button-container">
-        <button id="toggle-history-button" class="toggle-history-button">Game History</button>
         <button id="display-hand-button">Display Hand</button>
         <button id="suggestions-button">Suggestions</button>
         <button id="accusations-button">Accusations</button>
@@ -682,8 +604,8 @@
             "Lounge": "/static/images/rooms/lounge.png",
             "Hall": "/static/images/rooms/hall.png",
             "Library": "/static/images/rooms/library.png",
-            "BilliardRoom": "/static/images/rooms/billiard_room.png",
-            "DiningRoom": "/static/images/rooms/dining_room.png",
+            "Billiard Room": "/static/images/rooms/billiard_room.png",
+            "Dining Room": "/static/images/rooms/dining_room.png",
             "Conservatory": "/static/images/rooms/conservatory.png",
             "Ballroom": "/static/images/rooms/ballroom.png",
             "Kitchen": "/static/images/rooms/kitchen.png"
@@ -714,9 +636,6 @@
         let currentPlayer = null;
         let previousGameState = null;
 
-        const historyList = document.getElementById('history-list');
-        const actionHistory = []; // Array to store popup actions
-
         // Initialize WebSocket connection
         const gameId = {{ game_id }};
         console.log('Game ID:', gameId);
@@ -745,55 +664,6 @@
                     if (data.type === 'game_update') {
                         console.log('Game state players:', data.game_state.players);
                         updateGameBoard(data.game_state);
-
-                    }  else if (data.type === 'popup') {
-                        showPopup(data.message);
-                    }  else if (data.type === 'select_card') {
-                        // Handle the card selection popup
-                        const matchList = data.matchList;
-                        const message = data.message;
-                        const suggestingPlayerChannel = data.suggesting_player_channel;
-
-                        // Create a popup for card selection
-                        const popup = document.createElement('div');
-                        popup.style.position = 'fixed';
-                        popup.style.top = '50%';
-                        popup.style.left = '50%';
-                        popup.style.transform = 'translate(-50%, -50%)';
-                        popup.style.backgroundColor = '#fff';
-                        popup.style.padding = '20px';
-                        popup.style.borderRadius = '10px';
-                        popup.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.2)';
-                        popup.style.zIndex = '1000';
-                        popup.style.textAlign = 'center';
-
-                        const messageElement = document.createElement('p');
-                        messageElement.textContent = message;
-                        messageElement.style.color = 'black'; // Set text color to black
-                        popup.appendChild(messageElement);
-
-                        // Create buttons for each card in matchList
-                        matchList.forEach(card => {
-                            const button = document.createElement('button');
-                            button.textContent = card;
-                            button.style.margin = '5px';
-                            button.style.padding = '10px';
-                            button.style.border = '1px solid #ccc';
-                            button.style.borderRadius = '5px';
-                            button.style.cursor = 'pointer';
-                            button.addEventListener('click', () => {
-                                // Send the selected card back to the server
-                                ws.send(JSON.stringify({
-                                    type: 'card_selected',
-                                    card: card,
-                                    suggesting_player_channel: suggestingPlayerChannel
-                                }));
-                                document.body.removeChild(popup); // Remove the popup
-                            });
-                            popup.appendChild(button);
-                        });
-                        document.body.appendChild(popup);
-
                     } else if (data.type === 'game_end') {
                         const { winner, solution, message } = data;
                         // Update notification with game end message
@@ -849,6 +719,25 @@
             console.error('WebSocket initialization error:', e);
         }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // Update game board with new state
         function updateGameBoard(gameState) {
             try {
@@ -889,7 +778,6 @@
                 console.error('Error updating game board:', e);
             }
         }
-
 
         // Update room character displays
         function updateRoomCharacters(players, movedPlayer) {
@@ -981,38 +869,6 @@
             } catch (e) {
                 console.error('Error adding click listeners:', e);
             }
-        }
-
-        // Modify the showPopup function to send logs to the server
-        function showPopup(message) {
-            const popup = document.createElement('div');
-            popup.style.fontWeight = 'bold';
-            popup.textContent = message;
-            popup.style.position = 'fixed';
-            popup.style.top = '20px';
-            popup.style.left = '20px';
-            popup.style.backgroundColor = '#ffcc00';
-            popup.style.color = '#000';
-            popup.style.padding = '20px 30px';
-            popup.style.borderRadius = '10px';
-            popup.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.2)';
-            popup.style.zIndex = '1000';
-            document.body.appendChild(popup);
-
-            // Add the action to the history
-            addActionToHistory(message);
-
-            // Remove the popup after 5 seconds
-            setTimeout(() => {
-                popup.remove();
-            }, 5000);
-        }
-
-        // Function to add an action to the history
-        function addActionToHistory(action) {
-            const listItem = document.createElement('li');
-            listItem.textContent = action;
-            historyList.appendChild(listItem);
         }
 
         // Initialize JavaScript on DOM load
@@ -1192,26 +1048,6 @@
                     });
                 } else {
                     console.error('end-turn-button element missing');
-                }
-
-                // Handle toggle history button
-                const historyWindow = document.getElementById('history-window');
-                const toggleHistoryButton = document.getElementById('toggle-history-button');
-                const closeHistoryButton = document.getElementById('close-history-button');
-                if (toggleHistoryButton) {
-                    // Toggle the history window
-                    toggleHistoryButton.addEventListener('click', () => {
-                        const isOpen = historyWindow.classList.toggle('open');
-                        document.body.classList.toggle('history-open', isOpen); // Add or remove the class to push content
-                    });
-                
-                    // Close the history window
-                    closeHistoryButton.addEventListener('click', () => {
-                        historyWindow.classList.remove('open');
-                        document.body.classList.remove('history-open'); // Remove the class to reset content position
-                    });
-                } else {
-                    console.error('toggle-history-button element missing');
                 }
 
                 // Handle dark/light mode toggle

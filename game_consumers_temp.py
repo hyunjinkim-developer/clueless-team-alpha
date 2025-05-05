@@ -48,6 +48,7 @@ DEBUG_GAME_UPDATE = True  # Game state update logging
 DEBUG_HANDLE_ACCUSE = True  # Accusation event logging
 HANDLE_END_TURN = True  # End turn event logging
 
+
 class GameConsumer(AsyncWebsocketConsumer):
     """
     WebSocket consumer for real-time game interactions in Clue-Less.
@@ -60,9 +61,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     SessionValidationMiddleware for session isolation, addressing session overwrite
     issues in private browsing modes (e.g., Safari).
     """
-    # Mapping of player usernames to their WebSocket channel names
-    player_channel_map = {}
-    
+
     async def connect(self):
         """
         Handle WebSocket connection establishment.
@@ -153,12 +152,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.accept()
         print(f"WebSocket connected for game {self.game_id}, channel: {self.channel_name}")
 
-
-        # Add the player's username and channel_name to the mapping
-        username = self.scope['user'].username
-        GameConsumer.player_channel_map[username] = self.channel_name
-
-
         # Send initial game state to the client
         game_state = await self.get_game_state()
         await self._send_game_update(game_state, source="connect")
@@ -213,14 +206,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         - **Session Handling**: No direct session manipulation, but deactivation updates
           the player's state, which is reflected in game state broadcasts.
         """
-
-
-        # Remove the player's username from the mapping on disconnect
-        username = self.scope['user'].username
-        if username in GameConsumer.player_channel_map:
-            del GameConsumer.player_channel_map[username]
-
-
         if hasattr(self, 'game_group_name'):
             try:
                 game = await self.get_game()
@@ -288,12 +273,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             if DEBUG:
                 print(f"No message type in data: {data}")
             return
-        
-        # Skip turn validation for card_selected messages
-        if message_type == 'card_selected':
-            await self.handle_card_selected(data)
-            return
-        
         if message_type == 'start_game':
             await self.handle_start_game()
         elif message_type == 'move':
@@ -303,25 +282,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         elif message_type == 'accuse':
             await self.handle_accuse(data)
         elif message_type == 'end_turn':
-            # Capture the return values from handle_end_turn
-            turn_info = await self.handle_end_turn(data)  # Handle end_turn request
-            
-            if turn_info is None:
-                # If a player clicks when not their turn
-                return
-            
-            # Extract the current and next player's characters
-            current_player_character = turn_info.get('current_player_character')
-            next_player_character = turn_info.get('next_player_character')
-
-            # Broadcast the end turn message to all players
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'player_action',
-                    'message': f"{current_player_character} has ended their turn!\n\nIt is now {next_player_character}'s turn."
-                }
-            )
+            await self.handle_end_turn(data)
         elif message_type == 'player_out':
             await self.handle_player_out(data)
         else:
@@ -378,7 +339,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.game_group_name,
             {'type': 'game_started'}
         )
-    
+
     async def game_started(self, event):
         """Notify clients that the game has started, triggering redirect to game page."""
         await self.send(text_data=json.dumps({
@@ -437,7 +398,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             if player.character in hands:
                 player.hand = hands[player.character]
                 await database_sync_to_async(player.save)()
-    
+
     async def broadcast_suggestion_result(self, event):
         await self.send(text_data=json.dumps({
             'type': 'suggestion_result',
@@ -447,7 +408,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             'room': event['room'],
             'refuting_player': event.get('refuting_player')
         }))
-                    
+
     async def game_update(self, event):
         """
         Handle game_update events broadcast to the group.
@@ -472,22 +433,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             'game_state': game_state
         }))
 
-    async def player_action(self, event):
-        # Send the action message to WebSocket
-        await self.send(text_data=json.dumps({
-            'type': 'popup',
-            'message': event['message']
-        }))
-        
-    async def select_card(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'select_card',
-            'message': event['message'],
-            'matchList': event['matchList'],
-            'suggesting_player_channel': event['suggesting_player_channel']
-        }))
-
-    # Async wrapper for synchronous database query to get Game instance
     async def _send_game_update(self, game_state, source):
         """
         Helper method to send game_update with source tracking.
@@ -551,10 +496,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             players = await database_sync_to_async(list)(Player.objects.filter(game=game))
             for p in players:
                 if p.location in HALLWAYS and p.location == to_location and p.username != player.username:
-                    await self.send(text_data=json.dumps({'error': f'Cannot move to {to_location}, it is occupied by {p.username}'}))
+                    await self.send(text_data=json.dumps(
+                        {'error': f'Cannot move to {to_location}, it is occupied by {p.username}'}))
                     return
         if to_location not in valid_moves:
-            await self.send(text_data=json.dumps({'error': f'Invalid move: {to_location} is not adjacent to {from_location}'}))
+            await self.send(
+                text_data=json.dumps({'error': f'Invalid move: {to_location} is not adjacent to {from_location}'}))
             return
         player.location = to_location
         player.moved = True
@@ -565,14 +512,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'game_update',
                 'game_state': game_state
-            }
-        )
-        # Broadcast the move action to all players
-        await self.channel_layer.group_send(
-            self.game_group_name,
-            {
-                'type': 'player_action',
-                'message': f"{player.character} has moved from {from_location} into the {to_location}"
             }
         )
 
@@ -624,21 +563,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         if not all([suspect, weapon, room]):
             await self.send(text_data=json.dumps({'error': 'Missing accusation details (suspect, weapon or room)'}))
             return
-
-        # Compare accusation to case file
         if suspect not in SUSPECTS or weapon not in WEAPONS or room not in ROOMS:
             await self.send(text_data=json.dumps({'error': 'Invalid accusation: one or more selections are not valid'}))
             return
-        
-        # Broadcast accusation to all players
-        await self.channel_layer.group_send(
-            self.game_group_name,
-            {
-                'type': 'player_action',
-                'message': f"{player.character} has accused {suspect}, {weapon}, and {room}!"
-            }
-        )
-
         accusation = {'suspect': suspect, 'weapon': weapon, 'room': room}
         if DEBUG and DEBUG_HANDLE_ACCUSE:
             print(f"Player {player.username} accuses: {accusation}")
@@ -653,14 +580,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'type': 'game_end',
                     'winner': player.username,
                     'solution': game.case_file,
-                    'message': f"{player.username} won with the correct accusation!"
-                }
-            )
-            # Broadcast the move action to all players and add to log history
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'player_action',
                     'message': f"{player.username} won with the correct accusation!"
                 }
             )
@@ -690,14 +609,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'message': f"{player.username} has been eliminated due to an incorrect accusation."
                 }
             )
-            # Broadcast the move action to all players
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'player_action',
-                    'message': f"{player.username} has been eliminated due to an incorrect accusation."
-                }
-            )
             if DEBUG and DEBUG_HANDLE_ACCUSE:
                 print(f"Player {player.username} eliminated with incorrect accusation: {accusation}")
             await self.handle_end_turn({})
@@ -709,6 +620,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
+
     async def accusation_result(self, event):
         await self.send(text_data=json.dumps({
             'type': 'accusation_result',
@@ -749,21 +661,17 @@ class GameConsumer(AsyncWebsocketConsumer):
         game = await self.get_game()
         player = await self.get_player(self.scope['user'].username)
         players = await database_sync_to_async(list)(Player.objects.filter(game=game))
-        
-        # Get the channel_name of the suggesting player
-        suggesting_player_channel = GameConsumer.player_channel_map.get(player.username)
-        
         if not player.turn:
             await self.send(text_data=json.dumps({'error': 'It is not your turn'}))
             return
         if not player.moved and not player.suggested:
-            await self.send(text_data=json.dumps({'error': 'You must move before making a suggestion unless you were moved to the room'}))
+            await self.send(text_data=json.dumps(
+                {'error': 'You must move before making a suggestion unless you were moved to the room'}))
             return
         if player.accused:
             await self.send(text_data=json.dumps({'error': 'Eliminated players cannot make suggestions'}))
             return
         if player.location not in ROOMS:
-            print(f"player's location is: {player.location}")
             await self.send(text_data=json.dumps({'error': f'You must be in a room to make a suggestion'}))
             return
         suspect = data.get('suspect')
@@ -772,109 +680,55 @@ class GameConsumer(AsyncWebsocketConsumer):
         if not all([suspect, weapon, room]):
             await self.send(text_data=json.dumps({'error': 'Incomplete suggestion (suspect, weapon, or room missing)'}))
             return
-        
-        # Broadcast suggestion to all players
-        await self.channel_layer.group_send(
-            self.game_group_name,
-            {
-                'type': 'player_action',
-                'message': f"{player.character} has suggested {suspect}, {weapon}, and {room}"
-            }
-        )
-    
-        # make list of players in order of checking suggestion with players' card hands
-        # start with suggested player
-        # then follow turn order
-        playerCopyList = players.copy()
-        playerSuggestList = []
-    
+        print(f"Player {player.username} suggests: {suspect}, {weapon}, {room}")
         suspect_player = None
         for p in players:
             if p.character == suspect:
                 suspect_player = p
-        
-        if suspect_player is not None:
-            # move suspected player to suggested room
-            suspect_player.location = player.location
-            suspect_player.suggested = True
-            await database_sync_to_async(suspect_player.save)()  # Save changes asynchronously
-            
-            # Broadcast updated game state
-            game_state = await self.get_game_state()
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'game_update',
-                    'game_state': game_state
-                }
-            )
-            
-            playerSuggestList = [suspect_player]
-            playerCopyList.remove(suspect_player)
-            playerCopyList.remove(player)
-            playerSuggestList.extend(playerCopyList)
-        else:
-            playerCopyList.remove(player)
-            playerSuggestList.extend(playerCopyList)
-            
-
-        # check suspected player's hand for suspect, then weapon, then room
-        # put all matches into separate list
-        # if 0 cards match - move to next player and repeat process
-        # if 1 card matches - state that card disproves the suggestion
-        # if more than 1 card matches - ask suspected player which card to disprove suggestion with
-
-        for plyr in playerSuggestList:
-            currHand = plyr.hand
-            matchList = []
-            suspectMatch = [card for card in currHand if card==suspect]
-            roomMatch = [card for card in currHand if card==room]
-            weaponMatch = [card for card in currHand if card==weapon]
-            matchList.extend(suspectMatch)
-            matchList.extend(roomMatch)
-            matchList.extend(weaponMatch)
-            print(f"Disproving player: {plyr.username} as {plyr.character}")
-            print(f"Disproving player's card hand: {plyr.hand}")
-            print(f"List of matching cards: {matchList}") #test which cards match
-            numMatches = len(matchList)
-            
-            if numMatches == 1:
-                await self.channel_layer.send(
-                    suggesting_player_channel,
-                    {
-                        'type': 'player_action',
-                        'message': f'Card {matchList} disproves suggestion. End of turn'
-                    }
-                )
-                await self.handle_end_turn(data)
-                break
-            elif numMatches > 1:
-                disproving_player_channel = GameConsumer.player_channel_map.get(plyr.username)
-                if disproving_player_channel:
-                    # Prompt player to select which card to disprove suggestion with
-                    await self.channel_layer.send(
-                        disproving_player_channel,
-                        {
-                            'type': 'select_card',
-                            'message': f'You have multiple cards to disprove the suggestion:',
-                            'matchList': matchList,
-                            'suggesting_player_channel': suggesting_player_channel
-                        }
-                    )
-                await self.handle_end_turn(data)
-                break
+        if suspect_player is None:
+            for p in players:
+                if p.username != player.username:
+                    if suspect in p.hand or weapon in p.hand or room in p.hand:
+                        print(f"Player {p.username} shows a card to {player.username}")
+                        await self.send(text_data=json.dumps({
+                            'message': f"{p.username} shows you a card from their hand."
+                        }))
+                        await self.handle_end_turn(data)
+                        break
             else:
-                # Broadcast the results of your suggestion to all players
-                await self.channel_layer.send(
-                    suggesting_player_channel,
-                    {
-                        'type': 'player_action',
-                        'message': f'{plyr.character} has no cards to disprove your suggestion. Moving to next player.'
-                    }
-                )
-                
-           
-        # Broadcast updated game state
+                print(f"No one has the cards {suspect}, {weapon}, or {room}")
+                await self.send(text_data=json.dumps({
+                    'message': "No one has the cards you suggested."
+                }))
+        else:
+            if suspect_player and suspect_player.location != room:
+                suspect_player.location = room
+                suspect_player.suggested = True
+                await database_sync_to_async(suspect_player.save)()
+            else:
+                suspect_player.suggested = True
+                await database_sync_to_async(suspect_player.save)()
+            if suspect in suspect_player.hand or weapon in suspect_player.hand or room in suspect_player.hand:
+                print(f"Player {suspect} shows a card to {player.username}")
+                await self.send(text_data=json.dumps({
+                    'message': f"{suspect} shows you a card from their hand."
+                }))
+                await self.handle_end_turn(data)
+            else:
+                for p in players:
+                    if p.username != player.username and p.username != suspect:
+                        if suspect in p.hand or weapon in p.hand or room in p.hand:
+                            print(f"Player {p.username} shows a card to {player.username}")
+                            await self.send(text_data=json.dumps({
+                                'message': f"{p.username} shows you a card from their hand."
+                            }))
+                            await self.handle_end_turn(data)
+                            break
+                else:
+                    print(f"No one has the cards {suspect}, {weapon}, or {room}")
+                    await self.send(text_data=json.dumps({
+                        'message': "No one has the cards you suggested."
+                    }))
         game_state = await self.get_game_state()
         await self.channel_layer.group_send(
             self.game_group_name,
@@ -883,32 +737,15 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'game_state': game_state
             }
         )
-        
-        # Broadcast the results of your suggestion to all players
-        await self.channel_layer.send(
-            suggesting_player_channel,
+        await self.channel_layer.group_send(
+            self.game_group_name,
             {
-                'type': 'player_action',
-                'message': f'No player could disprove your suggestion.'
-            }
-        )
-
-    async def handle_card_selected(self, data):
-        """
-        Handle the card selected by the disproving player and send it to the suggesting player.
-        """
-        selected_card = data.get('card')
-        suggesting_player_channel = data.get('suggesting_player_channel')  # Get the suggesting player's channel
-
-        if not selected_card or not suggesting_player_channel:
-            return
-
-        # Send the selected card only to the suggesting player
-        await self.channel_layer.send(
-            suggesting_player_channel,
-            {
-                'type': 'player_action',
-                'message': f"The card [{selected_card}] has been shown to disprove your suggestion."
+                'type': 'broadcast_suggestion_result',
+                'suggesting_player': player.username,
+                'suspect': suspect,
+                'weapon': weapon,
+                'room': room,
+                'refuting_player': p.username if 'p' in locals() and suspect in p.hand or weapon in p.hand or room in p.hand else None
             }
         )
 
@@ -994,12 +831,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        # Return the characters of the current and next players
-        return {
-            'current_player_character': player.character,
-            'next_player_character': next_player.character
-        }
-
     async def game_tie(self, event):
         """Notify clients that the game has ended in a tie."""
         await self.send(text_data=json.dumps({
@@ -1020,8 +851,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         username = data.get('username')
         if not username:
             if DEBUG and DEBUG_AUTH:
-                print(f"[handle_player_out] No username provided in player_out message for game {self.game_id}: {data}, "
-                      f"channel: {self.channel_name}")
+                print(
+                    f"[handle_player_out] No username provided in player_out message for game {self.game_id}: {data}, "
+                    f"channel: {self.channel_name}")
             return
         if DEBUG:
             print(f"Processing player_out for username {username} in game {self.game_id}, channel: {self.channel_name}")
