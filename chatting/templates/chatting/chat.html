@@ -39,13 +39,24 @@
         margin-bottom: 4px;
     }
     .my-message .username {
-        margin-right: 8px;
+        margin-right: 10px;
     }
     .my-message .profile-photo {
-        width: 24px;
-        height: 24px;
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
         border: 1px solid #ccc;
+    }
+    .my-message .message-box {
+        background: var(--my-message-bg, #007BFF); /* Fallback to #007BFF if variable fails */
+        color: #fff;
+        border-radius: 8px 8px 0 8px;
+        padding: 8px 12px;
+        border: 2px solid #0056b3; /* Increased border thickness for visibility */
+        display: inline-block;
+        width: fit-content;
+        max-width: 70%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Added shadow for better visibility */
     }
     .other-message {
         margin-right: auto;
@@ -59,11 +70,11 @@
     }
     .other-message .username {
         margin-right: 4px;
-        margin-left: 4px;
+        margin-left: 10px;
     }
     .other-message .profile-photo {
-        width: 24px;
-        height: 24px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         border: 1px solid #ccc;
     }
@@ -79,6 +90,9 @@
     }
     .dark .other-message .message-box {
         border-color: #555;
+    }
+    .dark .my-message .message-box {
+        border-color: #135abe; /* Dark mode border for my-message */
     }
     .dark .profile-photo {
         border-color: #555;
@@ -170,7 +184,7 @@
 
                         const photoImg = document.createElement('img');
                         photoImg.className = 'profile-photo';
-                        photoImg.src = data.profile_photo || 'https://via.placeholder.com/24'; // Fallback placeholder
+                        photoImg.src = data.profile_photo || 'https://via.placeholder.com/24';
                         photoImg.onerror = () => console.error(`Failed to load profile photo: ${data.profile_photo}`);
 
                         if (data.username === username) {
