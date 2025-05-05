@@ -13,6 +13,9 @@
             --button-bg: #007BFF;
             --button-hover: #0056b3;
             --link-color: #007BFF;
+            --chat-bg: #f8f9fa;
+            --my-message-bg: #007BFF;
+            --other-message-bg: #e9ecef;
         }
 
         /* Define dark theme overrides */
@@ -23,20 +26,46 @@
             --button-bg: #1a73e8;
             --button-hover: #135abe;
             --link-color: #4dabf7;
+            --chat-bg: #2d2d2d;
+            --my-message-bg: #1a73e8;
+            --other-message-bg: #4a4a4a;
         }
 
-        /* Style body with centered layout and theme transitions */
+        /* Style body with flex layout to split page */
         body {
             font-family: 'Source Sans Pro', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
-            align-items: center;
             height: 100vh;
             background: var(--bg-color);
             color: var(--text-color);
             transition: background 0.3s, color 0.3s;
+        }
+
+        /* Main wrapper to split page into two halves */
+        .page-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Left half for chat */
+        .chat-half {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Right half for lobby */
+        .lobby-half {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
         /* Style main container for lobby content */
@@ -86,6 +115,9 @@
             margin: 20px 0;
             text-align: left;
         }
+        .player-list div {
+            color: var(--text-color);
+        }
 
         /* Style buttons (e.g., Start Game) */
         button {
@@ -99,6 +131,9 @@
             cursor: pointer;
             margin-top: 15px;
         }
+        .dark button {
+            border: 1px solid #555;
+        }
 
         /* Hover effect for buttons */
         button:hover {
@@ -109,6 +144,10 @@
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
+        }
+        .dark button:disabled {
+            background: #444;
+            border: 1px solid #555;
         }
 
         /* Style dark/light mode toggle */
@@ -167,46 +206,51 @@
     </style>
 </head>
 <body>
-    <div class="lobby">
-        {% include "chatting/chat.html" %}
-    </div>
-    <!-- Dark/light mode toggle switch -->
     <label class="mode-toggle">
         <input id="mode-switch" type="checkbox" />
         <span class="slider"></span>
         <span class="mode-label">🌙</span>
     </label>
-    <!-- Main lobby container -->
-    <div class="container">
-        <!-- Game title with game ID -->
-        <h1>Clue-Less Game {{ game_id }}</h1>
-        {% if is_first_user %}
-            <!-- Host view -->
-            <h2>Welcome Game Host!</h2>
-            <!-- Player count and list -->
-            <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
-            <div class="player-list" id="player-list">
-                {% for player in players_list %}
-                    <div>{{ player }}</div>
-                {% endfor %}
+    <!-- Page wrapper to split into two halves -->
+    <div class="page-wrapper">
+        <!-- Left half for chat -->
+        <div class="chat-half">
+            {% include "chatting/chat.html" %}
+        </div>
+        <!-- Right half for lobby -->
+        <div class="lobby-half">
+            <!-- Main lobby container -->
+            <div class="container">
+                <!-- Game title with game ID -->
+                <h1>Clue-Less Game {{ game_id }}</h1>
+                {% if is_first_user %}
+                    <!-- Host view -->
+                    <h2>Welcome Game Host!</h2>
+                    <!-- Player count and list -->
+                    <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
+                    <div class="player-list" id="player-list">
+                        {% for player in players_list %}
+                            <div>{{ player }}</div>
+                        {% endfor %}
+                    </div>
+                    <!-- Start Game button for host -->
+                    <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
+                        Start Game
+                    </button>
+                {% else %}
+                    <!-- Non-host view -->
+                    <h2>Waiting for host to start the game...</h2>
+                    <!-- Player count and list -->
+                    <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
+                    <div class="player-list" id="player-list">
+                        {% for player in players_list %}
+                            <div>{{ player }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
-            <!-- Start Game button for host -->
-            <button id="start-button" {% if player_count < 2 %}disabled{% endif %}>
-                Start Game
-            </button>
-        {% else %}
-            <!-- Non-host view -->
-            <h2>Waiting for host to start the game...</h2>
-            <!-- Player count and list -->
-            <p>Current Players (<span id="player-count">{{ player_count }}</span>/6):</p>
-            <div class="player-list" id="player-list">
-                {% for player in players_list %}
-                    <div>{{ player }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        </div>
     </div>
-
     <script>
         // Initialize JavaScript when DOM is fully loaded
         document.addEventListener('DOMContentLoaded', () => {
