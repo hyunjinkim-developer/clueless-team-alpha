@@ -611,10 +611,6 @@
             "Kitchen": "/static/images/rooms/kitchen.png"
         };
 
-        // Initialize WebSocket connection
-        const gameId = {{ game_id }};
-        const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
-
         // Initialize global variables
         let playersData = [];
         let currentUsername = '';
@@ -640,76 +636,95 @@
         let currentPlayer = null;
         let previousGameState = null;
 
-        // Log WebSocket connection success
-        ws.onopen = function() {
-            console.log("WebSocket connected successfully");
-        };
+        // Initialize WebSocket connection
+        const gameId = {{ game_id }};
+        console.log('Game ID:', gameId);
+        console.log('Protocol:', window.location.protocol);
+        console.log('Host:', window.location.host);
+        const wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/game/' + gameId + '/';
+        console.log('WebSocket URL:', wsUrl);
 
-        // Handle WebSocket messages
-        ws.onmessage = function(event) {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('Received WebSocket message:', data);
-                const notification = document.getElementById('notification');
-                if (!notification) {
-                    console.error('Notification element not found');
-                    return;
+        // const ws = None;
+        try {
+            ws = new WebSocket(wsUrl);
+
+            // Log WebSocket connection success
+            ws.onopen = function() {
+                console.log("WebSocket connected successfully");
+            };
+            // Handle WebSocket messages
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Received WebSocket message:', data);
+                    const notification = document.getElementById('notification');
+                    if (!notification) {
+                        console.error('Notification element not found');
+                        return;
+                    }
+                    if (data.type === 'game_update') {
+                        console.log('Game state players:', data.game_state.players);
+                        updateGameBoard(data.game_state);
+                    } else if (data.type === 'game_end') {
+                        const { winner, solution, message } = data;
+                        // Update notification with game end message
+                        notification.innerHTML = `<p>${message}</p>`;
+                        // Disable accusations button
+                        const accusationsButton = document.getElementById('accusations-button');
+                        if (accusationsButton) accusationsButton.disabled = true;
+                        setTimeout(() => {
+                            alert(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
+                        }, 1000);
+                    } else if (data.type === 'game_tie') {
+                        // Update notification with tie message
+                        notification.innerHTML = `<p>${data.message}</p>`;
+                        // Disable all action buttons
+                        const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
+                        buttons.forEach(id => {
+                            const btn = document.getElementById(id);
+                            if (btn) btn.disabled = true;
+                        });
+                        alert(data.message);
+                    } else if (data.type === 'accusation_failed') {
+                        // Append accusation failure message to notification
+                        document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                        alert(data.message);
+                        // Disable action buttons
+                        const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
+                        buttons.forEach(id => {
+                            const btn = document.getElementById(id);
+                            if (btn) btn.disabled = true;
+                        });
+                    } else if (data.type === 'player_eliminated') {
+                        // Append elimination message to notification
+                        document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
+                        alert(data.message);
+                    } else if (data.error) {
+                        console.error('Error:', data.error);
+                        alert(data.error);
+                    }
+                } catch (e) {
+                    console.error('Error processing WebSocket message:', e);
                 }
-                if (data.type === 'game_update') {
-                    console.log('Game state players:', data.game_state.players);
-                    updateGameBoard(data.game_state);
-                } else if (data.type === 'game_end') {
-                    const { winner, solution, message } = data;
-                    // Update notification with game end message
-                    notification.innerHTML = `<p>${message}</p>`;
-                    // Disable accusations button
-                    const accusationsButton = document.getElementById('accusations-button');
-                    if (accusationsButton) accusationsButton.disabled = true;
-                    setTimeout(() => {
-                        alert(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
-                    }, 1000);
-                } else if (data.type === 'game_tie') {
-                    // Update notification with tie message
-                    notification.innerHTML = `<p>${data.message}</p>`;
-                    // Disable all action buttons
-                    const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
-                    buttons.forEach(id => {
-                        const btn = document.getElementById(id);
-                        if (btn) btn.disabled = true;
-                    });
-                    alert(data.message);
-                } else if (data.type === 'accusation_failed') {
-                    // Append accusation failure message to notification
-                    document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
-                    alert(data.message);
-                    // Disable action buttons
-                    const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
-                    buttons.forEach(id => {
-                        const btn = document.getElementById(id);
-                        if (btn) btn.disabled = true;
-                    });
-                } else if (data.type === 'player_eliminated') {
-                    // Append elimination message to notification
-                    document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
-                    alert(data.message);
-                } else if (data.error) {
-                    console.error('Error:', data.error);
-                    alert(data.error);
-                }
-            } catch (e) {
-                console.error('Error processing WebSocket message:', e);
-            }
-        };
+            };
+            // Log WebSocket errors
+            ws.onerror = function(error) {
+                console.error("WebSocket connection error:", error);
+            };
 
-        // Log WebSocket errors
-        ws.onerror = function(error) {
-            console.error("WebSocket connection error:", error);
-        };
+            // Log WebSocket closure
+            ws.onclose = function() {
+                console.log("WebSocket closed");
+            };
+        } catch (e) {
+            console.error('WebSocket initialization error:', e);
+        }
 
-        // Log WebSocket closure
-        ws.onclose = function() {
-            console.log("WebSocket closed");
-        };
+
+
+
+
+
 
         // Update game board with new state
         function updateGameBoard(gameState) {

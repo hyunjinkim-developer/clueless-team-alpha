@@ -10,6 +10,12 @@ files, and ASGI/WebSocket integration. For detailed documentation, see:
 - https://docs.djangoproject.com/en/5.1/topics/i18n/
 """
 
+# Production Settings
+PRODUCTION = True
+PRODUCTION_NGROK_APP = 'c080-175-113-233-50.ngrok-free.app'
+PRODUCTION_NGROK_URL = 'https://' + PRODUCTION_NGROK_APP
+
+
 from pathlib import Path
 import os
 
@@ -34,11 +40,12 @@ DEBUG = True
 # Empty list is safe for local development (127.0.0.1, localhost)
 # In production, add your domain (e.g., ['example.com', 'www.example.com'])
 # See: https://docs.djangoproject.com/en/5.1/ref/settings/#allowed-hosts
-# # Localhost testing:
-# ALLOWED_HOSTS = []
-# Production recommendations:
-# ALLOWED_HOSTS = ['127.0.0.1', '*.ngrok-free.app']  # Add proper ngrok app in '*.ngrok-free.app'
-ALLOWED_HOSTS = ['127.0.0.1', 'f4ad-175-113-233-50.ngrok-free.app']
+if PRODUCTION:
+    # ALLOWED_HOSTS = ['127.0.0.1', '*.ngrok-free.app']  # Add proper ngrok app in '*.ngrok-free.app'
+    ALLOWED_HOSTS = ['127.0.0.1', PRODUCTION_NGROK_APP]
+else:
+    # Localhost testing:
+    ALLOWED_HOSTS = []
 
 # List of Django applications installed in the project
 # Includes core Django apps for admin, authentication, sessions, and messages,
@@ -131,13 +138,14 @@ SESSION_COOKIE_HTTPONLY = True     # Prevent JavaScript access to session cookie
 SESSION_COOKIE_SAMESITE = 'Strict' # Prevent cross-site cookie sharing
 SESSION_COOKIE_AGE = 1800         # 30-minute session duration
 SESSION_COOKIE_PATH = '/'         # Cookie applies to all paths
-# # Localhost testing:
-# SESSION_COOKIE_SECURE = False      # Disable secure flag for local HTTP development
-# SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
-# Production recommendations:
-SESSION_COOKIE_SECURE = True  # Require HTTPS for cookies
-SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Use Redis caching
-CSRF_TRUSTED_ORIGINS = ['https://f4ad-175-113-233-50.ngrok-free.app']  # Ensure CSRF_TRUSTED_ORIGINS includes the exact URL
+if PRODUCTION:
+    SESSION_COOKIE_SECURE = True  # Require HTTPS for cookies
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Use Redis caching
+    CSRF_TRUSTED_ORIGINS = [PRODUCTION_NGROK_URL]  # Ensure CSRF_TRUSTED_ORIGINS includes the exact URL
+else:
+    # Localhost testing:
+    SESSION_COOKIE_SECURE = False      # Disable secure flag for local HTTP development
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
 
 # Database configuration using SQLite for local development
 # SQLite is suitable for development but consider PostgreSQL/MySQL for production

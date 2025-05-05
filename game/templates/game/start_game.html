@@ -252,7 +252,9 @@
             // // For Localhost testing:
             // const ws = new WebSocket('ws://' + window.location.host + '/ws/game/' + gameId + '/');
             // For Production:
-            const ws = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/game/' + gameId + '/');
+            const wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/game/' + gameId + '/';
+            console.log('WebSocket URL:', wsUrl);
+            const ws = new WebSocket(wsUrl);
 
             // Log WebSocket connection success
             ws.onopen = function() {
