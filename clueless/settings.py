@@ -12,7 +12,7 @@ files, and ASGI/WebSocket integration. For detailed documentation, see:
 
 # Production Settings
 PRODUCTION = True
-PRODUCTION_NGROK_APP = 'bc96-175-113-233-50.ngrok-free.app'
+PRODUCTION_NGROK_APP = '79ab-175-113-233-50.ngrok-free.app'
 PRODUCTION_NGROK_URL = 'https://' + PRODUCTION_NGROK_APP
 
 
