@@ -136,15 +136,16 @@ CHANNEL_LAYERS = {
 # See: https://docs.djangoproject.com/en/5.1/topics/http/sessions/
 SESSION_COOKIE_NAME = 'sessionid'  # Name of the session cookie
 SESSION_COOKIE_HTTPONLY = True     # Prevent JavaScript access to session cookies
-SESSION_COOKIE_SAMESITE = 'Strict' # Prevent cross-site cookie sharing
 SESSION_COOKIE_AGE = 1800         # 30-minute session duration
 SESSION_COOKIE_PATH = '/'         # Cookie applies to all paths
 if PRODUCTION:
+    SESSION_COOKIE_SAMESITE = 'Strict'  # Prevent cross-site cookie sharing
     SESSION_COOKIE_SECURE = True  # Require HTTPS for cookies
     SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Use Redis caching
     CSRF_TRUSTED_ORIGINS = [PRODUCTION_NGROK_URL]  # Ensure CSRF_TRUSTED_ORIGINS includes the exact URL
 else:
     # Localhost testing:
+    SESSION_COOKIE_SAMESITE = 'Strict'  # Prevent cross-site cookie sharing
     SESSION_COOKIE_SECURE = False      # Disable secure flag for local HTTP development
     SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Store sessions in database
 
