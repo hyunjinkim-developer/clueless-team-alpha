@@ -197,10 +197,11 @@ USE_TZ = True            # Enable timezone-aware datetimes
 # STATICFILES_DIRS specifies additional directories for static files
 # In production, run `python manage.py collectstatic` to gather static files
 # See: https://docs.djangoproject.com/en/5.1/howto/static-files/
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # Directory for custom static files (e.g., images)
+    BASE_DIR / "static",  # Directory for custom static files (e.g., images)
 ]
+
 
 # Default primary key field type for models
 # AutoField is suitable for most use cases; BigAutoField supports larger ID ranges

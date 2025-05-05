@@ -4,6 +4,9 @@ from django.conf import settings
 from django.contrib.sessions.models import Session
 from channels.db import database_sync_to_async
 
+# Shared list to track players and their join order (replace with Redis in production)
+game_players = {}  # Format: {game_id: [{'username': username, 'join_index': index}, ...]}
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.game_id = self.scope['url_route']['kwargs']['game_id']
@@ -25,6 +28,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close(code=4002, reason="User not authenticated")
             return
 
+        # Initialize players list for this game if not exists
+        if self.game_id not in game_players:
+            game_players[self.game_id] = []
+
+        # Add player to the list if not already present
+        username = user.username
+        if not any(player['username'] == username for player in game_players[self.game_id]):
+            join_index = len(game_players[self.game_id]) + 1
+            game_players[self.game_id].append({
+                'username': username,
+                'join_index': join_index
+            })
+            print(f"[ChatConsumer] Assigned join_index {join_index} to {username} in game {self.game_id}")
+
+        # Find the player's join index
+        player = next((p for p in game_players[self.game_id] if p['username'] == username), None)
+        self.join_index = player['join_index'] if player else 1  # Fallback to 1 if not found
+
         await self.channel_layer.group_add(self.chat_group_name, self.channel_name)
         print(f"[ChatConsumer] Added to group: {self.chat_group_name}, channel: {self.channel_name}")
         await self.accept()
@@ -44,12 +65,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             username = self.scope['user'].username
             print(f"[ChatConsumer] Received message from {username}: {message}")
             if message and username:
+                # Assign profile photo based on join order
+                profile_filename = f"profile-{self.join_index}.jpeg"
+                profile_photo = f"{settings.STATIC_URL}images/profile/{profile_filename}"
+                print(f"[ChatConsumer] Assigned profile photo for {username}: {profile_photo}")
                 await self.channel_layer.group_send(
                     self.chat_group_name,
                     {
                         'type': 'chat_message',
                         'username': username,
-                        'message': message
+                        'message': message,
+                        'profile_photo': profile_photo
                     }
                 )
                 print(f"[ChatConsumer] Broadcasted message to group: {self.chat_group_name}")
@@ -65,5 +91,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'chat_message',
             'username': event['username'],
-            'message': event['message']
+            'message': event['message'],
+            'profile_photo': event['profile_photo']
         }))

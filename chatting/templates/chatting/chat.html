@@ -32,25 +32,40 @@
         margin-left: auto;
         align-items: flex-end;
     }
-    .my-message .username {
-        align-self: flex-end;
+    .my-message .header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        margin-bottom: 4px;
     }
-    .my-message .message-box {
-        background: var(--my-message-bg);
-        color: #fff;
-        border-radius: 8px 8px 0 8px;
-        padding: 8px 12px;
-        border: 1px solid #0056b3;
-        display: inline-block;
-        width: fit-content;
-        max-width: 70%;
+    .my-message .username {
+        margin-right: 8px;
+    }
+    .my-message .profile-photo {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid #ccc;
     }
     .other-message {
         margin-right: auto;
         align-items: flex-start;
     }
+    .other-message .header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        margin-bottom: 4px;
+    }
     .other-message .username {
-        align-self: flex-start;
+        margin-right: 4px;
+        margin-left: 4px;
+    }
+    .other-message .profile-photo {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid #ccc;
     }
     .other-message .message-box {
         background: var(--other-message-bg);
@@ -65,10 +80,12 @@
     .dark .other-message .message-box {
         border-color: #555;
     }
+    .dark .profile-photo {
+        border-color: #555;
+    }
     .username {
         font-size: 0.9em;
         font-weight: bold;
-        margin-bottom: 4px;
         color: var(--text-color);
     }
     .dark .username {
@@ -143,17 +160,35 @@
                         const messageDiv = document.createElement('div');
                         messageDiv.className = data.username === username ? 'message my-message' : 'message other-message';
 
-                        // Username on top
+                        // Header with username and profile photo
+                        const headerDiv = document.createElement('div');
+                        headerDiv.className = 'header';
+
                         const usernameSpan = document.createElement('span');
                         usernameSpan.className = 'username';
                         usernameSpan.textContent = data.username;
+
+                        const photoImg = document.createElement('img');
+                        photoImg.className = 'profile-photo';
+                        photoImg.src = data.profile_photo || 'https://via.placeholder.com/24'; // Fallback placeholder
+                        photoImg.onerror = () => console.error(`Failed to load profile photo: ${data.profile_photo}`);
+
+                        if (data.username === username) {
+                            // Your message: username on left, photo on right
+                            headerDiv.appendChild(usernameSpan);
+                            headerDiv.appendChild(photoImg);
+                        } else {
+                            // Others' message: photo on left, username on right
+                            headerDiv.appendChild(photoImg);
+                            headerDiv.appendChild(usernameSpan);
+                        }
 
                         // Message content inside a box
                         const messageBox = document.createElement('div');
                         messageBox.className = 'message-box';
                         messageBox.textContent = data.message;
 
-                        messageDiv.appendChild(usernameSpan);
+                        messageDiv.appendChild(headerDiv);
                         messageDiv.appendChild(messageBox);
 
                         chatMessages.appendChild(messageDiv);
