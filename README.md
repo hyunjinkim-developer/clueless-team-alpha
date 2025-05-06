@@ -3,7 +3,7 @@ Simplified version of board game Clue
 
 ## Demo Video
 ### Target Increment System
-
+[![Target Demo Video](https://img.youtube.com/vi/Hu95HgFbrEo/0.jpg)](https://youtu.be/Hu95HgFbrEo)
 ### Minimal Increment System
 [![Minimal Demo Video](https://img.youtube.com/vi/QRNJgaIlQss/0.jpg)](https://youtu.be/QRNJgaIlQss)
 ### Skeletal Increment System
