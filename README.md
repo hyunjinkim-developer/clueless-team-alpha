@@ -7,7 +7,7 @@ Simplified version of board game Clue
 ### Minimal Increment System
 [![Minimal Demo Video](https://img.youtube.com/vi/QRNJgaIlQss/0.jpg)](https://youtu.be/QRNJgaIlQss)
 ### Skeletal Increment System
-[![Skeletal Demo Video](https://img.youtube.com/vi/gN_xQpYRPfM/0.jpg)](https://youtu.be/gN_xQpYRPfM)
+[![Skeletal Demo Video](https://img.youtube.com/vi/YRgRJy2u2Jk/0.jpg)](https://youtu.be/YRgRJy2u2Jk)
 
 
 ## First-Time Setup: Installation and Server Configuration
