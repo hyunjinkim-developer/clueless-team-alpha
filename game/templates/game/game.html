@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <!-- Internal CSS for game board and UI styling -->
-    <style>
+     <style>
         /* Global reset for consistent sizing */
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -137,6 +137,14 @@
         /* Style vacant cells */
         .vacant { background-color: rgba(255, 255, 255, 0.1); }
 
+
+        /* Character name styling */
+        .room-characters span, .hallway-characters span {
+            white-space: nowrap;
+            display: block;
+            font-weight: bold;
+        }
+
         /* Animation for character movement */
         @keyframes pulseMove {
             0% { transform: scale(1); }
@@ -147,8 +155,8 @@
             animation: pulseMove 0.5s ease-in-out;
         }
 
-        /* Style player indicators */
-        .player-me {   /* Highlight Current user */
+        /* Player-specific styling */
+        .player-me {
             color: #ffe95b;
             font-weight: bold;
         }
@@ -175,10 +183,11 @@
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
 
-        /* Hover effect for buttons */
+         /* Hover effect for buttons */
         #display-hand-button:hover, #suggestions-button:hover, #accusations-button:hover, #end-turn-button:hover {
             background-color: #fffefa;
         }
+
 
         /* Style hand display popup */
         #hand-display-container {
@@ -233,6 +242,7 @@
             margin-right: 10px;
         }
 
+
         /* Style suggestion form */
         #suggestions-form-container {
             position: fixed;
@@ -268,6 +278,7 @@
         #suggestions-form button:hover {
             background-color: green;
         }
+
 
         /* Style accusation form */
         #accusations-form-container {
@@ -305,7 +316,7 @@
             background-color: #ff6347;
         }
 
-        /* Style dark/light mode toggle */
+/* Style dark/light mode toggle */
         .mode-toggle {
             position: absolute;
             top: 10px;
@@ -349,7 +360,6 @@
         }
 
 
-
         /* Default dark mode colors */
         :root {
             --bg-color: #0b0c1a;
@@ -380,6 +390,7 @@
         .game-title { color: #ff0066; }
         .game-id { color: rgba(255, 255, 255, 0.6); }
 
+
         /* Style user info section */
         .user-info h2 {
             font-size: 1.5em;
@@ -392,6 +403,7 @@
             font-family: 'Courier New', monospace;
             letter-spacing: 1px;
         }
+
 
         /* Style logout button */
         .logout-btn {
@@ -412,6 +424,7 @@
             box-shadow: 0 0 15px rgba(255, 0, 102, 0.9);
         }
 
+
         /* Style close buttons for forms */
         .close-button {
             width: 100%;
@@ -430,6 +443,7 @@
             background-color: #ffe0eb;
             transform: scale(1.05);
         }
+
 
         /* Style loading message */
         #loading-message {
@@ -465,7 +479,7 @@
             transition: margin-right 0.3s ease-in-out;
         }
 
-        /* History Header */
+                /* History Header */
         .history-header {
             background-color: #ff0066;
             color: white;
@@ -508,18 +522,11 @@
     </style>
 
 <body>
-    <!-- Dark/light mode toggle switch -->
-    <label class="mode-toggle">
-        <input id="mode-switch" type="checkbox"/>
-        <span class="slider"></span>
-        <span class="mode-label">🌙</span>
-    </label>
-
     <!-- Sliding History Window -->
     <div id="history-window" class="history-window">
         <div class="history-header">
             <h3>Game History</h3>
-            <button id="close-history-button" class="close-button">×</button>
+            <button id="close-history-button" class="close-button">Close</button>
         </div>
         <ul id="history-list" class="history-list"></ul>
     </div>
@@ -586,6 +593,15 @@
         <div class="room" id="Kitchen"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
     </div>
 
+    <!-- Dark/light mode toggle switch -->
+    <div class="mode-toggle-wrapper">
+        <label class="mode-toggle">
+            <input id="mode-switch" type="checkbox"/>
+            <span class="slider"></span>
+            <span class="mode-label">🌙</span>
+        </label>
+    </div>
+
     <!-- Hand display popup -->
     <div id="hand-display-container">
         <h3>Your Hand</h3>
@@ -634,7 +650,7 @@
             </select>
             <br/>
             <button type="submit">Submit Accusation</button>
-            <button type="button" class="close-button" id="cancel-accusation">×</button>
+            <button type="button" class="close-button" id="cancel-accusation">Cancel</button>
         </form>
     </div>
 
@@ -661,7 +677,7 @@
                 <option value="Rope">Rope</option>
             </select>
             <button type="submit">Submit Suggestion</button>
-            <button type="button" class="close-button" id="cancel-suggestions">×</button>
+            <button type="button" class="close-button" id="cancel-suggestions">Cancel</button>
         </form>
     </div>
 
