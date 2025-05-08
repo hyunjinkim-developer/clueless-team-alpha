@@ -1,6 +1,34 @@
 # Clue-Less
 Simplified version of board game Clue
 
+
+## Features
+### Current Features
+* Login/Logout:
+    Players authenticate and join Game 1,
+    with logout deactivating their Player instance.
+* Character Assignment:
+    Unique characters assigned on first login,
+    preserved across logouts (stored in game.players and game.players_list).
+* Movement:
+    Click adjacent rooms or hallways to move;
+    all players can move freely without turn restrictions, with updates synced via WebSocket.
+* Board Display:
+    5x5 grid shows all players’ positions, active or inactive.
+    This allows the game to continue even when some players log out.
+### Known Issues
+* Reload Problem:
+    Reloading a tab displays another player’s page.
+    Assuming the tab displays shows the latest login or log out player's information. Need verification.
+### Planned Features
+* Turn Rotation:
+    Implement sequential turns for Clue’s traditional gameplay (currently disabled per request).
+* Suggestions/Accusations:
+    Add mechanics for players to suggest or accuse, integrating card-based disproving and winning conditions.
+* Game End:
+    Define victory conditions and reset mechanics.
+
+
 ## Demo Video
 ### Target Increment System
 
@@ -31,19 +59,30 @@ Simplified version of board game Clue
         - % python manage.py migrate
 3. Run the server
     1. Run Redis server
-        - % redis-server
-    2. Initial Setting for Django Server
+        - % `redis-server`
+    2. Initial Setup for Django Server
         * To run the server listens both HTTP (pages) and WebSocket (live) connections.
         1. Using daphne to force ASGI, ensuring WebSockets work for multiplayer functionality
-            - % python run_daphne.py
+            - % `python run_daphne.py`
             * This customized code improves developer efficiency by truncating the command each time the server starts.
             [For further explanation](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f#1a821801a53980b39c8ced3d368ff56d).
         2. Close currently running server: Ctrl + c
     3. Run Django server
-        - % python manage.py runserver
+        - % `python manage.py runserver`
         * The server log displays: “Starting ASGI/Daphne version 4.1.2 development server at http://127.0.0.1:8000/"
-        * [Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) contains debugging cases.
+    4. Running the Server in a Production Environment
+        4-1. Initial Setup for Ngrok
+            1. Install Ngrok
+            2. Set Authentication Token at [the bottom of this page](https://dashboard.ngrok.com/get-started/your-authtoken)
+            3. Authenticate my Ngrok agent
+                - % `ngrok config add-authtoken $YOUR_AUTHTOKEN`
+        4-2. Run Ngrok: Start the tunnel
+        - %`ngrok http 8000`
+        4-3. Update Settings.py
+            - `PRODUCTION = True`
+            - `PRODUCTION_NGROK_APP = '*.ngrok-free.app'`
 
+[The Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) provides detailed explanations.
 
 ## Instructions After Cloning the Repository
 
@@ -108,28 +147,3 @@ clue-less/
 ```
 
 
-## Features
-### Current Features
-* Login/Logout:
-    Players authenticate and join Game 1,
-    with logout deactivating their Player instance.
-* Character Assignment:
-    Unique characters assigned on first login,
-    preserved across logouts (stored in game.players and game.players_list).
-* Movement:
-    Click adjacent rooms or hallways to move;
-    all players can move freely without turn restrictions, with updates synced via WebSocket.
-* Board Display:
-    5x5 grid shows all players’ positions, active or inactive.
-    This allows the game to continue even when some players log out.
-### Known Issues
-* Reload Problem:
-    Reloading a tab displays another player’s page.
-    Assuming the tab displays shows the latest login or log out player's information. Need verification.
-### Planned Features
-* Turn Rotation:
-    Implement sequential turns for Clue’s traditional gameplay (currently disabled per request).
-* Suggestions/Accusations:
-    Add mechanics for players to suggest or accuse, integrating card-based disproving and winning conditions.
-* Game End:
-    Define victory conditions and reset mechanics.
