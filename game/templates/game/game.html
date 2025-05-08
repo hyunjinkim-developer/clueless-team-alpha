@@ -40,6 +40,50 @@
             background-size: 100% 100%;
         }
 
+        /* Style dark/light mode toggle */
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            position: absolute; /* Position absolutely to place at the right end */
+            right: 20px; /* Align to the right with padding */
+            top: 50%; /* Vertically center within #button-container */
+            transform: translateY(-50%); /* Adjust for vertical centering */
+        }
+        .mode-toggle input[type="checkbox"] {
+            display: none;
+        }
+        .mode-toggle .slider {
+            width: 50px;
+            height: 25px;
+            background-color: #ccc;
+            border-radius: 50px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .mode-toggle .slider::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2.5px;
+            left: 2.5px;
+            transition: transform 0.3s ease;
+        }
+        .mode-toggle input[type="checkbox"]:checked + .slider {
+            background-color: #333;
+        }
+        .mode-toggle input[type="checkbox"]:checked + .slider::before {
+            transform: translateX(25px);
+        }
+        .mode-label {
+            font-size: 1.2em;
+        }
+
         /* Style notification bar for game status and user info */
         #notification {
             padding: 20px;
@@ -49,9 +93,10 @@
             background: rgba(0, 0, 0, 0.6);
             border-top: 2px solid #ff0066;
             border-bottom: 2px solid #ff0066;
-            box-shadow: 0 0 10px rgba(255, 0, 102, 0.5);
+            box-shadow: 0 0 10px rgba(255, 0, 103, 0.5);
             color: white;
             font-family: 'Courier New', Courier, monospace;
+            margin-top: 10px; /* Add space below the mode toggle */
         }
 
         /* Style game board as a 5x5 grid */
@@ -77,7 +122,7 @@
             height: var(--cell-size);
             border: 2px solid #000;
             text-align: center;
-            position: relsative;
+            position: relative;
             box-sizing: border-box;
             cursor: pointer;
             transition: transform 0.3s ease-in-out;
@@ -104,7 +149,7 @@
             color: white;
             text-shadow: 0 0 10px #ff0066;
         }
-        .room-characters span{
+        .room-characters span {
             font-size: var(--room-hallway-character-font-size);
             padding: 2px;
             overflow-y: auto;
@@ -137,6 +182,13 @@
         /* Style vacant cells */
         .vacant { background-color: rgba(255, 255, 255, 0.1); }
 
+        /* Character name styling */
+        .room-characters span, .hallway-characters span {
+            white-space: nowrap;
+            display: block;
+            font-weight: bold;
+        }
+
         /* Animation for character movement */
         @keyframes pulseMove {
             0% { transform: scale(1); }
@@ -147,9 +199,12 @@
             animation: pulseMove 0.5s ease-in-out;
         }
 
-        /* Style player indicators */
-        .player-me { color: #40001a; }
-        .player-other { color: #00252a; }
+        /* Player-specific styling */
+        .player-me {
+            color: #ffe95b;
+            font-weight: bold;
+        }
+        .player-other { color: rgb(0, 0, 0); }
 
         /* Style button container */
         #button-container {
@@ -157,12 +212,21 @@
             margin-bottom: 20px;
             width: 100%;
             display: flex;
+            justify-content: center; /* Center the action buttons */
+            position: relative; /* Allow absolute positioning of the mode toggle */
+            align-items: center;
+            min-height: 50px; /* Ensure enough height for the toggle */
+        }
+
+        /* Style wrapper for action buttons to keep them centered */
+        .action-buttons {
+            display: flex;
             justify-content: center;
             gap: 10px;
         }
 
         /* Style action buttons */
-        #display-hand-button, #suggestions-button, #accusations-button, #end-turn-button {
+        #display-hand-button, #suggestions-button, #accusations-button, #end-turn-button, #toggle-history-button {
             background-color: #fbe59d;
             padding: 10px 20px;
             font-size: 16px;
@@ -173,7 +237,7 @@
         }
 
         /* Hover effect for buttons */
-        #display-hand-button:hover, #suggestions-button:hover, #accusations-button:hover, #end-turn-button:hover {
+        #display-hand-button:hover, #suggestions-button:hover, #accusations-button:hover, #end-turn-button:hover, #toggle-history-button:hover {
             background-color: #fffefa;
         }
 
@@ -302,49 +366,6 @@
             background-color: #ff6347;
         }
 
-        /* Style dark/light mode toggle */
-        .mode-toggle {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 1000;
-        }
-        .mode-toggle input[type="checkbox"] {
-            display: none;
-        }
-        .mode-toggle .slider {
-            width: 50px;
-            height: 25px;
-            background-color: #ccc;
-            border-radius: 50px;
-            position: relative;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .mode-toggle .slider::before {
-            content: "";
-            position: absolute;
-            height: 20px;
-            width: 20px;
-            background-color: white;
-            border-radius: 50%;
-            top: 2.5px;
-            left: 2.5px;
-            transition: transform 0.3s ease;
-        }
-        .mode-toggle input[type="checkbox"]:checked + .slider {
-            background-color: #333;
-        }
-        .mode-toggle input[type="checkbox"]:checked + .slider::before {
-            transform: translateX(25px);
-        }
-        .mode-label {
-            font-size: 1.2em;
-        }
-
         /* Default dark mode colors */
         :root {
             --bg-color: #0b0c1a;
@@ -358,9 +379,12 @@
         body.light-mode {
             --bg-color: #f4f4f4;
             --text-color: #222;
-            --room-color: #ffe0eb;
             --hallway-color: #d0e7ff;
             --vacant-color: rgba(0, 0, 0, 0.05);
+        }
+        body.light-mode .middle-vacant {
+            background-color: #ffffff !important;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
         }
 
         /* Style game title */
@@ -379,9 +403,9 @@
         }
         .username, .character-name {
             font-weight: bold;
-            color: #00bcd4;
-            text-shadow: 0 0 5px rgba(0, 188, 212, 0.7);
-            font-family: 'Courier New', Courier, monospace;
+            color: #ffdd02;
+            text-shadow: 0 0 5px #ffdd02;
+            font-family: 'Courier New', monospace;
             letter-spacing: 1px;
         }
 
@@ -481,37 +505,14 @@
             border-bottom: 1px solid #ddd;
             font-size: 14px;
         }
-
-        /* History Button (aligned with other buttons) */
-        .toggle-history-button {
-            background-color: #fbe59d;
-            color: rgb(0, 0, 0);
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .toggle-history-button:hover {
-            background-color: #fffefa;
-        }
     </style>
 
 <body>
-    <!-- Dark/light mode toggle switch -->
-    <label class="mode-toggle">
-        <input id="mode-switch" type="checkbox"/>
-        <span class="slider"></span>
-        <span class="mode-label">🌙</span>
-    </label>
-
     <!-- Sliding History Window -->
     <div id="history-window" class="history-window">
         <div class="history-header">
             <h3>Game History</h3>
-            <button id="close-history-button" class="close-button">×</button>
+            <button id="close-history-button" class="close-button">Close</button>
         </div>
         <ul id="history-list" class="history-list"></ul>
     </div>
@@ -522,7 +523,7 @@
             Welcome to <span class="game-title">Clue-Less Game</span> -
             <span class="game-id">{{ game_id }}</span>
         </h1>
-        <div class="user-info" style="font-size: 0.6em;">
+        <div class="user-info" style="font-size: 0.9em;">
             <h2 id="user-status">
                 You are logged in as <span class="username">{{ username }}</span>
                 as <span class="character-name">{{ character }}</span>.
@@ -542,11 +543,18 @@
 
     <!-- Action buttons -->
     <div id="button-container">
-        <button id="toggle-history-button" class="toggle-history-button">Game History</button>
-        <button id="display-hand-button">Display Hand</button>
-        <button id="suggestions-button">Suggestions</button>
-        <button id="accusations-button">Accusations</button>
-        <button id="end-turn-button">End Turn</button>
+        <div class="action-buttons">
+            <button id="toggle-history-button" class="toggle-history-button">Game History</button>
+            <button id="display-hand-button">Display Hand</button>
+            <button id="suggestions-button">Suggestions</button>
+            <button id="accusations-button">Accusations</button>
+            <button id="end-turn-button">End Turn</button>
+        </div>
+        <label class="mode-toggle">
+            <input id="mode-switch" type="checkbox"/>
+            <span class="slider"></span>
+            <span class="mode-label">🌙</span>
+        </label>
     </div>
 
     <!-- Game board grid -->
@@ -557,9 +565,9 @@
         <div class="hallway" id="Hallway2"><div class="hallway-name">Hallway2</div><div class="hallway-characters" id="Hallway2-characters"></div></div>
         <div class="room" id="Lounge"><div class="room-name">Lounge</div><div class="room-characters" id="Lounge-characters"></div></div>
         <div class="hallway" id="Hallway3"><div class="hallway-name">Hallway3</div><div class="hallway-characters" id="Hallway3-characters"></div></div>
-        <div class="vacant" id="Vacant1"></div>
+        <div class="vacant middle-vacant" id="Vacant1"></div> <!-- Empty space -->
         <div class="hallway" id="Hallway4"><div class="hallway-name">Hallway4</div><div class="hallway-characters" id="Hallway4-characters"></div></div>
-        <div class="vacant" id="Vacant2"></div>
+        <div class="vacant middle-vacant" id="Vacant2"></div>
         <div class="hallway" id="Hallway5"><div class="hallway-name">Hallway5</div><div class="hallway-characters" id="Hallway5-characters"></div></div>
         <div class="room" id="Library"><div class="room-name">Library</div><div class="room-characters" id="Library-characters"></div></div>
         <div class="hallway" id="Hallway6"><div class="hallway-name">Hallway6</div><div class="hallway-characters" id="Hallway6-characters"></div></div>
@@ -567,9 +575,9 @@
         <div class="hallway" id="Hallway7"><div class="hallway-name">Hallway7</div><div class="hallway-characters" id="Hallway7-characters"></div></div>
         <div class="room" id="DiningRoom"><div class="room-name">Dining Room</div><div class="room-characters" id="DiningRoom-characters"></div></div>
         <div class="hallway" id="Hallway8"><div class="hallway-name">Hallway8</div><div class="hallway-characters" id="Hallway8-characters"></div></div>
-        <div class="vacant" id="Vacant3"></div>
+        <div class="vacant middle-vacant" id="Vacant3"></div>
         <div class="hallway" id="Hallway9"><div class="hallway-name">Hallway9</div><div class="hallway-characters" id="Hallway9-characters"></div></div>
-        <div class="vacant" id="Vacant4"></div>
+        <div class="vacant middle-vacant" id="Vacant4"></div>
         <div class="hallway" id="Hallway10"><div class="hallway-name">Hallway10</div><div class="hallway-characters" id="Hallway10-characters"></div></div>
         <div class="room" id="Conservatory"><div class="room-name">Conservatory</div><div class="room-characters" id="Conservatory-characters"></div></div>
         <div class="hallway" id="Hallway11"><div class="hallway-name">Hallway11</div><div class="hallway-characters" id="Hallway11-characters"></div></div>
@@ -626,7 +634,7 @@
             </select>
             <br/>
             <button type="submit">Submit Accusation</button>
-            <button type="button" class="close-button" id="cancel-accusation">×</button>
+            <button type="button" class="close-button" id="cancel-accusation">Cancel</button>
         </form>
     </div>
 
@@ -653,7 +661,7 @@
                 <option value="Rope">Rope</option>
             </select>
             <button type="submit">Submit Suggestion</button>
-            <button type="button" class="close-button" id="cancel-suggestions">×</button>
+            <button type="button" class="close-button" id="cancel-suggestions">Cancel</button>
         </form>
     </div>
 
@@ -889,7 +897,6 @@
                 console.error('Error updating game board:', e);
             }
         }
-
 
         // Update room character displays
         function updateRoomCharacters(players, movedPlayer) {
@@ -1204,7 +1211,7 @@
                         const isOpen = historyWindow.classList.toggle('open');
                         document.body.classList.toggle('history-open', isOpen); // Add or remove the class to push content
                     });
-                
+
                     // Close the history window
                     closeHistoryButton.addEventListener('click', () => {
                         historyWindow.classList.remove('open');
