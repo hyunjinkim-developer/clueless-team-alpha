@@ -1,36 +1,39 @@
 # ⚠️Currently in the process of ORGANIZING the GitHub repository!
 
 # Clue-Less
+
 Simplified version of board game Clue
 
 # Overview
-1. Features [##Features]
 
----
+1. [Features](#Features)
 
 ## Features
+
 ### Login/Logout:
+
     * Players authenticate and join Game 1, with logout deactivating their Player instance.
 
-* Chatting:
+- Chatting:
 
-* Lobby:
-    - Character Assignment:
-        Unique characters assigned on first login,
-        preserved across logouts (stored in game.players and game.players_list).
+- Lobby:
 
-* Movement:
-    Click adjacent rooms or hallways to move;
-    all players can move freely without turn restrictions, with updates synced via WebSocket.
+  - Character Assignment:
+    Unique characters assigned on first login,
+    preserved across logouts (stored in game.players and game.players_list).
 
-* Suggestion
+- Movement:
+  Click adjacent rooms or hallways to move;
+  all players can move freely without turn restrictions, with updates synced via WebSocket.
 
-* Accusation
+- Suggestion
 
-* GUI:
-    * Board Display:
-        5x5 grid shows all players’ positions, active or inactive.
-        This allows the game to continue even when some players log out.
+- Accusation
+
+- GUI:
+  - Board Display:
+    5x5 grid shows all players’ positions, active or inactive.
+    This allows the game to continue even when some players log out.
 
 # Tech Overview
 
@@ -38,28 +41,32 @@ Simplified version of board game Clue
 
 ## Frontend
 
+# Quick Start
 
 ## Installation
-* The commands below are based on macOS. Modify them to match your development environment.
+
+- The commands below are based on macOS. Modify them to match your development environment.
+
 1. Install dependencies (Python version 3.10.16)
-    1. % cd move-to-the-root-of-the-project-directory
-    2. Create virtual environment
-        - % python -m venv myenv
-    3. Activate virtual environment
-        - MacOS: % source venv/bin/activate
-        - Windows: file-path> venv\Scripts\activate
-        - When the virtual environment is activated, (venv) appears at the beginning of the terminal prompt
-    4. Install all dependencies for the Python project
-        - % pip install -r requirements.txt
-        * Reference: Customized code to uninstall all dependencies
-            - % python uninstall_packages.py
+   1. % cd move-to-the-root-of-the-project-directory
+   2. Create virtual environment
+      - % python -m venv myenv
+   3. Activate virtual environment
+      - MacOS: % source venv/bin/activate
+      - Windows: file-path> venv\Scripts\activate
+      - When the virtual environment is activated, (venv) appears at the beginning of the terminal prompt
+   4. Install all dependencies for the Python project
+      - % pip install -r requirements.txt
+      * Reference: Customized code to uninstall all dependencies
+        - % python uninstall_packages.py
 2. DB migration
-    1. Creates blueprints (migration files) for your database based on models.py
-        - % python manage.py makemigrations
-    2. Apply all migrations
-        - % python manage.py migrate
+   1. Creates blueprints (migration files) for your database based on models.py
+      - % python manage.py makemigrations
+   2. Apply all migrations
+      - % python manage.py migrate
 
 ## Run the server
+
     1. Run Redis server
         - % `redis-server`
     2. Initial Setup for Django Server
@@ -87,29 +94,32 @@ Simplified version of board game Clue
 ### Instructions After Cloning the Repository
 
 After cloning the repository, you may see the following system log:
->  *"_You have 18 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions.
->  Run 'python manage.py migrate' to apply them._"*
+
+> _"*You have 18 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions.
+> Run 'python manage.py migrate' to apply them.*"_
 
 This occurs because I intentionally **did not** inclulde `game/migrations` to prevent one person's database from affecting other's work.
-### Initial Migration Setup
+
+### Initial Database Migration Setup
+
 ```sh
 python manage.py makemigrations
 python manage.py migrate
 ```
 
+[The HyunJin's Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) provides detailed explanations.
 
-## [The Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) provides detailed explanations.
+## Directory Tree (based on SKELETAL increment system)
 
+- Project Naming Conventions
+  - This project follows Python's PEP 8 naming conventions for consistency and readability:
+    - Variables & functions: lower_case_with_underscores
+    - Constants: ALL_CAPS_WITH_UNDERSCORES
+    - Classes: PascalCase
+    - Modules & directories: lower_case_with_underscores
+    - Private members: \_single_leading_underscore
+  - For more details, refer to the [PEP 8 Style Guide](https://peps.python.org/pep-0008/#naming-conventions).
 
-## Directory Tree (based on skeletal increment system)
-* Project Naming Conventions
-    - This project follows Python's PEP 8 naming conventions for consistency and readability:
-        - Variables & functions: lower_case_with_underscores
-        - Constants: ALL_CAPS_WITH_UNDERSCORES
-        - Classes: PascalCase
-        - Modules & directories: lower_case_with_underscores
-        - Private members: _single_leading_underscore
-    - For more details, refer to the [PEP 8 Style Guide](https://peps.python.org/pep-0008/#naming-conventions).
 ```
 clue-less/
 ├── manage.py              # Django's command-line utility for administrative tasks
@@ -150,9 +160,15 @@ clue-less/
 ```
 
 ## Demo Video
+
 ### Target Increment System
+
 [![Target Demo Video](https://img.youtube.com/vi/Hu95HgFbrEo/0.jpg)](https://youtu.be/Hu95HgFbrEo)
+
 ### Minimal Increment System
+
 [![Minimal Demo Video](https://img.youtube.com/vi/QRNJgaIlQss/0.jpg)](https://youtu.be/QRNJgaIlQss)
+
 ### Skeletal Increment System
+
 [![Skeletal Demo Video](https://img.youtube.com/vi/YRgRJy2u2Jk/0.jpg)](https://youtu.be/YRgRJy2u2Jk)
