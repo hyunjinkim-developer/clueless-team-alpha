@@ -9,26 +9,26 @@ Simplified version of board game Clue
 * Login/Logout:
     Players authenticate and join Game 1,
     with logout deactivating their Player instance.
-* Character Assignment:
-    Unique characters assigned on first login,
-    preserved across logouts (stored in game.players and game.players_list).
+
+* Chatting:
+
+* Lobby:
+    - Character Assignment:
+        Unique characters assigned on first login,
+        preserved across logouts (stored in game.players and game.players_list).
+
 * Movement:
     Click adjacent rooms or hallways to move;
     all players can move freely without turn restrictions, with updates synced via WebSocket.
-* Board Display:
-    5x5 grid shows all players’ positions, active or inactive.
-    This allows the game to continue even when some players log out.
-### Known Issues
-* Reload Problem:
-    Reloading a tab displays another player’s page.
-    Assuming the tab displays shows the latest login or log out player's information. Need verification.
-### Planned Features
-* Turn Rotation:
-    Implement sequential turns for Clue’s traditional gameplay (currently disabled per request).
-* Suggestions/Accusations:
-    Add mechanics for players to suggest or accuse, integrating card-based disproving and winning conditions.
-* Game End:
-    Define victory conditions and reset mechanics.
+
+* Suggestion
+
+* Accusation
+
+* GUI:
+    * Board Display:
+        5x5 grid shows all players’ positions, active or inactive.
+        This allows the game to continue even when some players log out.
 
 
 ## Demo Video
@@ -100,7 +100,7 @@ python manage.py migrate
 ```
 
 
-## Directory Tree
+## Directory Tree (based on skeletal increment system)
 * Project Naming Conventions
     - This project follows Python's PEP 8 naming conventions for consistency and readability:
         - Variables & functions: lower_case_with_underscores
