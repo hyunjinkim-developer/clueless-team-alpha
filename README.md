@@ -1,12 +1,13 @@
 # ⚠️Currently in the process of ORGANIZING the GitHub repository!
 
-
 # Clue-Less
 Simplified version of board game Clue
 
+# Overview
+1. Features [#Features]
+
 ## Features
-### Current Features
-* Login/Logout:
+### Login/Logout:
     Players authenticate and join Game 1,
     with logout deactivating their Player instance.
 
@@ -30,17 +31,14 @@ Simplified version of board game Clue
         5x5 grid shows all players’ positions, active or inactive.
         This allows the game to continue even when some players log out.
 
+# Tech Overview
 
-## Demo Video
-### Target Increment System
-[![Target Demo Video](https://img.youtube.com/vi/Hu95HgFbrEo/0.jpg)](https://youtu.be/Hu95HgFbrEo)
-### Minimal Increment System
-[![Minimal Demo Video](https://img.youtube.com/vi/QRNJgaIlQss/0.jpg)](https://youtu.be/QRNJgaIlQss)
-### Skeletal Increment System
-[![Skeletal Demo Video](https://img.youtube.com/vi/YRgRJy2u2Jk/0.jpg)](https://youtu.be/YRgRJy2u2Jk)
+## Backend
+
+## Frontend
 
 
-## First-Time Setup: Installation and Server Configuration
+## Installation
 * The commands below are based on macOS. Modify them to match your development environment.
 1. Install dependencies (Python version 3.10.16)
     1. % cd move-to-the-root-of-the-project-directory
@@ -59,7 +57,8 @@ Simplified version of board game Clue
         - % python manage.py makemigrations
     2. Apply all migrations
         - % python manage.py migrate
-3. Run the server
+
+## Run the server
     1. Run Redis server
         - % `redis-server`
     2. Initial Setup for Django Server
@@ -84,9 +83,7 @@ Simplified version of board game Clue
             - `PRODUCTION = True`
             - `PRODUCTION_NGROK_APP = '*.ngrok-free.app'`
 
-[The Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) provides detailed explanations.
-
-## Instructions After Cloning the Repository
+### Instructions After Cloning the Repository
 
 After cloning the repository, you may see the following system log:
 >  *"_You have 18 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions.
@@ -98,6 +95,9 @@ This occurs because I intentionally **did not** inclulde `game/migrations` to pr
 python manage.py makemigrations
 python manage.py migrate
 ```
+
+
+## [The Development Log](https://hyunjinkimdeveloper.notion.site/Clue-Less-1a421801a53980059dbcc9c29b1b382f?pvs=4) provides detailed explanations.
 
 
 ## Directory Tree (based on skeletal increment system)
@@ -148,4 +148,10 @@ clue-less/
 └── run_daphne.py         # Custom script to start the Daphne server with predefined settings, bypassing the command-line daphne invocation.
 ```
 
-
+## Demo Video
+### Target Increment System
+[![Target Demo Video](https://img.youtube.com/vi/Hu95HgFbrEo/0.jpg)](https://youtu.be/Hu95HgFbrEo)
+### Minimal Increment System
+[![Minimal Demo Video](https://img.youtube.com/vi/QRNJgaIlQss/0.jpg)](https://youtu.be/QRNJgaIlQss)
+### Skeletal Increment System
+[![Skeletal Demo Video](https://img.youtube.com/vi/YRgRJy2u2Jk/0.jpg)](https://youtu.be/YRgRJy2u2Jk)
