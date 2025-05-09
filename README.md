@@ -4,12 +4,13 @@
 Simplified version of board game Clue
 
 # Overview
-1. Features [#Features]
+1. Features [##Features]
+
+---
 
 ## Features
 ### Login/Logout:
-    Players authenticate and join Game 1,
-    with logout deactivating their Player instance.
+    * Players authenticate and join Game 1, with logout deactivating their Player instance.
 
 * Chatting:
 
