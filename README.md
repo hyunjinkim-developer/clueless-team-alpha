@@ -18,9 +18,12 @@ The rules are pretty much the same except for moving from room to room.
 
 ## Features
 
-### Authentication:
+### Access the system via Ngrok access point
+
+### Authentication
 
 - SignUp
+  ![](./static/readme/signup.gif)
 - Login
 
   - Players authenticate and join Game 1, with logout deactivating their Player instance.
