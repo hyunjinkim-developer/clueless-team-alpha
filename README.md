@@ -18,17 +18,35 @@ The rules are pretty much the same except for moving from room to room.
 
 ## Features
 
-### Access the system via Ngrok access point
+### Access the System via Ngrok
 
-### Authentication
+- The Ngrok access point enables multiple players to log in from different devices and browsers,
+  allowing them to join the same game from anywhere in the world.
+  ![](./static/readme/access_point.gif)
 
-- SignUp
+### User Authentication
+
+- Sign Up
   ![](./static/readme/signup.gif)
-- Login
+- Log In
+  - Players authenticate and join the game.
+  - Upon login, the server randomly assigns each player a unique character.
+    ![](./static/readme/login.gif)
+  - If a player **enters an incorrect password**, an error message is displayed.
+    ![](./static/readme/incorrect_password.gif)
+  - Cookie isolation is implemented to prevent session overwrites,
+    ensuring each player's data remains intact even after page reloads.
+    ![](./static/readme/cookie_isolation_reload.gif)
+  - Supports **up to 6 players** per game.
+    ![](./static/readme/exceed_6players.gif)
+- Logout
+  - Logging out deactivates the player's game instance.
 
-  - Players authenticate and join Game 1, with logout deactivating their Player instance.
+### Chatting
 
-### Chatting:
+- Chat function that allows players to coordinate and decide when to start the game.
+
+- Instantly broadcast
 
 ### Lobby:
 
