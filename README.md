@@ -18,9 +18,12 @@ The rules are pretty much the same except for moving from room to room.
 
 ## Features
 
-### Authentication: SignUp / Login
+### Authentication:
 
-    * Players authenticate and join Game 1, with logout deactivating their Player instance.
+- SignUp
+- Login
+
+  - Players authenticate and join Game 1, with logout deactivating their Player instance.
 
 ### Chatting:
 
@@ -140,6 +143,7 @@ Modify these settings to suit your development environment.
    3. Update `/clueless/settings.py`
       - `PRODUCTION = True`
       - `PRODUCTION_NGROK_APP = '*.ngrok-free.app'`
+5. Access the `PRODUCTION_NGROK_URL/login` Endpoint
 
 ## Tech Overview
 
