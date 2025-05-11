@@ -24,7 +24,7 @@ The rules are pretty much the same except for moving from room to room.
   allowing them to join the same game from anywhere in the world.
   ![](./static/readme/access_point.gif)
 
-### User Authentication
+###
 
 - Sign Up
   ![](./static/readme/signup.gif)
@@ -42,11 +42,16 @@ The rules are pretty much the same except for moving from room to room.
 - Logout
   - Logging out deactivates the player's game instance.
 
-### Chatting
+### In-Game Chat
 
-- Chat function that allows players to coordinate and decide when to start the game.
-
-- Instantly broadcast
+- Players can communicate via the built-in chat to coordinate and decide when to start the game.
+- Once a player joins, they can send messages that are broadcast to all other players in the game.
+- Tested across mutiple devices and browsers:
+  - MacBook (Safari)
+  - MacBook (Firefox)
+  - iPad (Chrome)
+  - Windows (Edge)
+  - iPhone (Safari)
 
 ### Lobby:
 
@@ -178,7 +183,7 @@ Modify these settings to suit your development environment.
 
 ### Target Increment System
 
-[![Target Demo Video](https://img.youtube.com/vi/Hu95HgFbrEo/0.jpg)](https://youtu.be/Hu95HgFbrEo)
+[![Target Demo Video](https://img.youtube.com/vi/fOyfSLnUSaQ/0.jpg)](https://youtu.be/fOyfSLnUSaQ)
 
 ### Minimal Increment System
 
