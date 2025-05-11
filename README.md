@@ -24,7 +24,7 @@ The rules are pretty much the same except for moving from room to room.
   allowing them to join the same game from anywhere in the world.
   ![](./static/readme/access_point.gif)
 
-###
+### User Authentication
 
 - Sign Up
   ![](./static/readme/signup.gif)
@@ -46,12 +46,23 @@ The rules are pretty much the same except for moving from room to room.
 
 - Players can communicate via the built-in chat to coordinate and decide when to start the game.
 - Once a player joins, they can send messages that are broadcast to all other players in the game.
-- Tested across mutiple devices and browsers:
+- Tested across mutiple devices and browsers:<br>
+  ![](./static/readme/chat_result.jpeg)
+
   - MacBook (Safari)
-  - MacBook (Firefox)
-  - iPad (Chrome)
-  - Windows (Edge)
-  - iPhone (Safari)
+  - MacBook (Firefox)<br>
+    ![](./static/readme/chat_macbook.gif)
+  - iPad (Chrome)<br>
+    ![](./static/readme/chat_ipad_chrome.gif)
+  - Windows (Edge)<br>
+    ![](./static/readme/chat_windows_edge.gif)
+  - Windows (Chrome)<br>
+    ![](./static/readme/chat_windows_chrome.gif)
+  - iPhone (Safari)<br>
+    <p float="left">
+      <img src="./static/readme/iphone_safari.png" alt="iphone_safari" width="150" hieght="450">
+      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" width="600" hieght="450">
+    </p>
 
 ### Lobby:
 
