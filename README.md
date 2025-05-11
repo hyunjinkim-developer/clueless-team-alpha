@@ -60,8 +60,8 @@ The rules are pretty much the same except for moving from room to room.
     ![](./static/readme/chat_windows_chrome.gif)
   - iPhone (Safari)<br>
     <p float="left">
-      <img src="./static/readme/iphone_safari.png" alt="iphone_safari" width="150" hieght="450">
-      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" width="600" hieght="450">
+      <img src="./static/readme/iphone_safari.png" alt="iphone_safari" width="150" hieght="150">
+      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" width="600" hieght="400">
     </p>
 
 ### Lobby:
