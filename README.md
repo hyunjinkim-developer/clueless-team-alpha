@@ -46,9 +46,10 @@ The rules are pretty much the same except for moving from room to room.
 
 - Players can communicate via the built-in chat to coordinate and decide when to start the game.
 - Once a player joins, they can send messages that are broadcast to all other players in the game.
-- Tested across mutiple devices and browsers:<br>
+- My messages appear on the right, while messages from other players are displayed on the left alongside their profile images.
   ![](./static/readme/chat_result.jpeg)
 
+- Tested across mutiple devices and browsers:<br>
   - MacBook (Safari)
   - MacBook (Firefox)<br>
     ![](./static/readme/chat_macbook.gif)
@@ -64,12 +65,17 @@ The rules are pretty much the same except for moving from room to room.
       <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" width="600" hieght="400">
     </p>
 
-### Lobby:
+### Lobby
 
-### Character Assignment:
+- The server generates a Case File (containing a suspect, room, and weapon) and assigns cards to players upon entering the lobby.
+- When a player joins the game, a message is automatically broadcast to all players. Their name appears in the current player list, along with an updated count of total players.
 
-- Unique characters assigned on first login,
-  preserved across logouts (stored in game.players and game.players_list).
+* (Split half, one player enters the game)
+
+- The game can start **3 to 6 players** have joined.
+- The host is set to Mrs. Scarlet if assigned. If not, due to random character assignment, the first player to join becomes the host and can start the game.
+
+* (3 players joined -> Click start game button -> Move to game board)
 
 ### Movement:
 
@@ -81,6 +87,10 @@ all players can move freely without turn restrictions, with updates synced via W
 ### Accusation
 
 - GUI:
+  - Light/Dark Mode for user convenience, ensuring consistent styling throughout the entire game interface.
+    - Signup/Login
+    - Chat/Lobby
+    - Game board
   - Board Display:
     5x5 grid shows all players’ positions, active or inactive.
     This allows the game to continue even when some players log out.
@@ -96,10 +106,10 @@ Modify these settings to suit your development environment.
    % cd path/to/your/project-directory
    ```
 
-2. Create virtual environment
+2. Create virtual environment (both MacOS and Windows)
 
    ```sh
-   % python -m venv myenv
+   % python -m venv venv
    ```
 
 3. Activate virtual environment
@@ -110,7 +120,7 @@ Modify these settings to suit your development environment.
      ```
    - Windows:
      ```sh
-     % file-path> venv\Scripts\activate
+     file-path> .\venv\Scripts\activate
      ```
 
 4. Install all dependencies for this project
