@@ -839,9 +839,12 @@
                         const { winner, solution, message } = data;
                         // Update notification with game end message
                         notification.innerHTML = `<p>${message}</p>`;
-                        // Disable accusations button
-                        const accusationsButton = document.getElementById('accusations-button');
-                        if (accusationsButton) accusationsButton.disabled = true;
+                         // Disable all action buttons
+                        const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
+                        buttons.forEach(id => {
+                            const btn = document.getElementById(id);
+                            if (btn) btn.disabled = true;
+                        });
                         setTimeout(() => {
                             showPopup(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
                         }, 1000);
@@ -854,13 +857,15 @@
                             const btn = document.getElementById(id);
                             if (btn) btn.disabled = true;
                         });
-                        showPopup(data.message);
+                         setTimeout(() => {
+                            showPopup(data.message);
+                        }, 1000);
                     } else if (data.type === 'accusation_failed') {
                         // Append accusation failure message to notification
                         document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
                         showPopup(data.message);
                         // Disable action buttons
-                        const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
+                        const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button'];
                         buttons.forEach(id => {
                             const btn = document.getElementById(id);
                             if (btn) btn.disabled = true;
