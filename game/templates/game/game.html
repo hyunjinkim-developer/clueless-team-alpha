@@ -379,7 +379,7 @@
             border-radius: 5px;
         }
 
-        /* Style close buttons for forms (base style for both submit and cancel buttons) */
+        /* Base Style close and submit buttons for forms */
         .close-button {
             width: 100%;
             padding: 10px;
@@ -394,7 +394,6 @@
             transition: background-color 0.2s ease, transform 0.2s ease;
         }
         .close-button:hover {
-            background-color: rgba(213, 211, 211, 0.94);
             transform: scale(1.05);
         }
 
@@ -404,7 +403,7 @@
             color: white;
         }
         #suggestions-form .close-button:hover {
-            background-color: #e0ffe0; /* Light green background on hover */
+            background-color: #e0ffe0;
             color: darkgreen;
         }
 
@@ -414,8 +413,26 @@
             color: white;
         }
         #accusations-form .close-button:hover {
-            background-color: #ffe0eb; /* Light pink background on hover */
+            background-color: #ffe0eb;
             color: #ff6347;
+        }
+
+        /* History close button styling */
+        #close-history-button.close-button {
+            background-color: #ff0066;
+            color: white;
+            width: 80px;
+            padding: 8px 12px;
+            margin-top: 0;
+        }
+        #close-history-button.close-button:hover {
+            background-color: #ffbcd8;
+            transform: scale(1.1);
+        }
+
+        /* Display hand buttons styling */
+        #close-hand-button:hover {
+            background-color: rgba(213, 211, 211, 0.94);
         }
 
         /* Style game title */
@@ -481,10 +498,17 @@
             z-index: 1000;
             display: flex;
             flex-direction: column;
+            color: white; /* Default text color for dark mode */
+        }
+
+        /* Light mode styles for history window */
+        body.light-mode .history-window {
+            background-color: #ffffff;
+            color: #222;
         }
 
         .history-window.open {
-            right: 0; /* Slide into view */
+            right: 0;
         }
 
         /* History Header */
@@ -495,6 +519,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        /* Light mode styles for history header */
+        body.light-mode .history-header {
+            background-color: #ff0066;
+            color: #222;
         }
 
         /* History List */
@@ -510,6 +540,11 @@
             padding: 10px;
             border-bottom: 1px solid #ddd;
             font-size: 14px;
+        }
+
+        /* Light mode styles for history list items */
+        body.light-mode .history-list li {
+            border-bottom: 1px solid #666; /* Darker border for contrast in light mode */
         }
 
         /* Popup container styling */
