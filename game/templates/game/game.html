@@ -82,10 +82,13 @@
         #button-container {
             margin-top: 15px;
             margin-bottom: 10px;
-            width: 100%;
-            max-width: 90%;
+            margin-right: 0px;
+            margin-left: 0px;
+            width: 100%; /* Full width to allow toggle to reach the right edge */
             display: flex;
-            justify-content: center; /* Center the action buttons */
+            justify-content: space-between; /* Space between buttons and toggle */
+            align-items: center;
+            padding: 0 3px; /* Add padding to prevent elements from touching the edges */
         }
 
         /* Style wrapper for action buttons to keep them centered */
@@ -93,6 +96,7 @@
             display: flex;
             justify-content: center;
             gap: 10px;
+            flex-grow: 1; /* Allow buttons to take up available space */
         }
 
         /* Style action buttons */
@@ -111,40 +115,12 @@
             background-color: #fffefa;
         }
 
-        /* Container for game board */
-        #game-and-toggle-container {
-            width: 100%;
-            max-width: 100%; /* Remove max-width constraint to eliminate margins */
-            margin-left: 0;
-            margin-right: 0;
-            position: relative;
-        }
-
-        /* Style game board as a 5x5 grid */
-        #game-board {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            grid-template-rows: repeat(5, minmax(0, 1fr));
-            gap: 1px;
-            background-color: #0a0a23;
-            padding: 10px;
-            border: 5px solid #2c2c6c;
-            width: var(--board-size);
-            height: var(--board-size);
-            margin: 0 auto; /* Center the game board within the container */
-            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
-            max-width: 90vw;
-            max-height: 90vh;
-        }
-
         /* Style dark/light mode toggle */
         .mode-toggle {
-            position: fixed;
-            top: 0;
-            right: 1px;
             display: flex;
             align-items: center;
-            gap: 2px;
+            padding-left: 3px;
+            gap: 3px;
             z-index: 1000;
         }
         .mode-toggle input[type="checkbox"] {
@@ -178,6 +154,32 @@
         }
         .mode-label {
             font-size: 1.2em;
+        }
+
+        /* Container for game board */
+        #game-and-toggle-container {
+            width: 100%;
+            max-width: 100%; /* Remove max-width constraint to eliminate margins */
+            margin-left: 0;
+            margin-right: 0;
+            position: relative;
+        }
+
+        /* Style game board as a 5x5 grid */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-rows: repeat(5, minmax(0, 1fr));
+            gap: 1px;
+            background-color: #0a0a23;
+            padding: 10px;
+            border: 5px solid #2c2c6c;
+            width: var(--board-size);
+            height: var(--board-size);
+            margin: 0 auto; /* Center the game board within the container */
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
+            max-width: 90vw;
+            max-height: 90vh;
         }
 
         /* Common styles for rooms, hallways, and vacant cells */
@@ -581,7 +583,7 @@
     <!-- Loading message for initial state -->
     <div id="loading-message">Loading game data...</div>
 
-    <!-- Action buttons -->
+    <!-- Action buttons and light/dark toggle -->
     <div id="button-container">
         <div class="action-buttons">
             <button id="toggle-history-button" class="toggle-history-button">Game History</button>
@@ -590,6 +592,11 @@
             <button id="accusations-button">Accusations</button>
             <button id="end-turn-button">End Turn</button>
         </div>
+        <label class="mode-toggle" id="mode-toggle">
+            <input id="mode-switch" type="checkbox"/>
+            <span class="slider"></span>
+            <span class="mode-label">🌙</span>
+        </label>
     </div>
 
     <!-- Container for game board -->
@@ -623,13 +630,6 @@
             <div class="room" id="Kitchen"><div class="room-name">Kitchen</div><div class="room-characters" id="Kitchen-characters"></div></div>
         </div>
     </div>
-
-    <!-- Light/Dark mode toggle fixed to the right end of the browser -->
-    <label class="mode-toggle" id="mode-toggle">
-        <input id="mode-switch" type="checkbox"/>
-        <span class="slider"></span>
-        <span class="mode-label">🌙</span>
-    </label>
 
     <!-- Hand display popup -->
     <div id="hand-display-container">
@@ -927,21 +927,8 @@
                 updateHallwayCharacters(players, movedPlayer);
                 currentPlayer = players.find(player => player.username === currentUsername) || null;
                 previousGameState = JSON.parse(JSON.stringify(gameState));
-
-                // Update the position of the light/dark toggle to align with the top of the game board
-                updateTogglePosition();
             } catch (e) {
                 console.error('Error updating game board:', e);
-            }
-        }
-
-        // Function to dynamically position the light/dark toggle
-        function updateTogglePosition() {
-            const gameBoard = document.getElementById('game-board');
-            const modeToggle = document.getElementById('mode-toggle');
-            if (gameBoard && modeToggle) {
-                const gameBoardRect = gameBoard.getBoundingClientRect();
-                modeToggle.style.top = `${gameBoardRect.top + window.scrollY}px`;
             }
         }
 
@@ -1266,11 +1253,6 @@
                 } else {
                     console.error('mode-switch element missing');
                 }
-
-                // Update toggle position on window resize
-                window.addEventListener('resize', updateTogglePosition);
-                // Update toggle position on scroll
-                window.addEventListener('scroll', updateTogglePosition);
             } catch (e) {
                 console.error('Error in DOMContentLoaded:', e);
             }
