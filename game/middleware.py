@@ -20,7 +20,7 @@ from django.shortcuts import render
 # Debug flag for logging; disable in production to reduce verbosity
 # When True, logs detailed session and cookie information for debugging
 # Set to False in production to improve performance and security
-DEBUG = True
+DEBUG = False
 
 class SessionValidationMiddleware:
     """

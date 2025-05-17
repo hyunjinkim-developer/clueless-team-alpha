@@ -40,7 +40,7 @@ from .models import *
 from .constants import *
 
 # Debug flags for logging; disable in production
-DEBUG = True  # Enables/disables all debug logging
+DEBUG = False  # Enables/disables all debug logging
 DEBUG_AUTH = True  # Authentication-specific debug logging
 DEBUG_ASSIGN_RANDOM_CHARACTER = True  # Character assignment debug logging
 

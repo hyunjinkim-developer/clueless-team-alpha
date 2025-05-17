@@ -43,7 +43,7 @@ from .constants import *
 # When enabled, logs session details, game state, and action events for debugging
 # Set to False in production for performance and security
 DEBUG = True  # Enables/disables all logging
-DEBUG_AUTH = True  # Authentication-specific debug logging
+DEBUG_AUTH = False  # Authentication-specific debug logging
 DEBUG_GAME_UPDATE = True  # Game state update logging
 DEBUG_HANDLE_ACCUSE = True  # Accusation event logging
 HANDLE_END_TURN = True  # End turn event logging
@@ -190,13 +190,13 @@ class GameConsumer(AsyncWebsocketConsumer):
         try:
             session = Session.objects.get(session_key=session_key)
             decoded_session = session.get_decoded()
-            if DEBUG:
+            if DEBUG and DEBUG_AUTH:
                 print("[load_session] Session loaded:")
                 print(f"  Session key: {session_key}")
                 print(f"  Expected username: {decoded_session.get('expected_username', 'None')}")
             return decoded_session
         except Session.DoesNotExist:
-            if DEBUG:
+            if DEBUG and DEBUG_AUTH:
                 print("[load_session] Session not found:")
                 print(f"  Session key: {session_key}")
             raise
