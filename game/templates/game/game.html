@@ -11,6 +11,11 @@
             --cell-size: calc(var(--board-size) / 5);
             --room-hallway-name-font-size: calc(var(--cell-size) * 0.15);
             --room-hallway-character-font-size: calc(var(--cell-size) * 0.12);
+            --bg-color: #0b0c1a;
+            --text-color: white;
+            --room-color: #ff0066;
+            --hallway-color: #0a74da;
+            --vacant-color: rgba(255, 255, 255, 0.1);
         }
 
         /* Style body with centered layout and background effects */
@@ -38,6 +43,24 @@
                 radial-gradient(1px 1px at 60% 40%, #fff, transparent),
                 radial-gradient(1px 1px at 70% 60%, #fff, transparent);
             background-size: 100% 100%;
+        }
+
+        /* Light mode overrides */
+        body.light-mode {
+            --bg-color: #f4f4f4;
+            --text-color: #222;
+            --hallway-color: #d0e7ff;
+            --vacant-color: rgba(0, 0, 0, 0.05);
+        }
+        body.light-mode .middle-vacant {
+            background-color: #ffffff !important;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Push the main content when the history window is open */
+        body.history-open {
+            margin-right: 300px; /* Push content to the left by the width of the history window */
+            transition: margin-right 0.3s ease-in-out;
         }
 
         /* Style dark/light mode toggle */
@@ -366,27 +389,6 @@
             background-color: #ff6347;
         }
 
-        /* Default dark mode colors */
-        :root {
-            --bg-color: #0b0c1a;
-            --text-color: white;
-            --room-color: #ff0066;
-            --hallway-color: #0a74da;
-            --vacant-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Light mode overrides */
-        body.light-mode {
-            --bg-color: #f4f4f4;
-            --text-color: #222;
-            --hallway-color: #d0e7ff;
-            --vacant-color: rgba(0, 0, 0, 0.05);
-        }
-        body.light-mode .middle-vacant {
-            background-color: #ffffff !important;
-            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
-        }
-
         /* Style game title */
         #game-title {
             font-size: 2.5em;
@@ -475,12 +477,6 @@
             right: 0; /* Slide into view */
         }
 
-        /* Push the main content when the history window is open */
-        body.history-open {
-            margin-right: 300px; /* Push content to the left by the width of the history window */
-            transition: margin-right 0.3s ease-in-out;
-        }
-
         /* History Header */
         .history-header {
             background-color: #ff0066;
@@ -504,6 +500,44 @@
             padding: 10px;
             border-bottom: 1px solid #ddd;
             font-size: 14px;
+        }
+
+        /* Popup message styling */
+        .popup-message {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: #ffcc00;
+            color: #000;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            font-weight: bold;
+        }
+
+        /* Select card popup styling */
+        .select-card-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            text-align: center;
+        }
+        .select-card-message {
+            color: black;
+        }
+        .select-card-button {
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 
@@ -725,6 +759,8 @@
         const historyList = document.getElementById('history-list');
         const actionHistory = []; // Array to store popup actions
 
+        let ws;
+
         // Initialize WebSocket connection
         const gameId = {{ game_id }};
         console.log('Game ID:', gameId);
@@ -740,6 +776,7 @@
             ws.onopen = function() {
                 console.log("WebSocket connected successfully");
             };
+
             // Handle WebSocket messages
             ws.onmessage = function(event) {
                 try {
@@ -753,42 +790,28 @@
                     if (data.type === 'game_update') {
                         console.log('Game state players:', data.game_state.players);
                         updateGameBoard(data.game_state);
-
-                    }  else if (data.type === 'popup') {
+                    } else if (data.type === 'popup') {
                         showPopup(data.message);
-                    }  else if (data.type === 'select_card') {
+                    } else if (data.type === 'select_card') {
                         // Handle the card selection popup
                         const matchList = data.matchList;
                         const message = data.message;
                         const suggestingPlayerChannel = data.suggesting_player_channel;
 
-                        // Create a popup for card selection
+                        // Create a popup for card selection using CSS classes
                         const popup = document.createElement('div');
-                        popup.style.position = 'fixed';
-                        popup.style.top = '50%';
-                        popup.style.left = '50%';
-                        popup.style.transform = 'translate(-50%, -50%)';
-                        popup.style.backgroundColor = '#fff';
-                        popup.style.padding = '20px';
-                        popup.style.borderRadius = '10px';
-                        popup.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.2)';
-                        popup.style.zIndex = '1000';
-                        popup.style.textAlign = 'center';
+                        popup.className = 'select-card-popup';
 
                         const messageElement = document.createElement('p');
+                        messageElement.className = 'select-card-message';
                         messageElement.textContent = message;
-                        messageElement.style.color = 'black'; // Set text color to black
                         popup.appendChild(messageElement);
 
                         // Create buttons for each card in matchList
                         matchList.forEach(card => {
                             const button = document.createElement('button');
+                            button.className = 'select-card-button';
                             button.textContent = card;
-                            button.style.margin = '5px';
-                            button.style.padding = '10px';
-                            button.style.border = '1px solid #ccc';
-                            button.style.borderRadius = '5px';
-                            button.style.cursor = 'pointer';
                             button.addEventListener('click', () => {
                                 // Send the selected card back to the server
                                 ws.send(JSON.stringify({
@@ -801,7 +824,6 @@
                             popup.appendChild(button);
                         });
                         document.body.appendChild(popup);
-
                     } else if (data.type === 'game_end') {
                         const { winner, solution, message } = data;
                         // Update notification with game end message
@@ -810,7 +832,7 @@
                         const accusationsButton = document.getElementById('accusations-button');
                         if (accusationsButton) accusationsButton.disabled = true;
                         setTimeout(() => {
-                            alert(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
+                            showPopup(`${message}\nSolution: ${solution.suspect} in ${solution.room} with ${solution.weapon}`);
                         }, 1000);
                     } else if (data.type === 'game_tie') {
                         // Update notification with tie message
@@ -821,11 +843,11 @@
                             const btn = document.getElementById(id);
                             if (btn) btn.disabled = true;
                         });
-                        alert(data.message);
+                        showPopup(data.message);
                     } else if (data.type === 'accusation_failed') {
                         // Append accusation failure message to notification
                         document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
-                        alert(data.message);
+                        showPopup(data.message);
                         // Disable action buttons
                         const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
                         buttons.forEach(id => {
@@ -835,15 +857,16 @@
                     } else if (data.type === 'player_eliminated') {
                         // Append elimination message to notification
                         document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
-                        alert(data.message);
+                        showPopup(data.message);
                     } else if (data.error) {
                         console.error('Error:', data.error);
-                        alert(data.error);
+                        showPopup(data.error);
                     }
                 } catch (e) {
                     console.error('Error processing WebSocket message:', e);
                 }
             };
+
             // Log WebSocket errors
             ws.onerror = function(error) {
                 console.error("WebSocket connection error:", error);
@@ -990,20 +1013,11 @@
             }
         }
 
-        // Modify the showPopup function to send logs to the server
+        // Show popup message
         function showPopup(message) {
             const popup = document.createElement('div');
-            popup.style.fontWeight = 'bold';
+            popup.className = 'popup-message';
             popup.textContent = message;
-            popup.style.position = 'fixed';
-            popup.style.top = '20px';
-            popup.style.left = '20px';
-            popup.style.backgroundColor = '#ffcc00';
-            popup.style.color = '#000';
-            popup.style.padding = '20px 30px';
-            popup.style.borderRadius = '10px';
-            popup.style.boxShadow = '0px 4px 8px rgba(0, 0, 0, 0.2)';
-            popup.style.zIndex = '1000';
             document.body.appendChild(popup);
 
             // Add the action to the history
@@ -1023,16 +1037,6 @@
         }
 
         // Initialize JavaScript on DOM load
-        // - **DOM Manipulation**: Sets up event listeners for buttons
-        //   (#display-hand-button, #suggestions-button, #accusations-button,
-        //   #end-turn-button), forms (#suggestions-form, #accusations-form), and
-        //   toggle (#mode-switch). Dynamically updates #hand-list, toggles visibility
-        //   of #hand-display-container, #suggestions-form-container, and
-        //   #accusations-form-container, and modifies #notification for messages.
-        //   Uses querySelector, addEventListener, and innerHTML to manipulate elements.
-        // - **Session Integration**: Button/form actions (e.g., submit suggestion,
-        //   end turn) send WebSocket messages validated by GameConsumer using
-        //   sessionid cookies, ensuring DOM updates reflect authenticated actions.
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 console.log('Initial players data:', playersData);
@@ -1070,15 +1074,9 @@
                             handList.innerHTML = '';
                             currentPlayer.hand.forEach(item => {
                                 const listItem = document.createElement('li');
-                                listItem.style.display = 'flex';
-                                listItem.style.alignItems = 'center';
-                                listItem.style.marginBottom = '10px';
                                 const itemImage = document.createElement('img');
                                 itemImage.src = itemImages[item] || '';
                                 itemImage.alt = item;
-                                itemImage.style.width = '40px';
-                                itemImage.style.height = '40px';
-                                itemImage.style.marginRight = '10px';
                                 const itemText = document.createElement('span');
                                 itemText.textContent = item;
                                 listItem.appendChild(itemImage);
@@ -1089,7 +1087,7 @@
                             handDisplayContainer.style.display = 'block';
                             handDisplayOverlay.style.display = 'block';
                         } else {
-                            alert('Your hand is empty or not available.');
+                            showPopup('Your hand is empty or not available.');
                         }
                     });
 
@@ -1131,7 +1129,7 @@
                         };
                         console.log("Sending accusation:", message);
                         ws.send(JSON.stringify(message));
-                        alert('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+                        showPopup('Accusation Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
                         // Hide accusations form
                         accusationsFormContainer.style.display = 'none';
                     });
@@ -1162,7 +1160,7 @@
                         const weapon = document.getElementById('suggest-weapon').value;
                         const room = currentPlayer ? currentPlayer.location : null;
                         if (!room) {
-                            alert("You must be in a room to make a suggestion.");
+                            showPopup("You must be in a room to make a suggestion.");
                             return;
                         }
                         const message = {
@@ -1173,7 +1171,7 @@
                         };
                         console.log("Sending suggestion:", message);
                         ws.send(JSON.stringify(message));
-                        alert('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
+                        showPopup('Suggestion Submitted: ' + suspect + ' with ' + weapon + ' in the ' + room);
                         // Hide suggestions form
                         suggestionsFormContainer.style.display = 'none';
                     });
@@ -1195,7 +1193,7 @@
                         };
                         console.log("Ending turn:", message);
                         ws.send(JSON.stringify(message));
-                        alert("Your turn has ended. Waiting for the next player...");
+                        showPopup("Your turn has ended. Waiting for the next player...");
                     });
                 } else {
                     console.error('end-turn-button element missing');
