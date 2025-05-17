@@ -510,18 +510,27 @@
             font-size: 14px;
         }
 
-        /* Popup message styling */
-        .popup-message {
+        /* Popup container styling */
+        #popup-container {
             position: fixed;
             top: 20px;
             left: 20px;
+            z-index: 1000;
+            width: 300px; /* Fixed width to prevent popups from stretching */
+        }
+
+        /* Popup message styling */
+        .popup-message {
+            position: relative; /* Position relative to stack within container */
             background-color: #ffcc00;
             color: #000;
             padding: 20px 30px;
             border-radius: 10px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
             font-weight: bold;
+            margin-bottom: 10px; /* Space between popups */
+            width: 100%; /* Ensure consistent width */
+            box-sizing: border-box;
         }
 
         /* Select card popup styling */
@@ -550,6 +559,9 @@
     </style>
 
 <body>
+    <!-- Popup container -->
+    <div id="popup-container"></div>
+
     <!-- Sliding History Window -->
     <div id="history-window" class="history-window">
         <div class="history-header">
@@ -649,9 +661,9 @@
             <select id="suspect" name="suspect" required>
                 <option value="Miss Scarlet">Miss Scarlet</option>
                 <option value="Col. Mustard">Col. Mustard</option>
-                <option value="Prof. Plum">Professor Plum</option>
+                <option value="Prof. Plum">Prof. Plum</option>
                 <option value="Mrs. Peacock">Mrs. Peacock</option>
-                <option value="Mr. Green">Reverend Green</option>
+                <option value="Mr. Green">Mr. Green</option>
                 <option value="Mrs. White">Mrs. White</option>
             </select>
             <br/>
@@ -691,9 +703,9 @@
             <select id="suggest-suspect" name="suggest-suspect">
                 <option value="Miss Scarlet">Miss Scarlet</option>
                 <option value="Col. Mustard">Col. Mustard</option>
-                <option value="Prof. Plum">Professor Plum</option>
+                <option value="Prof. Plum">Prof. Plum</option>
                 <option value="Mrs. Peacock">Mrs. Peacock</option>
-                <option value="Mr. Green">Reverend Green</option>
+                <option value="Mr. Green">Mr. Green</option>
                 <option value="Mrs. White">Mrs. White</option>
             </select>
             <label for="suggest-weapon">Weapon:</label>
@@ -839,7 +851,7 @@
                         const { winner, solution, message } = data;
                         // Update notification with game end message
                         notification.innerHTML = `<p>${message}</p>`;
-                         // Disable all action buttons
+                        // Disable all action buttons
                         const buttons = ['accusations-button', 'suggestions-button', 'end-turn-button', 'display-hand-button'];
                         buttons.forEach(id => {
                             const btn = document.getElementById(id);
@@ -857,7 +869,7 @@
                             const btn = document.getElementById(id);
                             if (btn) btn.disabled = true;
                         });
-                         setTimeout(() => {
+                        setTimeout(() => {
                             showPopup(data.message);
                         }, 1000);
                     } else if (data.type === 'accusation_failed') {
@@ -1031,17 +1043,18 @@
 
         // Show popup message
         function showPopup(message) {
+            const popupContainer = document.getElementById('popup-container');
             const popup = document.createElement('div');
             popup.className = 'popup-message';
             popup.textContent = message;
-            document.body.appendChild(popup);
+            popupContainer.appendChild(popup);
 
             // Add the action to the history
             addActionToHistory(message);
 
-            // Remove the popup after 5 seconds
+            // Remove the popup after 5 seconds and adjust positions of remaining popups
             setTimeout(() => {
-                popup.remove();
+                popupContainer.removeChild(popup);
             }, 5000);
         }
 
