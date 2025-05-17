@@ -344,21 +344,12 @@
             display: block;
             margin: 10px 0 5px;
         }
-        #suggestions-form select,
-        #suggestions-form button {
+        #suggestions-form select {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
-        }
-        #suggestions-form button {
-            background-color: darkgreen;
-            color: white;
-            cursor: pointer;
-        }
-        #suggestions-form button:hover {
-            background-color: green;
         }
 
         /* Style accusation form */
@@ -380,21 +371,51 @@
             display: block;
             margin: 10px 0 5px;
         }
-        #accusations-form select,
-        #accusations-form button {
+        #accusations-form select {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        #accusations-form button {
+
+        /* Style close buttons for forms (base style for both submit and cancel buttons) */
+        .close-button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: transparent;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .close-button:hover {
+            background-color: rgba(213, 211, 211, 0.94);
+            transform: scale(1.05);
+        }
+
+        /* Suggestions form buttons styling */
+        #suggestions-form .close-button {
+            background-color: darkgreen;
+            color: white;
+        }
+        #suggestions-form .close-button:hover {
+            background-color: #e0ffe0; /* Light green background on hover */
+            color: darkgreen;
+        }
+
+        /* Accusations form buttons styling */
+        #accusations-form .close-button {
             background-color: #ff6347;
             color: white;
-            cursor: pointer;
         }
-        #accusations-form button:hover {
-            background-color: #ff6347;
+        #accusations-form .close-button:hover {
+            background-color: #ffe0eb; /* Light pink background on hover */
+            color: #ff6347;
         }
 
         /* Style game title */
@@ -436,25 +457,6 @@
             background-color: #e6006d;
             transform: scale(1.1);
             box-shadow: 0 0 15px rgba(255, 0, 102, 0.9);
-        }
-
-        /* Style close buttons for forms */
-        .close-button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            background: transparent;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #ff0066;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-        }
-        .close-button:hover {
-            background-color: #ffe0eb;
-            transform: scale(1.05);
         }
 
         /* Style loading message */
@@ -604,7 +606,7 @@
             <button id="accusations-button">Accusations</button>
             <button id="end-turn-button">End Turn</button>
         </div>
-        <label class="mode-toggle" id="mode-toggle">
+        <label class="mode-toggle">
             <input id="mode-switch" type="checkbox"/>
             <span class="slider"></span>
             <span class="mode-label">🌙</span>
@@ -647,7 +649,7 @@
     <div id="hand-display-container">
         <h3>Your Hand</h3>
         <ul id="hand-list"></ul>
-        <button id="close-hand-button">Close</button>
+        <button id="close-hand-button" class="close-button">Close</button>
     </div>
 
     <!-- Hand display overlay -->
@@ -690,7 +692,7 @@
                 <option value="Kitchen">Kitchen</option>
             </select>
             <br/>
-            <button type="submit">Submit Accusation</button>
+            <button type="submit" class="close-button">Submit Accusation</button>
             <button type="button" class="close-button" id="cancel-accusation">Cancel</button>
         </form>
     </div>
@@ -717,7 +719,7 @@
                 <option value="Candlestick">Candlestick</option>
                 <option value="Rope">Rope</option>
             </select>
-            <button type="submit">Submit Suggestion</button>
+            <button type="submit" class="close-button">Submit Suggestion</button>
             <button type="button" class="close-button" id="cancel-suggestions">Cancel</button>
         </form>
     </div>
