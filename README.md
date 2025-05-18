@@ -1,5 +1,3 @@
-# ⚠️Currently in the process of ORGANIZING the GitHub repository!
-
 # Clue-Less
 
 This web application is a simplified version of the classic board game Clue®.
@@ -293,12 +291,21 @@ The backend of Clue-Less Game is built to handle game logic, user authentication
 The frontend is designed to provide an interactive and responsive user interface for players to engage with the game board, manage their actions, and view game history.
 
 - **HTML**: Structures the game interface, including the game board, action buttons, notification bar, and history window.
-- **CSS**: Provides styling for the game board, buttons, and history window, with responsive design using CSS variables and media queries. Includes light/dark mode theming for better user experience.
+- **CSS**: Provides styling for the game board, buttons, and history window, with responsive design using CSS variables and relative units. Includes light/dark mode theming for better user experience.
 - **JavaScript**: Handles client-side logic, including:
   - WebSocket communication for real-time updates (e.g., player movements, turn changes).
   - DOM manipulation for updating the game board, displaying popups, and managing the history window.
   - Event listeners for user interactions (e.g., clicking rooms, submitting accusations/suggestions).
   - No frontend frameworks are used; the project relies on vanilla JavaScript for simplicity and lightweight performance.
+
+### Deployment
+
+For development and testing purposes, Clue-Less Game is deployed locally and exposed to the internet using Ngrok, allowing remote access for demos, testing, or collaboration.
+- **Ngrok for Public Access**: Ngrok creates a secure tunnel to the local Django server, providing a public URL that can be shared with others.
+- Limitations:
+    - The free tier has bandwidth limits and a session timeout (typically 2 hours per session as of May 2025).
+    - Free Ngrok URLs are temporary and change each time the tunnel restarts. For a persistent URL, consider a paid Ngrok plan with custom subdomains.
+    - For production deployment, consider a more robust hosting solution (e.g., AWS, Heroku) instead of Ngrok.
 
 ## Presentation
 
