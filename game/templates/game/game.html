@@ -726,8 +726,8 @@
                 <option value="Hall">Hall</option>
                 <option value="Lounge">Lounge</option>
                 <option value="Library">Library</option>
-                <option value="Billiard Room">Billiard Room</option>
-                <option value="Dining Room">Dining Room</option>
+                <option value="BilliardRoom">Billiard Room</option>
+                <option value="DiningRoom">Dining Room</option>
                 <option value="Conservatory">Conservatory</option>
                 <option value="Ballroom">Ballroom</option>
                 <option value="Kitchen">Kitchen</option>
@@ -928,7 +928,6 @@
                     } else if (data.type === 'player_eliminated') {
                         // Append elimination message to notification
                         document.getElementById('notification').innerHTML += `<p>${data.message}</p>`;
-                        showPopup(data.message);
                     } else if (data.error) {
                         console.error('Error:', data.error);
                         showPopup(data.error);
