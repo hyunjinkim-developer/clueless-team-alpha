@@ -39,10 +39,10 @@ The core rules remain unchanged, with the main simplification being how players 
   - Windows (Chrome)<br>
     ![](./static/readme/chat_windows_chrome.gif)
   - iPhone (Safari)<br>
-  <div style="display: inline-block;">
-    <img src="./static/readme/iphone_safari.png" alt="iPhone Safari view" height="450">
-    <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iPhone Safari zoomed-in view" width=auto>
-  </div>
+      <div style="display: inline-block;">
+        <img src="./static/readme/iphone_safari.png" alt="iPhone Safari view" height="450">
+        <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iPhone Safari zoomed-in view" width=500>
+      </div>
 
 ### Lobby
 
