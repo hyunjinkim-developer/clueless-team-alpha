@@ -39,12 +39,10 @@ The core rules remain unchanged, with the main simplification being how players 
   - Windows (Chrome)<br>
     ![](./static/readme/chat_windows_chrome.gif)
   - iPhone (Safari)<br>
-    <table>
-        <tr>
-            <td><img src="./static/readme/iphone_safari.png" alt="iphone_safari" height="450" width=auto></td>
-            <td><img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" height="450" width=auto></td>
-        </tr>
-    </table>
+  <div style="display: inline-block;">
+    <img src="./static/readme/iphone_safari.png" alt="iPhone Safari view" height="450">
+    <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iPhone Safari zoomed-in view" width=auto>
+  </div>
 
 ### Lobby
 
@@ -301,11 +299,12 @@ The frontend is designed to provide an interactive and responsive user interface
 ### Deployment
 
 For development and testing purposes, Clue-Less Game is deployed locally and exposed to the internet using Ngrok, allowing remote access for demos, testing, or collaboration.
+
 - **Ngrok for Public Access**: Ngrok creates a secure tunnel to the local Django server, providing a public URL that can be shared with others.
 - Limitations:
-    - The free tier has bandwidth limits and a session timeout (typically 2 hours per session as of May 2025).
-    - Free Ngrok URLs are temporary and change each time the tunnel restarts. For a persistent URL, consider a paid Ngrok plan with custom subdomains.
-    - For production deployment, consider a more robust hosting solution (e.g., AWS, Heroku) instead of Ngrok.
+  - The free tier has bandwidth limits and a session timeout (typically 2 hours per session as of May 2025).
+  - Free Ngrok URLs are temporary and change each time the tunnel restarts. For a persistent URL, consider a paid Ngrok plan with custom subdomains.
+  - For production deployment, consider a more robust hosting solution (e.g., AWS, Heroku) instead of Ngrok.
 
 ## Presentation
 
