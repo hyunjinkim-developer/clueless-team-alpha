@@ -277,9 +277,28 @@ Modify these settings to suit your development environment.
 
 ### Backend
 
+The backend of Clue-Less Game is built to handle game logic, user authentication, and real-time communication for a seamless multiplayer experience.
+
+- **Framework**: Django
+  - A Python web framework used for handling user authentication, game state management, and routing.
+  - Manages the core game logic, such as player turns, accusations, suggestions, and game state updates.
+- **Real-Time Communication**: Django Channels
+  - Extends Django to support WebSocket connections, enabling real-time updates for multiplayer interactions.
+  - Handles events like player movements, turn updates, and notifications (e.g., game end, accusation/suggestion results).
+- **Database**: SQLite (default for Django development)
+  - Stores user data and game state.
+
 ### Frontend
 
-- HTML/ CSS / Javascript
+The frontend is designed to provide an interactive and responsive user interface for players to engage with the game board, manage their actions, and view game history.
+
+- **HTML**: Structures the game interface, including the game board, action buttons, notification bar, and history window.
+- **CSS**: Provides styling for the game board, buttons, and history window, with responsive design using CSS variables and media queries. Includes light/dark mode theming for better user experience.
+- **JavaScript**: Handles client-side logic, including:
+  - WebSocket communication for real-time updates (e.g., player movements, turn changes).
+  - DOM manipulation for updating the game board, displaying popups, and managing the history window.
+  - Event listeners for user interactions (e.g., clicking rooms, submitting accusations/suggestions).
+  - No frontend frameworks are used; the project relies on vanilla JavaScript for simplicity and lightweight performance.
 
 ## Presentation
 
