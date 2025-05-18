@@ -43,8 +43,8 @@ The rules are pretty much the same except for moving from room to room.
     ![](./static/readme/chat_windows_chrome.gif)
   - iPhone (Safari)<br>
     <p float="left">
-      <img src="./static/readme/iphone_safari.png" alt="iphone_safari" width="150" hieght="150">
-      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" width="600" hieght="400">
+      <img src="./static/readme/iphone_safari.png" alt="iphone_safari" height="450">
+      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" height="450">
     </p>
 
 ### Lobby
@@ -81,23 +81,33 @@ The rules are pretty much the same except for moving from room to room.
 
 ### Suggestion
 
-- Players can only make a suggestion during their turn; attempting to do so on another player's turn will trigger an error message.
-- Players can only make a suggestion when they are in a room; only weapon and character are specified in a suggestion.
-  - !attempting to do so in a hallway
-  - !Move to a room and make a suggestion after choosing suspect and weapon.
-- Display cards in hand with Display Hand button
-- Go through each player when a suggestion is made
-- If a player has mutiple cards for a suggestion they can pcik which card to disprove.
-  - -> ! based on what's in hand, submit suggestion
-  - -> ! Multiple cards to disprove, choose one among them
-- Emliminated character because of false accusation
-  - could still can be moved by a suggestion
-  - could still disprove suggestion
-  - !
+- Players can only make a suggestion during their turn; attempting to do so on another player's turn triggers an error message.
+  ![](./static/readme/suggestion_not_your_turn.gif)
+
+- Suggestions can only be made when the player is inside a room (not in a hallway).
+  ![](./static/readme/suggestion_move_to_room.gif)
+
+- Players can view their own cards at any time using the Display Hand button.
+  ![](./static/readme/suggestion_display_hand.gif)
+
+- Only the suspect and weapon are specified in a suggestion; the room is implied by the player's current location.
+- When a suggestion is made:
+
+  - The suggested character is moved to the room where the suggestion is made.
+  - The system checks each other player, in order, to find someone who can disprove the suggestion.
+  - If a player holds multiple matching cards, they can choose which card to reveal.
+
+  ![](./static/readme/suggestion_disprove.gif)
+
+- Eliminated characters (due to incorrect accusations):
+  - Can still disprove suggestions with matching cards.
+    ![](./static/readme/suggestion_eliminated_disprove.gif)
+  - Can still be moved if they are part of another player's suggestion.
+    ![](./static/readme/suggestion_eliminated_moved.gif)
 
 ### Accusation
 
-- Players can make an accusation at any point during their turn
+- Players can make an accusation at any point during their turn.
 
   - Attempting to accuse outside of their turn triggers an error message.
     ![](./static/readme/accusation_not_your_turn.gif)
@@ -133,13 +143,13 @@ The rules are pretty much the same except for moving from room to room.
   - Displays a distict notification style to indicate the game has ended.
   - Disables all action buttons except **Game History** for all players.
 
-  - ! 6 players suggestion -> accusation true -> click Light/Dark mode
+  ![](./static/readme/accusation_correct.gif)
 
 ### Game History
 
 - Displays all private and public messages relevant to each player.
 
-- ! 6 players suggestion -> accusation true -> click Light/Dark mode
+![](./static/readme/game_history.gif)
 
 ### User Authentication
 
