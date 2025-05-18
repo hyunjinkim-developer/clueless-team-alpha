@@ -42,10 +42,12 @@ The rules are pretty much the same except for moving from room to room.
   - Windows (Chrome)<br>
     ![](./static/readme/chat_windows_chrome.gif)
   - iPhone (Safari)<br>
-    <p float="left">
-      <img src="./static/readme/iphone_safari.png" alt="iphone_safari" height="450">
-      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" height="450">
-    </p>
+    <table>
+        <tr>
+        <td><img src="./static/readme/iphone_safari.png" alt="iphone_safari" height="450" width=auto></td>
+        <td><img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" height="450" width=auto></td>
+        </tr>
+    </table>
 
 ### Lobby
 
