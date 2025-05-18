@@ -82,54 +82,64 @@ The rules are pretty much the same except for moving from room to room.
 ### Suggestion
 
 - Players can only make a suggestion during their turn; attempting to do so on another player's turn will trigger an error message.
-- Players can only make a suggestion when they are in a room;
+- Players can only make a suggestion when they are in a room; only weapon and character are specified in a suggestion.
   - !attempting to do so in a hallway
   - !Move to a room and make a suggestion after choosing suspect and weapon.
 - Display cards in hand with Display Hand button
-- -> ! based on what's in hand, submit suggestion
-- -> ! Multiple cards to disprove, choose one among them
+- Go through each player when a suggestion is made
+- If a player has mutiple cards for a suggestion they can pcik which card to disprove.
+  - -> ! based on what's in hand, submit suggestion
+  - -> ! Multiple cards to disprove, choose one among them
 - Emliminated character because of false accusation
-  - could still moved thorough a suggestion
+  - could still can be moved by a suggestion
   - could still disprove suggestion
+  - !
 
 ### Accusation
 
-- Player can make an accusation any point during the game.
-- ! Make accusation right after login
-- Players can only make an accusation during their turn; attempting to do so on another player's turn will trigger an error message.
-- ! Check error message style
+- Players can make an accusation at any point during their turn
 
-- If an accusation is incorrect,
+  - Attempting to accuse outside of their turn triggers an error message.
+    ![](./static/readme/accusation_not_your_turn.gif)
 
-  - the system privately notify the accusing player an message “Your accusation was incorrect. You are no longer able to move or make accusations, but you remain a suspect.” and broadcast 'Player 1 has been eliminated due to an incorrect accusation.'"
-  - ! Move and make accusation
-  - ! two notification doesn't overlap
+- **Incorrect** Accusations:
 
-  - The eliminated player can no longer move, their turn automatically skipped, and the "End Turn" button is disabled.
-    - ! Click button
-  - The eliminated player is no longer eligible to win and cannot make accusations as "Accusations" button is disabled.
-    - ! Click button
-  - The eliminated player cannot make suggestions as "Suggestions" button is disabled.
-    - ! Click button
-  - The eliminated player still Can prove opponents' suggestions false.
+  - The accusing player receives a private message, “Your accusation was incorrect. You are no longer able to move or make accusations, but you remain a suspect.”
+  - A public message and notification announce the player's elimination.
 
-    - ! "Display Hand" should not be disabled
+  ![](./static/readme/accusation_incorrect.gif)
 
-  - When only one player reamins because all other players have been eliminated due to incorrect accusations,
+  - Eliminated players:
 
-    - The last player continues taking turns alone, ensuring the game reaches completion.
+    - Cannot make suggestions or accusations; corresponding buttons are disabled.
+    - Can no longer move; their turn is auto-skipped and the End Turn button is disabled.
 
-  - Tie: If all players make incorrect accusations,
-    - the system disables the accusations buttons for all players,
-    - broadcast the game ending in a tie, and shows a distinct notification style when the game ends
+    ![](./static/readme/accusation_eliminated_button_disabled.gif)
 
-- If an accusation is correct,
-- Show notifications in title differently after the game ends with a winner or ends in a tie
+  - If all other players are eliminated, the last remaining player continues alone until the game ends.
+    ![](./static/readme/accusation_only_player_left.gif)
+
+  - **Tie** Condition:<br>
+    If all players are eliminated due to incorrect accusations:
+
+    - All action buttons (Display Hands, Suggestions, Accusations, End Turn) are disabled.
+    - A distinct game-over notification is shown, indicating a tie.
+
+    ![](./static/readme/accusation_tie.gif)
+
+- **Correct** Accusations:
+
+  - Broadcasts the correct solution and announces the winner to all players.
+  - Displays a distict notification style to indicate the game has ended.
+  - Disables all action buttons except **Game History** for all players.
+
+  - ! 6 players suggestion -> accusation true -> click Light/Dark mode
 
 ### Game History
 
-- ! Modify button size and style,
-- ! Check Light/Dark mode (low prio.)
+- Displays all private and public messages relevant to each player.
+
+- ! 6 players suggestion -> accusation true -> click Light/Dark mode
 
 ### User Authentication
 
