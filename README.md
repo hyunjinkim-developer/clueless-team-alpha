@@ -2,10 +2,9 @@
 
 # Clue-Less
 
-This web application is a simplified version of the popular board game Clue®.
-The main simplification is in the navigation of the game board.
-In Clue-Less there are the same nine rooms, six weapons, and six characters as in the board game.
-The rules are pretty much the same except for moving from room to room.
+This web application is a simplified version of the classic board game Clue®.
+Clue-Less retains the same nine rooms, six weapons, and six characters as the original game.
+The core rules remain unchanged, with the main simplification being how players navigate the game board.
 
 ## Overview
 
@@ -44,8 +43,8 @@ The rules are pretty much the same except for moving from room to room.
   - iPhone (Safari)<br>
     <table>
         <tr>
-        <td><img src="./static/readme/iphone_safari.png" alt="iphone_safari" height="450" width=auto></td>
-        <td><img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" height="450" width=auto></td>
+            <td><img src="./static/readme/iphone_safari.png" alt="iphone_safari" height="450" width=auto></td>
+            <td><img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iphone_safari" height="450" width=auto></td>
         </tr>
     </table>
 
@@ -55,6 +54,7 @@ The rules are pretty much the same except for moving from room to room.
 - A broadcast message is sent to all players when someone joins, updating the player list and count.
 - The game can start once **3 to 6 players** have joined.
 - Mrs. Scarlet becomes the host if assigned; otherwise, due to random character assignment, the first player to join is designated as host and can start the game.
+
   ![](./static/readme/lobby.gif)
 
 ### Player Movement & Turn Rules
@@ -143,7 +143,7 @@ The rules are pretty much the same except for moving from room to room.
 
   - Broadcasts the correct solution and announces the winner to all players.
   - Displays a distict notification style to indicate the game has ended.
-  - Disables all action buttons except **Game History** for all players.
+  - Disables all action buttons **except Game History** for all players.
 
   ![](./static/readme/accusation_correct.gif)
 
