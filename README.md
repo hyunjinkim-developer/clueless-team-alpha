@@ -40,8 +40,8 @@ The core rules remain unchanged, with the main simplification being how players 
     ![](./static/readme/chat_windows_chrome.gif)
   - iPhone (Safari)<br>
     <div style="display: flex; flex-wrap: nowrap; width: 100%; gap: 5px;">
-      <img src="./static/readme/iphone_safari.png" alt="iPhone Safari game view" style="width: 20%; height: auto">
-      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iPhone Safari zoomed-in game view" style=" width: auto;">
+      <img src="./static/readme/iphone_safari.png" alt="iPhone Safari game view" style="width: 20%; height: auto;">
+      <img src="./static/readme/iphone_safari_zoomin.jpeg" alt="iPhone Safari zoomed-in game view" style=" width: 75%; height: auto;">
     </div>
 
 ### Lobby
